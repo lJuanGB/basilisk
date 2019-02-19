@@ -73,6 +73,9 @@ void Update_hillPoint(hillPointConfig *ConfigData, uint64_t callTime, uint64_t m
     ReadMessage(ConfigData->inputNavID, &writeTime, &writeSize,
                 sizeof(NavTransIntMsg), &navData, moduleID);
 
+    printf("r_planet = %g, %g, %g \t", primPlanet.r_BdyZero_N[0], primPlanet.r_BdyZero_N[1], primPlanet.r_BdyZero_N[2]);
+    printf("v_planet = %g, %g, %g \n", primPlanet.v_BdyZero_N[0], primPlanet.v_BdyZero_N[1], primPlanet.v_BdyZero_N[2]);
+    
     /*! - Compute and store output message */
     computeHillPointingReference(ConfigData,
                                  navData.r_BN_N,
@@ -112,6 +115,12 @@ void computeHillPointingReference(hillPointConfig *ConfigData,
     v3Subtract(r_BN_N, celBdyPositonVector, relPosVector);
     v3Subtract(v_BN_N, celBdyVelocityVector, relVelVector);
     
+    printf("r_BN_N = %g, %g, %g \t", r_BN_N[0], r_BN_N[1], r_BN_N[2]);
+    printf("v_BN_N = %g, %g, %g \n", v_BN_N[0], v_BN_N[1], v_BN_N[2]);
+    printf("relPosVector = %g, %g, %g \t", relPosVector[0], relPosVector[1], relPosVector[2]);
+    printf("relVelVector = %g, %g, %g \n\n", relVelVector[0], relVelVector[1], relVelVector[2]);
+    
+    
     /* Compute RN */
     v3Normalize(relPosVector, dcm_RN[0]);
     v3Cross(relPosVector, relVelVector, h);
@@ -141,5 +150,12 @@ void computeHillPointingReference(hillPointConfig *ConfigData,
     m33Transpose(dcm_RN, temp33);
     m33MultV3(temp33, omega_RN_R, ConfigData->attRefOut.omega_RN_N);
     m33MultV3(temp33, domega_RN_R, ConfigData->attRefOut.domega_RN_N);
+    
+    printf("sigma_RN = %g, %g, %g \n", ConfigData->attRefOut.sigma_RN[0],
+           ConfigData->attRefOut.sigma_RN[1], ConfigData->attRefOut.sigma_RN[2]);
+    printf("omega_RN_N = %g, %g, %g \n", ConfigData->attRefOut.omega_RN_N[0],
+           ConfigData->attRefOut.omega_RN_N[1], ConfigData->attRefOut.omega_RN_N[2]);
+    printf("domega_RN_N = %g, %g, %g \n\n\n", ConfigData->attRefOut.domega_RN_N[0],
+           ConfigData->attRefOut.domega_RN_N[1], ConfigData->attRefOut.domega_RN_N[2]);
     
 }
