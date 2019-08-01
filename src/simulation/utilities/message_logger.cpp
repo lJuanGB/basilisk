@@ -152,6 +152,45 @@ void messageLogger::logAllMessages()
         }
     }
 }
+
+
+bool messageLogger::readLogByName(std::string message_name, SingleMessageHeader *dataHeader,
+                                  uint64_t maxBytes, uint8_t *msgPayload, uint64_t currentOffset)
+
+{
+    //! Begin  method steps
+    //! - Iterate through the message list and find the requested Name
+    std::vector<messageLogContainer>::iterator it;
+    SingleMessageHeader *headPtr;
+    for(it=logData.begin(); it != logData.end(); it++)
+    {
+        if(it->messageName != message_name)
+        {
+            continue;
+        }
+        int64_t currentIndex = it->logInstanceCount;
+        currentIndex -= (1 + currentOffset);
+        while(currentIndex < 0)
+        {
+            currentIndex += it->logInstanceCount;
+        }
+        std::vector<uint64_t>::iterator storIt;
+        storIt = it->storOff.begin();
+        storIt += currentIndex;
+        uint8_t *dataPtr = &(it->messageBuffer.StorageBuffer[*storIt]);
+        headPtr = reinterpret_cast<SingleMessageHeader*> (dataPtr);
+        memcpy(dataHeader, headPtr, sizeof(SingleMessageHeader));
+        dataPtr += sizeof(SingleMessageHeader);
+        uint64_t bytesUse = maxBytes > headPtr->WriteSize ? headPtr->WriteSize :
+        maxBytes;
+        memcpy(msgPayload, dataPtr, bytesUse);
+        return(true);
+    }
+    
+    return false;
+}
+
+
 bool messageLogger::readLog(MessageIdentData & messageID, SingleMessageHeader *dataHeader,
                             uint64_t maxBytes, uint8_t *msgPayload, uint64_t currentOffset)
 {
@@ -197,6 +236,23 @@ uint64_t messageLogger::getLogCount(int64_t processID, int64_t messageID)
     for(it=logData.begin(); it != logData.end(); it++)
     {
         if(it->messageID != messageID || it->processID != processID)
+        {
+            continue;
+        }
+        messageCount = it->logInstanceCount;
+        return(messageCount);
+    }
+    return(messageCount);
+}
+
+
+uint64_t messageLogger::getLogCountByName(std::string message_name)
+{
+    std::vector<messageLogContainer>::iterator it;
+    uint64_t messageCount = 0;
+    for(it=logData.begin(); it != logData.end(); it++)
+    {
+        if(it->messageName != message_name)
         {
             continue;
         }

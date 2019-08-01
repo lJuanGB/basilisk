@@ -461,7 +461,8 @@ class SimBaseClass:
         if moduleFound == '':
             print "Failed to find valid message structure for: " + headerData.messageStruct
             return []
-        messageCount = self.TotalSim.messageLogs.getLogCount(messageID.processBuffer, messageID.itemID)
+        #messageCount = self.TotalSim.messageLogs.getLogCount(messageID.processBuffer, messageID.itemID)
+        messageCount = self.TotalSim.messageLogs.getLogCountByName(splitName[0])
         resplit = varName.split(splitName[0] + '.')
         bufferUse = sim_model.logBuffer if messageCount > 0 else sim_model.messageBuffer
         maxCountMessager = headerData.UpdateCounter if headerData.UpdateCounter < headerData.MaxNumberBuffers else headerData.MaxNumberBuffers

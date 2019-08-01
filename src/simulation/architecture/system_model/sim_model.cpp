@@ -98,8 +98,18 @@ uint64_t SimModel::GetWriteData(std::string MessageName, uint64_t MaxSize,
             SystemMessaging::GetInstance()->ReadMessage(MessageID.itemID, &DataHeader, MaxSize, reinterpret_cast<uint8_t*> (MessageData), -1, LatestOffset);
             break;
         case logBuffer:
-            this->messageLogs.readLog(MessageID, &DataHeader,
+            bool success;
+            success = this->messageLogs.readLog(MessageID, &DataHeader,
                                 MaxSize, reinterpret_cast<uint8_t*> (MessageData), LatestOffset);
+            if (success==false)
+            {
+                success = this->messageLogs.readLogByName(MessageName, &DataHeader,
+                                                    MaxSize, reinterpret_cast<uint8_t*> (MessageData), LatestOffset);
+            }
+            if (success==false)
+            {
+                std::cout << "COULD NOT READ LOG for: " << MessageName<< std::endl;
+            }
             break;
         default:
             BSK_PRINT_BRIEF(MSG_ERROR, "I don't know how to access the log type: %u", logType);

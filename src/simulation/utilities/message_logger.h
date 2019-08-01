@@ -63,7 +63,10 @@ public:
     void logAllMessages();
     bool readLog(MessageIdentData & messageID, SingleMessageHeader *dataHeader,
                  uint64_t maxBytes, uint8_t *msgPayload, uint64_t currentOffset=0);
+    bool readLogByName(std::string message_name, SingleMessageHeader *dataHeader,
+                        uint64_t maxBytes, uint8_t *msgPayload, uint64_t currentOffset=0);
     uint64_t getLogCount(int64_t processID, int64_t messageID);
+    uint64_t getLogCountByName(std::string message_name);
     void clearLogs();
 	void archiveLogsToDisk(std::string outFileName);
 	void loadArchiveFromDisk(std::string inFileName);
