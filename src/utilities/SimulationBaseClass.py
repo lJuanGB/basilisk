@@ -339,6 +339,9 @@ class SimBaseClass:
                 if(minNextTime < 0 or CurrSimTime + LogValue.Period < minNextTime):
                     minNextTime = CurrSimTime + LogValue.Period
         return minNextTime
+    
+    def archive_logs(self, arch_file_path):
+        self.TotalSim.messageLogs.archiveLogsToDisk(arch_file_path)
 
     def ExecuteSimulation(self):
         self.initializeEventChecks()
