@@ -1,6 +1,7 @@
 #include "leon_registers.h"
 #include <iostream>
-#include "worker_process.hpp"
+#include "qemu_singleton.hpp"
+
 
 
 LeonRegisters::LeonRegisters()
@@ -10,7 +11,7 @@ LeonRegisters::LeonRegisters()
     this->rwSpeedsMsgName_fswIn = "reactionwheel_output_states";
     this->simpleNavAttMsgName_fswIn = "simple_att_nav_output";
     
-    this->BlackLionInterfacePresent = 0;
+    this->BlackLionInterfacePresent = false;
     this->BlackLionConnectionInfo = "";
     return;
 }
@@ -49,11 +50,15 @@ void LeonRegisters::UpdateState(uint64_t CurrentSimNanos)
         -- Find reader by message ID. Reader should have the pair <ID, msgName(i.e. stream_name)> and dataPackets (although we might want to preseve only the latest packet)
      */
     
+    /* Wake up BL interface*/
+    // if (this->BlackLionInterfacePresent)
+    this->processorExternalWakeup(CurrentSimNanos);
     return;
 }
 
 void LeonRegisters::Reset(uint64_t CurrentSimNanos)
 {
+    // if (this->BlackLionInterfacePresent)
     this->create_singleton_worker_process();
     this->create_sbc_register();
     return;
@@ -61,6 +66,7 @@ void LeonRegisters::Reset(uint64_t CurrentSimNanos)
 
 void LeonRegisters::processorExternalWakeup(uint64_t CurrentSimNanos)
 {
+    std::cout << "LeonRegisters::processorExternalWakeup()" << std::endl;
     this->save_current_clock(CurrentSimNanos);
     this->send_tock_msg(); // here we tock
     this->poll_worker_sockets(); // here we tick, publish & subcribe
@@ -69,7 +75,7 @@ void LeonRegisters::processorExternalWakeup(uint64_t CurrentSimNanos)
 
 void LeonRegisters::create_sbc_register()
 {
-    std::cout << "create_sbc_register()" << std::endl;
+    std::cout << "LeonRegisters::create_sbc_register()" << std::endl;
     /* Define readers and writers
      -- Readers: we need one for each fswOut msg with valid ID (those in CrossInit).
      -- Writers: we need one for each fswIn msg as (declared in SelfInit)
@@ -78,6 +84,9 @@ void LeonRegisters::create_sbc_register()
 }
 void LeonRegisters::create_singleton_worker_process()
 {
+    std::cout << "LeonRegisters::create_singleton_worker_process()" << std::endl;
+    QemuSingleton* registers_interface =  QemuSingleton::GetInstance();
+    registers_interface->create_worker_process(this->BlackLionConnectionInfo);
     return;
 }
 void LeonRegisters::poll_worker_sockets()
@@ -94,12 +103,11 @@ void LeonRegisters::poll_worker_sockets()
      */
     return;
 }
-void LeonRegisters::save_connect_info(char *connect_string)
-{
-    return;
-}
+
 void LeonRegisters::send_tock_msg()
 {
+    QemuSingleton* registers_interface =  QemuSingleton::GetInstance();
+    registers_interface->execute_tock();
     return;
 }
 void LeonRegisters::save_current_clock(uint64_t clockTime)
