@@ -9,11 +9,13 @@ public:
     static QemuSingleton* GetInstance();
     void create_worker_process(std::string conn_string_in);
     void set_connection_string(std::string conn_string_in);
-    void run_worker_process();
     void poll_worker_process();
     
     void add_snorkel_reader(RegisterReader *new_reader);
     void add_snorkel_writer(RegisterWriter *new_writer);
+    
+    void update_registers_FSWoutbound(int64_t MessageID, uint8_t *MsgPayload);
+    
     void execute_tock();
     
     void setQemuTime(uint64_t clockTime) {this->qemuTime = clockTime;}

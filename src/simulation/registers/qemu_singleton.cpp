@@ -42,10 +42,6 @@ void QemuSingleton::create_worker_process(std::string conn_string_in)
     }
 }
 
-void QemuSingleton::run_worker_process()
-{
-    while(this->QemuWorker->reactor->poll() && !(this->QemuWorker->interrupted_node)){ }
-}
 void QemuSingleton::poll_worker_process()
 {
     if(!this->conn_present)
@@ -77,34 +73,75 @@ void QemuSingleton::execute_tock()
     this->firstTockCommand = false;
 }
 
+void QemuSingleton::update_registers_FSWoutbound(int64_t MessageID, uint8_t *MsgPayload)
+{
+    /* Check if Reader exists */
+    RegisterReader* local_reader = find_reader_by_msgID(MessageID);
+    if(local_reader!= NULL)
+    {
+        local_reader->current_buffer = MsgPayload;
+        //local_reader->reader_callback_FSWoutbound();
+        local_reader->create_packet_from_FSWword();
+        
+    }
+    //    {
+    //        local_reader->current_data_word = data_word;
+    //        local_reader->reader_callback_FSWoutbound();
+    //        return(0);
+    //    }
+    
+}
+//int QemuSingleton::FSW_write_to_device(unsigned int access_address, unsigned int data_word, uint64_t buffer_idx)
+//{
+//    /* Check if FSW is trying to write a packet_word to a Reader */
+//    RegisterReader* local_reader = this->dataBuffers[buffer_idx]->messageStorage.find_reader_by_address(access_address);
+//    if(local_reader!= NULL)
+//    {
+//        local_reader->current_data_word = data_word;
+//        local_reader->reader_callback_FSWoutbound();
+//        return(0);
+//    }
+//    /* Check if FSW is trying to write a descriptor_word belonging to a Reader */
+//    RegisterReader* local_descriptor_reader = this->dataBuffers[buffer_idx]->messageStorage.find_reader_by_descriptor_address(access_address);
+//    if(local_descriptor_reader!= NULL)
+//    {
+//        local_descriptor_reader->current_descriptor_word = data_word;
+//        local_descriptor_reader->descriptor_callback_FSWoutbound();
+//        return(0);
+//    }
+//    /* Check if FSW is trying to write a descriptor_word belonging to a Writer */
+//    RegisterWriter* local_descriptor_writer =  this->dataBuffers[buffer_idx]->messageStorage.find_writer_by_descriptor_address(access_address);
+//    if(local_descriptor_writer!= NULL)
+//    {
+//        this->write_message_to_buffer(local_descriptor_writer->get_buffer_index(),
+//                                      local_descriptor_writer->get_descriptor_address(),
+//                                      sizeof(data_word), &data_word);
+//        return(0);
+//    }
+//    return(-1);
+//}
+
 RegisterReader* QemuSingleton::find_reader_by_msgID(int64_t msgID)
 {
-    /*
      std::vector<RegisterReader*>::iterator it;
-     for(it = this->device_readers.begin(); it!=this->device_readers.end(); it++)
-     {
-     if ( (*it)->get_msgID()== msgID)
-     {
-     //std::cout << "Device Reader found: "<< (*it)->get_router_name() <<  std::endl;
-     return(*it);
+    for(it = this->QemuWorker->routers.begin(); it!=this->QemuWorker->routers.end(); it++){
+        if ( (*it)->get_msgID()== msgID) {
+            std::cout << "Device Reader found: "<< (*it)->get_router_name() <<  std::endl;
+            return(*it);
+        }
      }
-     }
-     */
     return(NULL);
 }
 
 RegisterWriter* QemuSingleton::find_writer_by_msgID(int64_t msgID)
 {
-    /*
      std::vector<RegisterWriter*>::iterator it;
-     for(it = this->device_writers.begin(); it!=this->device_writers.end(); it++)
-     {
-     if ( (*it)->get_msgID()== msgID)
-     {
-     //std::cout << "Device Reader found: "<< (*it)->get_router_name() <<  std::endl;
-     return(*it);
+    for(it = this->QemuWorker->writers.begin(); it!=this->QemuWorker->writers.end(); it++){
+        if ( (*it)->get_msgID() == msgID ){
+            std::cout << "Device Writer found: "<< (*it)->get_router_name() <<  std::endl;
+            return(*it);
+        }
      }
-     }*/
     return(NULL);
 }
 

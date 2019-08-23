@@ -24,18 +24,35 @@ LeonRegisters::~LeonRegisters()
 
 void LeonRegisters::SelfInit()
 {
-    /* Declare output message/s */
+    /* Create Qemu interface */
+    this->create_singleton_worker_process();
+    
+    /* Declare output messages and associated snorkels */
     this->rwSpeedsMsgID_fswIn = SystemMessaging::GetInstance()->CreateNewMessage(this->rwSpeedsMsgName_fswIn,
                      sizeof(RWSpeedIntMsg), this->outputBufferCount, "RWSpeedIntMsg", moduleID);
+    RegisterReader* Snorkel_RWSpeeds = new RegisterReader(this->rwSpeedsMsgName_fswIn, this->rwSpeedsMsgID_fswIn, sizeof(RWSpeedIntMsg));
     
-    this->simpleNavAttMsgID_fswIn = SystemMessaging::GetInstance()->CreateNewMessage(this->simpleNavAttMsgName_fswIn, sizeof(NavAttIntMsg), this->outputBufferCount, "NavAttIntMsg", moduleID);
+    this->simpleNavAttMsgID_fswIn = SystemMessaging::GetInstance()->CreateNewMessage(this->simpleNavAttMsgName_fswIn, sizeof(NavAttIntMsg),
+                                                                                     this->outputBufferCount, "NavAttIntMsg", moduleID);
+    RegisterReader* Snorkel_AttNav = new RegisterReader(this->simpleNavAttMsgName_fswIn, this->simpleNavAttMsgID_fswIn, sizeof(NavAttIntMsg));
+    
+    /*TODOO: BIND SNORKEL CALLBACKS */
+    
+    /* Add snorkel-readers to the Qemu interface */
+    QemuSingleton::GetInstance()->add_snorkel_reader(Snorkel_RWSpeeds);
+    QemuSingleton::GetInstance()->add_snorkel_reader(Snorkel_AttNav);
+    
     return;
 }
 
 void LeonRegisters::CrossInit()
 {
-    /* Define input message/s */
+    /* Define input messages and associated snorkels  */
     this->rwTorqueMsgID_fswOut = SystemMessaging::GetInstance()->subscribeToMessage(this->rwTorqueMsgName_fswOut, sizeof(RWArrayTorqueIntMsg), moduleID);
+    RegisterWriter* Snorkel_RWTorques = new RegisterWriter(this->rwTorqueMsgName_fswOut, this->rwTorqueMsgID_fswOut, sizeof(RWArrayTorqueIntMsg));
+    
+    /* Add snorkel-writers to the Qemu interface */
+    QemuSingleton::GetInstance()->add_snorkel_writer(Snorkel_RWTorques);
     return;
 }
 
@@ -45,7 +62,9 @@ void LeonRegisters::UpdateState(uint64_t CurrentSimNanos)
     SingleMessageHeader LocalHeader;
     RWArrayTorqueIntMsg rw_torques_buffer;
     memset(&(rw_torques_buffer), 0x0, sizeof(RWArrayTorqueIntMsg));
-    SystemMessaging::GetInstance()->ReadMessage(this->rwTorqueMsgID_fswOut, &LocalHeader, sizeof(RWArrayTorqueIntMsg), reinterpret_cast<uint8_t*> (&rw_torques_buffer),moduleID);
+    SystemMessaging::GetInstance()->ReadMessage(this->rwTorqueMsgID_fswOut, &LocalHeader, sizeof(RWArrayTorqueIntMsg), reinterpret_cast<uint8_t*> (&rw_torques_buffer), this->moduleID);
+    QemuSingleton::GetInstance()->update_registers_FSWoutbound(this->rwTorqueMsgID_fswOut, reinterpret_cast<uint8_t*>(&rw_torques_buffer));
+    
     /* Find associated Singleton reader and add each message as a FSW packet:
         -- Find reader by message ID. Reader should have the pair <ID, msgName(i.e. stream_name)> and dataPackets (although we might want to preseve only the latest packet)
      */
@@ -58,9 +77,6 @@ void LeonRegisters::UpdateState(uint64_t CurrentSimNanos)
 
 void LeonRegisters::Reset(uint64_t CurrentSimNanos)
 {
-    // if (this->BlackLionInterfacePresent)
-    this->create_singleton_worker_process();
-    this->create_sbc_register();
     return;
 }
 
@@ -80,11 +96,16 @@ void LeonRegisters::create_sbc_register()
      -- Readers: we need one for each fswOut msg with valid ID (those in CrossInit).
      -- Writers: we need one for each fswIn msg as (declared in SelfInit)
      */
+    
+    
+    /* Create register buffer*/
+    //QemuSingleton* local_qemu = QemuSingleton::GetInstance();
+    //local_qemu->sbc_buffer_index = local_qemu->attach_storage_container("sbc_register", 1048575);
     return;
 }
 void LeonRegisters::create_singleton_worker_process()
 {
-    std::cout << "LeonRegisters::create_singleton_worker_process()" << std::endl;
+    std::cout << "LeonRegisters. BlackLionConnectionInfo = " << this->BlackLionConnectionInfo <<std::endl;
     QemuSingleton* registers_interface =  QemuSingleton::GetInstance();
     registers_interface->create_worker_process(this->BlackLionConnectionInfo);
     return;

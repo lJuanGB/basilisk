@@ -14,13 +14,13 @@ public:
         this->reader_callback_FSWoutbound = NULL;
     };
     ~RegisterReader(){};
-    
     std::vector<DataExchangeObject> dataPackets;
+    //void* current_data_word;
+    uint8_t* current_buffer;
+    std::function<void()> reader_callback_FSWoutbound;
 public:
     bool packets_waiting();
-    void add_packet_to_router();
     void create_packet_from_FSWword();
-    std::function<void()> reader_callback_FSWoutbound;
 };
 
 #endif /* _ROUTER_READER_HH_ */
