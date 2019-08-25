@@ -18,8 +18,11 @@ public:
     
     void execute_tock();
     
-    void setQemuTime(uint64_t clockTime) {this->qemuTime = clockTime;}
-    uint64_t getQemuTime() {return this->qemuTime;}
+    void setQemuTime(uint64_t clockTime){ this->qemuTime = clockTime; }
+    uint64_t getQemuTime(){ return(this->qemuTime); }
+    
+    std::vector<RegisterReader*> get_readers(){ return(this->QemuWorker->routers); }
+    std::vector<RegisterWriter*> get_writers(){ return(this->QemuWorker->writers); }
 
     
 private:

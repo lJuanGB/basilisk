@@ -13,12 +13,3 @@ QemuRouter::~QemuRouter()
 {
     return;
 }
-
-std::string QemuRouter::get_router_name()
-{
-    return(this->msg_name);
-}
-int64_t QemuRouter::get_msgID()
-{
-    return(this->msg_id);
-}

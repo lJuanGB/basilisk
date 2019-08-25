@@ -21,8 +21,11 @@ public:
     
 public:
     void add_bytes_to_packet(std::vector<unsigned char> cdata, uint32_t pay_size);
+    
 public:
     std::vector<unsigned char> messageData;
+    void serialize_simpleNav();
+    void serialize_bytes();
 };
 
 #endif /* _ROUTER_WRITER_HH_ */

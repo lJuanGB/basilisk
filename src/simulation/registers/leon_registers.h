@@ -19,22 +19,21 @@ public:
     void UpdateState(uint64_t CurrentSimNanos);
     void Reset(uint64_t CurrentSimNanos);
     
+    void read_rwTorque();
+    
 private:
     void processorExternalWakeup(uint64_t CurrentSimNanos);
-    void create_sbc_register();
-    void create_singleton_worker_process();
-    void poll_worker_sockets();
+    void update_registers_from_fsw();
+    void update_registers_to_fsw(uint64_t CurrentSimNanos);
     //void save_connect_info(char *connect_string);
-    void send_tock_msg();
-    void save_current_clock(uint64_t clockTime);
     
 public:
     uint64_t outputBufferCount;
     std::string rwTorqueMsgName_fswOut;
     std::string rwSpeedsMsgName_fswIn;
     std::string simpleNavAttMsgName_fswIn;
+    
     std::string BlackLionConnectionInfo;
-    bool BlackLionInterfacePresent;
 
 private:
     int64_t rwTorqueMsgID_fswOut;

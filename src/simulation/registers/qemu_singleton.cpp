@@ -80,15 +80,8 @@ void QemuSingleton::update_registers_FSWoutbound(int64_t MessageID, uint8_t *Msg
     if(local_reader!= NULL)
     {
         local_reader->current_buffer = MsgPayload;
-        //local_reader->reader_callback_FSWoutbound();
         local_reader->create_packet_from_FSWword();
-        
     }
-    //    {
-    //        local_reader->current_data_word = data_word;
-    //        local_reader->reader_callback_FSWoutbound();
-    //        return(0);
-    //    }
     
 }
 //int QemuSingleton::FSW_write_to_device(unsigned int access_address, unsigned int data_word, uint64_t buffer_idx)
@@ -121,11 +114,12 @@ void QemuSingleton::update_registers_FSWoutbound(int64_t MessageID, uint8_t *Msg
 //    return(-1);
 //}
 
+
 RegisterReader* QemuSingleton::find_reader_by_msgID(int64_t msgID)
 {
      std::vector<RegisterReader*>::iterator it;
     for(it = this->QemuWorker->routers.begin(); it!=this->QemuWorker->routers.end(); it++){
-        if ( (*it)->get_msgID()== msgID) {
+        if ( (*it)->msg_id== msgID) {
             std::cout << "Device Reader found: "<< (*it)->get_router_name() <<  std::endl;
             return(*it);
         }
@@ -137,7 +131,7 @@ RegisterWriter* QemuSingleton::find_writer_by_msgID(int64_t msgID)
 {
      std::vector<RegisterWriter*>::iterator it;
     for(it = this->QemuWorker->writers.begin(); it!=this->QemuWorker->writers.end(); it++){
-        if ( (*it)->get_msgID() == msgID ){
+        if ( (*it)->msg_id == msgID ){
             std::cout << "Device Writer found: "<< (*it)->get_router_name() <<  std::endl;
             return(*it);
         }

@@ -10,14 +10,14 @@ public:
     QemuRouter(std::string msg_name, int64_t msg_id, uint64_t msg_size);
     ~QemuRouter();
     QemuRouter(){};
+    std::string get_router_name(){ return(this->msg_name); }
     
 public:
-    std::string get_router_name();
-    int64_t get_msgID();
-protected:
-    std::string msg_name;
     int64_t msg_id;
     uint64_t msg_size;
+protected:
+    std::string msg_name;
+
 };
 
 #endif /* _QEMU_ROUTER_HH_ */
