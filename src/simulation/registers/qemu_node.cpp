@@ -49,6 +49,7 @@ void QemuWorkerProcess::route_in_packet(std::string msg_name, std::string packet
 
 bool QemuWorkerProcess::getTicked()
 {
+    std::cout << "Qemu WP: getTicked()"<< std::endl;
     return(this->tickReceived);
 }
 
@@ -118,7 +119,7 @@ bool QemuWorkerProcess::should_router_publish(RegisterReader* router)
 void QemuWorkerProcess::publish_single_router_data(RegisterReader* router)
 {
     std::string register_name = router->get_router_name();
-//    std::cout << "Router "<< register_name  << " has contents to publish." << std::endl;
+    std::cout << "Router "<< register_name  << " has contents to publish." << std::endl;
     std::vector<DataExchangeObject>::iterator it;
     for(it = router->dataPackets.begin(); it!=router->dataPackets.end(); it++)
     {
@@ -130,7 +131,7 @@ void QemuWorkerProcess::publish_single_router_data(RegisterReader* router)
         local_msg.add((it)->marshall_payload());
         this->pub_socket->send(local_msg);
     }
-//    std::cout << "Packets published. Clearing stack."<< std::endl;
+    std::cout << "Packets published. Clearing stack."<< std::endl;
     router->dataPackets.clear();
     return;
 }

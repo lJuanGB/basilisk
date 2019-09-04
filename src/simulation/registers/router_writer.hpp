@@ -12,20 +12,13 @@ public:
     QemuRouter(msg_name, msg_id, msg_size)
     {
         this->messageData.clear();
-        this->writer_callback_REGinbound = NULL;
-        this->writer_callback_FSWinbound = NULL;
+        this->data_fresh = false;
     };
     ~RegisterWriter(){};
-    std::function<void()> writer_callback_REGinbound;
-    std::function<unsigned int()> writer_callback_FSWinbound;
-    
-public:
     void add_bytes_to_packet(std::vector<unsigned char> cdata, uint32_t pay_size);
-    
 public:
     std::vector<unsigned char> messageData;
-    void serialize_simpleNav();
-    void serialize_bytes();
+    bool data_fresh;
 };
 
 #endif /* _ROUTER_WRITER_HH_ */

@@ -11,16 +11,13 @@ public:
     QemuRouter(msg_name, msg_id, msg_size)
     {
         this->dataPackets.clear();
-        //this->reader_callback_FSWoutbound = NULL;
     };
     ~RegisterReader(){};
     std::vector<DataExchangeObject> dataPackets;
-    //void* current_data_word;
-    uint8_t* current_buffer;
-    //std::function<void()> reader_callback_FSWoutbound;
+    //uint8_t* current_buffer;
 public:
     bool packets_waiting();
-    void create_packet_from_FSWword();
+    void create_packet_from_FSWdata(uint8_t* data_buffer);
 };
 
 #endif /* _ROUTER_READER_HH_ */

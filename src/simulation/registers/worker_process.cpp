@@ -221,9 +221,10 @@ void WorkerProcess::parse_command(zmqpp::message *message_cmd)
         this->parse_tick_message(message_cmd->copy());
         this->publish();
         this->subscribe();
-        this->step_process();
-        zmqpp::message tock_msg = this->tock_node_callback();
-        this->rep_socket->send(tock_msg);
+        //this->step_process();
+        //zmqpp::message tock_msg = this->tock_node_callback();
+        //this->rep_socket->send(tock_msg);
+        //std::cout << "Look I tok-ed!\n"<<std::endl;
         tickReceived=true;
     }
     else if(msg_str == BL_FINISH)
