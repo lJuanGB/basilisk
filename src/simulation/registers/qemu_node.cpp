@@ -81,7 +81,7 @@ zmqpp::message QemuWorkerProcess::handle_tock_message()
         if (this->should_router_publish((*it))){
             register_name =(*it)->get_router_name();
             packets_count = (*it)->dataPackets.size();
- //           std::cout << "Router "<< register_name << " has contents to publish: # "<< packets_count << std::endl;
+            //std::cout << "Router "<< register_name << " has contents to publish: # "<< packets_count << std::endl;
             for (int i = 0; i < packets_count; i++)
             {
                 msg.add((*it)->get_router_name());
@@ -93,7 +93,6 @@ zmqpp::message QemuWorkerProcess::handle_tock_message()
 
 void QemuWorkerProcess::handle_publish()
 {
-    std::cout << "QemuWorkerProcess::handle_publish()\n " << std::endl;
     std::vector<RegisterReader*>::iterator it;
     for(it = this->routers.begin(); it!=this->routers.end(); it++)
     {
@@ -102,6 +101,7 @@ void QemuWorkerProcess::handle_publish()
             this->publish_single_router_data((*it));
         }
     }
+    std::cout << "QemuWorkerProcess: EVERYTHING PUBLISHED. " << std::endl;
     return;
 }
 
@@ -119,7 +119,7 @@ bool QemuWorkerProcess::should_router_publish(RegisterReader* router)
 void QemuWorkerProcess::publish_single_router_data(RegisterReader* router)
 {
     std::string register_name = router->get_router_name();
-    std::cout << "Router "<< register_name  << " has contents to publish." << std::endl;
+    std::cout << "Router "<< register_name  << " has contents to publish: size = " << router->dataPackets.size()<< std::endl;
     std::vector<DataExchangeObject>::iterator it;
     for(it = router->dataPackets.begin(); it!=router->dataPackets.end(); it++)
     {
@@ -130,8 +130,9 @@ void QemuWorkerProcess::publish_single_router_data(RegisterReader* router)
         local_msg.add(std::to_string((it)->payload_size));
         local_msg.add((it)->marshall_payload());
         this->pub_socket->send(local_msg);
+        std::cout << "Local msg SENT." << std::endl;
     }
-    std::cout << "Packets published. Clearing stack."<< std::endl;
+    //std::cout << "Packets published. Clearing stack."<< std::endl;
     router->dataPackets.clear();
     return;
 }

@@ -114,7 +114,6 @@ void WorkerProcess::handle_rep_interrupt_callback()
 /* SUB RECV HANDLING */
 bool WorkerProcess::handle_sub_callback()
 {
-    std::cout << "WorkerProcess::handle_subscribe()" << std::endl;
     zmqpp::message msg;
     bool msg_received = false;
     if(this->sub_socket->receive(msg))
@@ -126,7 +125,7 @@ bool WorkerProcess::handle_sub_callback()
 };
 bool WorkerProcess::handle_sub_interrupt_callback()
 {
-    std::cout << "WorkerProcess::handle_subscribe()" << std::endl;
+    //std::cout << "WorkerProcess::handle_subscribe()" << std::endl;
     zmqpp::message msg;
     bool msg_received = false;
     bool interrupted = true;
@@ -289,8 +288,8 @@ void WorkerProcess::parse_tick_message(zmqpp::message message)
 {
     this->frame_time = std::stod(message.get(1));
     this->subcribed_msgs_next_count = std::stoi(message.get(2));
-    //std::cout << "frame_time = " << this->frame_time;
-    //std::cout <<"; sub_msg_next_count = " << this->subcribed_msgs_next_count << std::endl;
+    std::cout << "frame_time = " << this->frame_time;
+    std::cout <<"; sub_msg_next_count = " << this->subcribed_msgs_next_count << std::endl;
 }
 
 void WorkerProcess::parse_incoming_packet(zmqpp::message message)
@@ -314,17 +313,17 @@ void WorkerProcess::publish()
 
 void WorkerProcess::subscribe()
 {
-    //std::cout << "SUBSCRIBE() " << std::endl;
+    std::cout << "SUBSCRIBE() " << std::endl;
     zmqpp::message sub_msg;
     int local_msg_count = 0;
     while (local_msg_count != this->subcribed_msgs_next_count)
     {
         if (this->sub_callback()) {
             local_msg_count += 1;
-            //std::cout << "local_msg_count = " << local_msg_count << std::endl;
+            std::cout << "local_msg_count = " << local_msg_count << std::endl;
         }
     }
-    //std::cout << "All subscriptions received. " << std::endl;
+    std::cout << "All subscriptions received. " << std::endl;
     return;
 }
 

@@ -46,7 +46,7 @@ void LeonRegisters::CrossInit()
     /* Define input messages and associated snorkels  */
     this->rwTorqueMsgID_fswOut = SystemMessaging::GetInstance()->subscribeToMessage(this->rwTorqueMsgName_fswOut, sizeof(RWArrayTorqueIntMsg), moduleID);
     RegisterReader* Snorkel_RWTorques = new RegisterReader(this->rwTorqueMsgName_fswOut, this->rwTorqueMsgID_fswOut, sizeof(RWArrayTorqueIntMsg));
-    std::cout << "sizeof(RWArrayTorqueIntMsg)" << sizeof(RWArrayTorqueIntMsg) << std::endl;
+    //std::cout << "sizeof(RWArrayTorqueIntMsg)" << sizeof(RWArrayTorqueIntMsg) << std::endl;
     
     /* Add snorkel-readers to the Qemu interface */
     QemuSingleton::GetInstance()->add_snorkel_reader(Snorkel_RWTorques);
@@ -66,9 +66,9 @@ void LeonRegisters::read_rwTorque()
 
 void LeonRegisters::UpdateState(uint64_t CurrentSimNanos)
 {
-    std::cout << "LeonRegisters::UpdateState(). CurrentSimNanos = "<< CurrentSimNanos << std::endl;
+    std::cout << "\nLeonRegisters::UpdateState(). CurrentSimNanos = "<< CurrentSimNanos << std::endl;
     /* Read messages from FSW */
-    this->read_rwTorque();
+    //this->read_rwTorque();
     this->update_registers_from_fsw();
     /* Wake up BL interface */
     this->processorExternalWakeup(CurrentSimNanos);
