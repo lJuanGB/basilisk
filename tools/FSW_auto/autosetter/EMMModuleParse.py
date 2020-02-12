@@ -2,7 +2,7 @@
 '''
  ISC License
 
- Copyright (c) 2016, Autonomous Vehicle Systems Lab, University of Colorado at Boulder
+ Copyright (c) 2016-2018, Autonomous Vehicle Systems Lab, University of Colorado at Boulder
 
  Permission to use, copy, modify, and/or distribute this software for any
  purpose with or without fee is hereby granted, provided that the above
@@ -38,7 +38,8 @@ def ParseConfigData(TheSim, TaskListIdxs, dataStr, sourceFile):
             if type(input[i]).__name__ == 'list':
                 printList(input[i], prefixIn, sourceFile)
             else:
-                sourceFile.write(prefixIn + ' = ' + str(input[i])+';\n')
+                if(input[i] != 0):
+                    sourceFile.write(prefixIn + ' = ' + str(input[i])+';\n')
             
     # This method recursively autocodes the input object.
     def autocodeObject(input, prefix, sourceFile):
@@ -69,9 +70,10 @@ def ParseConfigData(TheSim, TaskListIdxs, dataStr, sourceFile):
                 printList(fieldValue, '\t' + dataStr + prefix + '.' + str(fieldName), sourceFile)
             # non-array variable
             else:
-                sourceFile.write('\t' + dataStr + prefix + '.')
-                sourceFile.write(str(fieldName)) # name of the variable
-                sourceFile.write(' = '+str(fieldValue)+';\n') # value of the variable
+                if(fieldValue != 0):
+                    sourceFile.write('\t' + dataStr + prefix + '.')
+                    sourceFile.write(str(fieldName)) # name of the variable
+                    sourceFile.write(' = '+str(fieldValue)+';\n') # value of the variable
 
     NameReplace = TheSim.NameReplace
     TaskList = TheSim.TaskList
