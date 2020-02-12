@@ -18,7 +18,7 @@
 
 '''
 import sys, os, inspect
-import EMMModuleParse as dataParser
+import modulesParser as dataParser
 
 filename = inspect.getframeinfo(inspect.currentframe()).filename
 path = os.path.dirname(os.path.abspath(filename))
@@ -163,13 +163,6 @@ def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
         theVoidList.append(void_header)
         theAlgList.append(void_source)
 
-    def write_callback_alg(c_alg_name, cpp_arg, c_arg, store_list):
-        void_callback = '\tvoid ' + c_alg_name + '_Callback' + cpp_arg + '{\n'
-        void_callback += '\t\t' + c_alg_name + c_arg
-        void_callback += '\n\t}'
-        store_list.append(void_callback)
-
-
     # This function progressively creates a list with all the void definitions that will go in the output header file
     # and the algorithms names that will go in the output source file for Update methods.
     # It adds an if-check to learn about the task activity flag. Only tasks that are active should be Updated.
@@ -251,14 +244,9 @@ def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
     theConfigDataList = []
     theAlgList = [] # global list for all source algorithms
     theVoidList = [] # global list for all header void function definitions.
-    theVoidCallbackList = list()
     theHeadersList = [] # global list for all the module headers
     ConfigData = '(' + str_ConfigData + ' *data)'
     ConfigData_callTime = '(' + str_ConfigData + ' *data, uint64_t callTime)'
-    cpp_config_data_name = 'config_data'
-    ConfgifDataMember_arg = '(&(this->'+cpp_config_data_name+'));'
-    callTime_arg = '(uint64_t callTime)'
-    ConfgifDataMember_callTime_arg = '(&(this->'+cpp_config_data_name+', callTime);'
 
 
     taskIdxDir = areTasksInSimTaskList(taskActivityDir, TheSim)
@@ -295,12 +283,8 @@ def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
         globalAlgUpdate.append([algNameUpdate, (algNameUpdateTaskActivity,isTaskActive)])
         algNameReset = task.Name + '_Reset'
         writeTaskAlgs(algNameUpdate + ConfigData_callTime, allAlgUpdate, theVoidList, theAlgList)
-        write_callback_alg(c_alg_name=algNameUpdate, cpp_arg=callTime_arg, c_arg=ConfgifDataMember_callTime_arg,
-                           store_list=theVoidCallbackList)
         if (allAlgReset): # check if there are any reset methods in the task models
             writeTaskAlgs(algNameReset + ConfigData_callTime, allAlgReset, theVoidList, theAlgList)
-            write_callback_alg(c_alg_name=algNameReset, cpp_arg=callTime_arg, c_arg=ConfgifDataMember_callTime_arg,
-                               store_list=theVoidCallbackList)
             for reset in allAlgReset:
                 if not(reset in globalAllAlgReset):
                     globalAllAlgReset.append(reset)
@@ -310,18 +294,8 @@ def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
     taskNameUpdate = str_ConfigData + '_AllTasks_Update'
     algNameDataInit = str_ConfigData + '_DataInit'
 
-    c_alg_list_noArg = [algNameAllSelfInit, algNameAllCrossInit, algNameDataInit]
-    c_alg_list_calltimeArg = [algNameAllReset, taskNameUpdate]
-    for alg_name in c_alg_list_noArg:
-        write_callback_alg(c_alg_name=alg_name, cpp_arg='()', c_arg=ConfgifDataMember_arg,
-                           store_list=theVoidCallbackList)
-    for alg_name in c_alg_list_calltimeArg:
-        write_callback_alg(c_alg_name=alg_name, cpp_arg=callTime_arg, c_arg=ConfgifDataMember_callTime_arg,
-                           store_list=theVoidCallbackList)
-
-
     writeTaskAlgs(algNameAllSelfInit + ConfigData, allAlgSelfInit, theVoidList, theAlgList)
-    writeTaskAlgs(algNameAllCrossInit + ConfigData, allAlgCrossInit, theVoidList, theAlgList)
+    writeTaskAlgs(algNameAllCrossInit  + ConfigData, allAlgCrossInit, theVoidList, theAlgList)
     writeTaskAlgs(algNameAllReset + ConfigData_callTime, globalAllAlgReset, theVoidList, theAlgList)
     writeUpdateTaskActivityAlg(taskNameUpdate  + ConfigData_callTime, globalAlgUpdate, theVoidList, theAlgList)
     varType = 'uint32_t'
@@ -333,27 +307,6 @@ def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
     alg_source = open(localPath + '/' + outputCFileName + '.c', fileMode)  # source file
     alg_header = open(localPath + '/' + outputCFileName + '.h', fileMode)  # header file
     alg_swig = open(localPath + '/' + outputCFileName + '.i', fileMode)  # header file
-
-    # Write cpp class
-    alg_class = open(localPath + '/' + outputCFileName + '.hpp', fileMode)
-    compile_def_name = 'FSW_AUTOCODE'
-    hpp_def_name = compile_def_name + '_HPP'
-    alg_class.write('#ifndef ' + hpp_def_name + '\n' + '#define ' + hpp_def_name + '\n\n')
-    alg_class.write('#include "' + outputCFileName + '.h"' + '\n\n')
-    class_name = str_ConfigData + "Class"
-    alg_class.write('class ' + class_name + '{')
-    alg_class.write('\npublic:')
-    alg_class.write('\n\t'+class_name+'(){ }')
-    alg_class.write('\n\t'+'~'+class_name+'(){}')
-    alg_class.write('\n')
-    for void in theVoidCallbackList:
-        alg_class.write(void)
-    alg_class.write('\nprivate:')
-    alg_class.write('\n\t' + str_ConfigData + ' ' + cpp_config_data_name + ';')
-    alg_class.write('\n};')
-    alg_class.write('\n\n#endif')
-    alg_class.close()
-
 
     # Write source file
     alg_source.write('#include "' + outputCFileName + '.h"' + '\n\n')
@@ -371,8 +324,8 @@ def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
 
     # Write header file
     ## begin header file
-    h_def_name = compile_def_name + '_H'
-    alg_header.write('#ifndef ' + h_def_name +'\n' + '#define ' + h_def_name + '\n\n')
+    defName = '_FSW_AUTOCODE_'
+    alg_header.write('#ifndef ' + defName + '\n' + '#define ' + defName + '\n\n')
     ## define auto-code init data
     for header in theHeadersList:
         alg_header.write(header)
@@ -425,16 +378,6 @@ def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
     alg_source.close()
     alg_header.close()
     alg_swig.close()
-
-    def print_lists():
-        print "allAlgSelfInit ", allAlgSelfInit
-        print "allAlgCrossInit ", allAlgCrossInit
-        print "globalAllAlgReset ", globalAllAlgReset
-        print "globalAlgUpdate ", globalAlgUpdate
-        print "theAlgList ", theAlgList
-        print "theVoidList ", theVoidList
-        print "theVoidCallbackList ", theVoidCallbackList
-    #print_lists
 
 
 
