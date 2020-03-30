@@ -49,35 +49,35 @@ class DesktopFSW(SimulationBaseClass.SimBaseClass):
 
     def pull_outputs(self, plots_path=None):
         self.fsw_plotter = FSWPlotter(plots_path=plots_path, add_titles=False, name="fsw")
-        
+
         ISCPntB_B = self.pullMessageLogData(self.fswModels.VehConfigData.outputPropsName + ".ISCPntB_B", range(9))
         CoM_B = self.pullMessageLogData(self.fswModels.VehConfigData.outputPropsName + ".CoM_B", range(3))
-        print "ISCPntB_B = ", ISCPntB_B[:, 1:]
-        print "CoM_B = ", CoM_B[:, 1:]
+        print("ISCPntB_B = ", ISCPntB_B[:, 1:])
+        print( "CoM_B = ", CoM_B[:, 1:])
 
         GsMatrix_B = self.pullMessageLogData(self.fswModels.rwConfigData.rwParamsOutMsgName+".GsMatrix_B", range(3 * self.fswModels.numRW))
         JsList = self.pullMessageLogData(self.fswModels.rwConfigData.rwParamsOutMsgName+".JsList", range(self.fswModels.numRW))
         uMax = self.pullMessageLogData(self.fswModels.rwConfigData.rwParamsOutMsgName + ".uMax", range(self.fswModels.numRW))
-        print "GsMatrix_B = ", GsMatrix_B[:, 1:]
-        print "JsList = ", JsList[:, 1:]
-        print "uMax = ", uMax[:, 1:]
+        print( "GsMatrix_B = ", GsMatrix_B[:, 1:])
+        print( "JsList = ", JsList[:, 1:])
+        print( "uMax = ", uMax[:, 1:])
 
         sigma_RN = self.pullMessageLogData(self.fswModels.inertial3DData.outputDataName + ".sigma_RN", range(3))
         omega_RN_N = self.pullMessageLogData(self.fswModels.inertial3DData.outputDataName + ".omega_RN_N", range(3))
-        print "sigma_RN = ", sigma_RN[:, 1:]
-        print "omega_RN_N = ", omega_RN_N[:, 1:]
+        print( "sigma_RN = ", sigma_RN[:, 1:])
+        print( "omega_RN_N = ", omega_RN_N[:, 1:])
         self.fsw_plotter.plot_ref_attitude(sigma_RN, omega_RN_N)
 
         sigma_BR = self.pullMessageLogData(self.fswModels.attTrackingData_base.outputDataName + ".sigma_BR", range(3))
         omega_BR_B = self.pullMessageLogData(self.fswModels.attTrackingData_base.outputDataName + ".omega_BR_B", range(3))
-        print "sigma_BR = ", sigma_BR[:, 1:]
-        print "omega_BR_B = ", omega_BR_B[:, 1:]
+        print( "sigma_BR = ", sigma_BR[:, 1:])
+        print( "omega_BR_B = ", omega_BR_B[:, 1:])
         self.fsw_plotter.plot_track_error(sigma_BR, omega_BR_B)
 
         Lr = self.pullMessageLogData(self.fswModels.MRP_FeedbackRWAData.outputDataName + ".torqueRequestBody", range(3))
         u_wheels = self.pullMessageLogData(self.fswModels.rwMotorTorqueData.outputDataName + ".motorTorque", range(self.fswModels.numRW))
-        print "Lr = ", Lr[:, 1:]
-        print "u_wheels = ", u_wheels[:, 1:]
+        print( "Lr = ", Lr[:, 1:])
+        print( "u_wheels = ", u_wheels[:, 1:])
         self.fsw_plotter.plot_rw_control(Lr, u_wheels)
         self.fsw_plotter.show_plots()
 
@@ -94,8 +94,3 @@ if __name__ == "__main__":
     theSim.ExecuteSimulation()
 
     theSim.pull_outputs()
-
-
-
-
-

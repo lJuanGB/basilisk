@@ -14,11 +14,11 @@ def empty_wraps_folder(outputPath):
     :return:
     """
     if os.path.exists(outputPath):
-        print "Cleaning directory: %s" % outputPath
+        print("Cleaning directory: %s" % outputPath)
         for plot_file in os.listdir(outputPath):
             os.remove(outputPath + '/' + plot_file)
     else:
-        print "Creating new directory: %s" % outputPath
+        print("Creating new directory: %s" % outputPath)
         os.makedirs(outputPath)
 
 
@@ -47,8 +47,3 @@ def run_auto_wrapper():
 
 if __name__ == "__main__":
     run_auto_wrapper()
-
-
-
-
-

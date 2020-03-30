@@ -12,7 +12,7 @@ class CppWrapperClass(object):
         self.module_mpy_file = open(self.output_store_path + "/module.hpp", 'w+')
 
         self.name_replace = TheSim.NameReplace
-        print "NameReplace = ", self.name_replace
+        print( "NameReplace = ", self.name_replace)
 
         self.SelfInit_dict = dict() # {modelTag: SelfInit alg address, moduleID}
         self.CrossInit_dict = dict()  # dictionary D = {modelTag: CrossInit alg address, moduleID}
@@ -51,7 +51,7 @@ class CppWrapperClass(object):
         return -1
 
     def areTasksInSimTaskList(self, taskActivityDir, TheSim):
-        print 'TASKS BEING PARSED: '
+        print( 'TASKS BEING PARSED: ')
         taskIdxDir = []
         taskOrderedList = []
         for procIdx in range(0, len(TheSim.TotalSim.processList)):
@@ -80,7 +80,7 @@ class CppWrapperClass(object):
             if taskName in taskActivityDir.keys():
                 idxUse = self.getTaskIndex(TheSim, taskOrderedList[i_task][2].TaskPtr)
                 taskIdxDir.append(idxUse)
-                print i_task, taskName
+                print( i_task, taskName)
         return taskIdxDir
 
     def getTaskModelKey(self, i_task, i_model):
@@ -174,18 +174,18 @@ class CppWrapperClass(object):
                 curr_model_algs_dict = dict()
                 key = self.getTaskModelKey(i_task, i_model)
                 modelTag = TheSim.NameReplace[key]
-                # print "modelTag = ", modelTag
+                # print( "modelTag = ", modelTag)
                 module = model.__module__
                 # modelConfigDataName = str(type(model).__name__)
                 c_struct_name = str(type(model).__name__)
                 split_names = module.split('.')
-                print "split_names = ", split_names
+                print( "split_names = ", split_names)
                 h_file_name = split_names[-1]
                 h_folder_name = split_names[-2]
                 header_line = '#include "%s/%s.h"' % (h_folder_name, h_file_name)
                 hpp_line = '#include "%s/%s.hpp"' % (h_folder_name, h_file_name)
                 config_data_member_line = c_struct_name + " config_data;"
-                # print "config_data_member_line = ", config_data_member_line
+                # print( "config_data_member_line = ", config_data_member_line)
 
                 sysMod = sys.modules[module]
                 dirList = dir(sysMod)
@@ -218,19 +218,19 @@ class CppWrapperClass(object):
         self.module_mpy_file.close()
 
     def printList(self, input, prefix):
-        print "input = ", input
-        print "len_input = ", len(input)
+        print( "input = ", input)
+        print( "len_input = ", len(input))
         for i in range(len(input)):
             prefixIn = prefix + '[' + str(i) + ']'
-            #print "prefixIn = ", prefixIn
+            #print( "prefixIn = ", prefixIn)
             if type(input[i]).__name__ == 'list':
-                print "RECURSION"
+                print( "RECURSION")
                 self.printList(input[i], prefixIn)
             else:
                 if(input[i] != 0):
                     list_write = prefixIn + ' = ' + str(input[i])+';\n'
-                    print "str_write = ", list_write
-                    print "input_type = ", type(input[i]).__name__
+                    print( "str_write = ", list_write)
+                    print( "input_type = ", type(input[i]).__name__)
                     #sourceFile.write(list_write)
 
     def classify_list(self, list, prefix):
@@ -245,9 +245,9 @@ class CppWrapperClass(object):
                               callback)
 
     def autocode_model(self, model, prefix):
-        print "\nmodel = ", model
+        print( "\nmodel = ", model)
         dir_model = dir(model)
-        #print "dir_model = ", dir_model
+        #print( "dir_model = ", dir_model)
         field_names = copy.copy(dir_model)
         for k in range(0, len(dir_model)):
             fieldName = dir_model[k]
@@ -255,65 +255,124 @@ class CppWrapperClass(object):
             fieldTypeName = type(fieldValue).__name__
             fieldTypeFull = str(type(fieldValue))
 
-            # this and __ and SwigPyObject and instancemethod
-            if fieldName[0:2] == '__' or fieldName[0:4] == 'this' or \
-                    fieldTypeName == 'SwigPyObject' or fieldTypeName == 'instancemethod':
-                field_names.remove(fieldName)
-                continue
-            # class
-            elif fieldTypeFull[1:6] == 'class':
-                class_prefix = "%s.%s" % (prefix, fieldName)
-                print "class_prefix = %s. RECURSION NEEDED." % class_prefix
-                # @TODO: handle recursion
-                #self.autocode_model(model=fieldValue, prefix=class_prefix)
-                #autocodeObject(fieldValue, prefix + '.' + fieldName, sourceFile)
-
-            # # list of class/struct
-            # elif fieldTypeName == 'list' and (str(type(fieldValue[0]))[1:6] == 'class'):
-            #     for l in range(0, len(fieldValue)):
-            #         list_class_prefix = prefix + '.' + fieldName + '[' + str(l) + ']'
-            #         print "list_class_prefix = ", list_class_prefix
-            #         print "list_class_fieldValue = ", fieldValue[l]
-            #         #self.autocode_model(model=fieldValue[l], prefix=list_class_prefix)
-            #         #autocodeObject(fieldValue[l], prefix + '.' + fieldName + '[' + str(l) + ']', sourceFile)
-            # character array
-            elif fieldTypeName == 'str':
-                self.wrapper_template.swig_string(field_name=fieldName)
-            elif fieldTypeName == 'int': #and fieldValue is not 0:
-                if fieldValue == 0:
+            if (sys.version_info < (3, 0)):
+                # this and __ and SwigPyObject and instancemethod
+                if fieldName[0:2] == '__' or fieldName[0:4] == 'this' or \
+                        fieldTypeName == 'SwigPyObject' or fieldTypeName == 'instancemethod':
+                    field_names.remove(fieldName)
                     continue
-                else:
-                    self.wrapper_template.swig_numeric_value(field_name=fieldName, field_type=fieldTypeName)
-            elif fieldTypeName == 'float': #and fieldValue is not 0.0:
-                if fieldValue == 0:
-                    print "Value iz zero for fieldName = %s, of type = %s" % (fieldName, fieldTypeName)
-                    continue
-                else:
-                    self.wrapper_template.swig_numeric_value(field_name=fieldName, field_type='double')
+                # class
+                elif fieldTypeFull[1:6] == 'class':
+                    class_prefix = "%s.%s" % (prefix, fieldName)
+                    print( "class_prefix = %s. RECURSION NEEDED." % class_prefix)
+                    # @TODO: handle recursion
+                    #self.autocode_model(model=fieldValue, prefix=class_prefix)
+                    #autocodeObject(fieldValue, prefix + '.' + fieldName, sourceFile)
 
-            # handle numeric lists
-            elif fieldTypeName == 'list':
-                # for i in range(len(fieldValue)):
-                #     if type(fieldValue[i]).__name__ == 'list':
-                #         print "RECURSION IS NECESSARY HERE."
-                if all(v == 0 for v in fieldValue):
-                    print "Value iz zero for fieldName = %s, of type = %s" % (fieldName, fieldTypeName)
-                    continue
-                else:
-                    self.classify_list(list=fieldValue, prefix=fieldName)
+                # # list of class/struct
+                # elif fieldTypeName == 'list' and (str(type(fieldValue[0]))[1:6] == 'class'):
+                #     for l in range(0, len(fieldValue)):
+                #         list_class_prefix = prefix + '.' + fieldName + '[' + str(l) + ']'
+                #         print( "list_class_prefix = ", list_class_prefix)
+                #         print( "list_class_fieldValue = ", fieldValue[l])
+                #         #self.autocode_model(model=fieldValue[l], prefix=list_class_prefix)
+                #         #autocodeObject(fieldValue[l], prefix + '.' + fieldName + '[' + str(l) + ']', sourceFile)
+                # character array
+                elif fieldTypeName == 'str':
+                    self.wrapper_template.swig_string(field_name=fieldName)
+                elif fieldTypeName == 'int': #and fieldValue is not 0:
+                    if fieldValue == 0:
+                        continue
+                    else:
+                        self.wrapper_template.swig_numeric_value(field_name=fieldName, field_type=fieldTypeName)
+                elif fieldTypeName == 'float': #and fieldValue is not 0.0:
+                    if fieldValue == 0:
+                        print( "Value iz zero for fieldName = %s, of type = %s" % (fieldName, fieldTypeName))
+                        continue
+                    else:
+                        self.wrapper_template.swig_numeric_value(field_name=fieldName, field_type='double')
 
-            # # non-array variable
-            # else:
-            #     if fieldValue != 0:
-            #         else_write = '\t' + 'data->' + prefix + '.' + str(fieldName) + ' = ' + str(fieldValue) + ';\n'
-            #         print "else_write = ", else_write
-            #         #sourceFile.write(else_write)
+                # handle numeric lists
+                elif fieldTypeName == 'list':
+                    # for i in range(len(fieldValue)):
+                    #     if type(fieldValue[i]).__name__ == 'list':
+                    #         print( "RECURSION IS NECESSARY HERE.")
+                    if all(v == 0 for v in fieldValue):
+                        print( "Value iz zero for fieldName = %s, of type = %s" % (fieldName, fieldTypeName))
+                        continue
+                    else:
+                        self.classify_list(list=fieldValue, prefix=fieldName)
+
+                # # non-array variable
+                # else:
+                #     if fieldValue != 0:
+                #         else_write = '\t' + 'data->' + prefix + '.' + str(fieldName) + ' = ' + str(fieldValue) + ';\n'
+                #         print( "else_write = ", else_write
+                #         #sourceFile.write(else_write)
+                else:
+                    print( "field_name: %s\t field_value: %s\t field_type_name: %s\t field_type_full: %s\t" % \
+                          (fieldName, fieldValue, fieldTypeName, fieldTypeFull))
             else:
-                print "field_name: %s\t field_value: %s\t field_type_name: %s\t field_type_full: %s\t" % \
-                      (fieldName, fieldValue, fieldTypeName, fieldTypeFull)
+                # this and __ and SwigPyObject and instancemethod
+                if fieldName[0:2] == '__' or fieldName[0:4] == 'this' or \
+                        fieldTypeName == 'SwigPyObject' or fieldTypeName == 'instancemethod':
+                    field_names.remove(fieldName)
+                    continue
+                # class
+                elif 'Basilisk' in fieldTypeFull:
+                    class_prefix = "%s.%s" % (prefix, fieldName)
+                    print( "class_prefix = %s. RECURSION NEEDED." % class_prefix)
+                    # @TODO: handle recursion
+                    #self.autocode_model(model=fieldValue, prefix=class_prefix)
+                    #autocodeObject(fieldValue, prefix + '.' + fieldName, sourceFile)
 
-        print "field_names = ", field_names
-        print "swigged vars = ", self.wrapper_template.get_swigged_keys()
+                # # list of class/struct
+                # elif fieldTypeName == 'list' and (str(type(fieldValue[0]))[1:6] == 'class'):
+                #     for l in range(0, len(fieldValue)):
+                #         list_class_prefix = prefix + '.' + fieldName + '[' + str(l) + ']'
+                #         print( "list_class_prefix = ", list_class_prefix)
+                #         print( "list_class_fieldValue = ", fieldValue[l])
+                #         #self.autocode_model(model=fieldValue[l], prefix=list_class_prefix)
+                #         #autocodeObject(fieldValue[l], prefix + '.' + fieldName + '[' + str(l) + ']', sourceFile)
+                # character array
+                elif fieldTypeName == 'str':
+                    self.wrapper_template.swig_string(field_name=fieldName)
+                elif fieldTypeName == 'int': #and fieldValue is not 0:
+                    if fieldValue == 0:
+                        continue
+                    else:
+                        self.wrapper_template.swig_numeric_value(field_name=fieldName, field_type=fieldTypeName)
+                elif fieldTypeName == 'float': #and fieldValue is not 0.0:
+                    if fieldValue == 0:
+                        print( "Value iz zero for fieldName = %s, of type = %s" % (fieldName, fieldTypeName))
+                        continue
+                    else:
+                        self.wrapper_template.swig_numeric_value(field_name=fieldName, field_type='double')
+
+                # handle numeric lists
+                elif fieldTypeName == 'list':
+                    # for i in range(len(fieldValue)):
+                    #     if type(fieldValue[i]).__name__ == 'list':
+                    #         print( "RECURSION IS NECESSARY HERE.")
+                    if all(v == 0 for v in fieldValue):
+                        print( "Value iz zero for fieldName = %s, of type = %s" % (fieldName, fieldTypeName))
+                        continue
+                    else:
+                        self.classify_list(list=fieldValue, prefix=fieldName)
+
+                # # non-array variable
+                # else:
+                #     if fieldValue != 0:
+                #         else_write = '\t' + 'data->' + prefix + '.' + str(fieldName) + ' = ' + str(fieldValue) + ';\n'
+                #         print( "else_write = ", else_write
+                #         #sourceFile.write(else_write)
+                else:
+                    print( "field_name: %s\t field_value: %s\t field_type_name: %s\t field_type_full: %s\t" % \
+                          (fieldName, fieldValue, fieldTypeName, fieldTypeFull))
+
+
+        print( "field_names = ", field_names)
+        print( "swigged vars = ", self.wrapper_template.get_swigged_keys())
 
 
 class SwigNamer(object):
@@ -359,8 +418,8 @@ class MpyWrapCodeTemplate(object):
 
         if 'Reset' in algs_dict:
             self.str_mpy_wrap_init += '\t%s.Def < %s::Reset > (& %s::Reset);\n' % (self.wrap_name, struct_name, self.class_name)
-        # print "str_mpy_wrap_struct_names =\n", self.str_mpy_wrap_struct_names
-        # print "str_mpy_wrap_init =\n", self.str_mpy_wrap_init
+        # print( "str_mpy_wrap_struct_names =\n", self.str_mpy_wrap_struct_names)
+        # print( "str_mpy_wrap_init =\n", self.str_mpy_wrap_init)
 
 
     def add_properties_to_wrap(self, current_vars_swig_dict):
@@ -393,7 +452,7 @@ class CppWrapClassTemplate(object):
         self.current_mpy_code_model = None
 
     def reset(self):
-        # print "CppWrapClassTemplate now resetting(...)"
+        # print( "CppWrapClassTemplate now resetting(...)")
         self.str_class_algs = ""
         self.str_class_swig = ""
         self.str_class_config = ""
@@ -414,7 +473,7 @@ class CppWrapClassTemplate(object):
         self.current_model = model_tag
         # Create C++ class
         compile_def_name = 'WRAP_%s_HPP' % model_tag
-        #print "compile_def_name = ", compile_def_name
+        #print( "compile_def_name = ", compile_def_name)
 
         str_compile_def = '#ifndef ' + compile_def_name + '\n' + \
                           '#define ' + compile_def_name + '\n\n'
@@ -456,12 +515,12 @@ class CppWrapClassTemplate(object):
         for key, values in self.current_vars_swig_dict.items():
             str_swig += values[0] + values[1]
         self.str_class_swig = str_swig
-        #print "str_class_swig = ", self.str_class_swig
+        #print( "str_class_swig = ", self.str_class_swig))
 
     def write_new_class(self, abs_path_file_name):
-        print "NEW WRAP: output_file_name = ", abs_path_file_name
+        print( "NEW WRAP: output_file_name = ", abs_path_file_name)
         the_string = self.str_class_algs + self.str_class_swig + self.str_class_config
-        #print "\nthe_string=\n", the_string
+        #print( "\nthe_string=\n", the_string)
         #return
         # Write cpp class
         file_mode = 'w+'  # create file to be written if it doesn't exist
@@ -498,9 +557,9 @@ class CppWrapClassTemplate(object):
                      "\t}\n"
         self.current_vars_swig_dict[field_name] = setter_str, getter_str
         self.current_props_swig_dict[field_name] = swig.set_call, swig.get_call
-        # print "\nswig_string(). field_name = ", field_name
-        # print "setter_str = \n", setter_str
-        # print "getter_str = \n", getter_str
+        # print( "\nswig_string(). field_name = ", field_name)
+        # print( "setter_str = \n", setter_str)
+        # print( "getter_str = \n", getter_str)
         return
 
     def swig_numeric_value(self, field_name, field_type):
@@ -531,9 +590,9 @@ class CppWrapClassTemplate(object):
 
         self.current_vars_swig_dict[field_name] = setter_str, getter_str
         self.current_props_swig_dict[field_name] = swig.set_call, swig.get_call
-        # print "\nswig_v3_doubles(). field_name = ", field_name
-        # print "setter_str = \n", setter_str
-        # print "getter_str = \n", getter_str
+        # print( "\nswig_v3_doubles(). field_name = ", field_name)
+        # print( "setter_str = \n", setter_str)
+        # print( "getter_str = \n", getter_str)
         return
 
     def swig_v9_doubles(self, field_name):
@@ -550,8 +609,7 @@ class CppWrapClassTemplate(object):
                      "\t}\n"
         self.current_vars_swig_dict[field_name] = setter_str, getter_str
         self.current_props_swig_dict[field_name] = swig.set_call, swig.get_call
-        # print "\nswig_v9_doubles(). field_name = ", field_name
-        # print "setter_str = \n", setter_str
-        # print "getter_str = \n", getter_str
+        # print( "\nswig_v9_doubles(). field_name = ", field_name)
+        # print( "setter_str = \n", setter_str)
+        # print( "getter_str = \n", getter_str)
         return
-

@@ -31,7 +31,7 @@ import numpy as np
 def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
     simTag='TheSim', localPath = os.path.dirname(os.path.abspath(filename))):
     def areTasksInSimTaskList(taskActivityDir, TheSim):
-        print 'TASKS BEING PARSED: '
+        print('TASKS BEING PARSED: ')
         taskIdxDir = []
         taskOrderedList = []
         procLength = len(TheSim.TotalSim.processList)
@@ -61,7 +61,7 @@ def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
             if taskName in taskActivityDir.keys():
                 idxUse = getTaskIndex(TheSim, taskOrderedList[i_task][2].TaskPtr)
                 taskIdxDir.append(idxUse)
-                print i_task, taskName
+                print(i_task, taskName)
         return taskIdxDir
 
     # First Parsing Method:
@@ -202,7 +202,8 @@ def parseSimAlgorithms(TheSim, taskActivityDir, outputCFileName, str_ConfigData,
                     return filePath
     # This function appends a module's header string to the global headers list (only if it's not there)
     def createModuleHeaderName(module, headersList):
-        moduleName = module[:len(module) / 2] + '.h'
+        print(len(module))
+        moduleName = module[:len(module) // 2] + '.h'
         headerPath = findFilePath(moduleName)
         if(headerPath == None):
            return

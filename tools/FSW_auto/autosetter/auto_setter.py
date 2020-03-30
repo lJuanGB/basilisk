@@ -15,11 +15,11 @@ def empty_sets_folder(outputPath):
     :return:
     """
     if os.path.exists(outputPath):
-        print "Cleaning directory: %s" % outputPath
+        print("Cleaning directory: %s" % outputPath)
         for data_file in os.listdir(outputPath):
             os.remove(outputPath + '/' + data_file)
     else:
-        print "Creating new directory: %s" % outputPath
+        print("Creating new directory: %s" % outputPath)
         os.makedirs(outputPath)
 
 

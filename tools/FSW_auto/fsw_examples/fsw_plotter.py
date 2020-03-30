@@ -15,7 +15,7 @@ class FSWPlotter(Plotter):
 
     def save_plot(self, plot_name):
         plt.savefig(self.plots_path + "/" + plot_name + ".pdf", bbox_inches='tight', pad_inches=0)
-        print 'Saving Figure: %s' % (self.plots_path + "/" + plot_name + ".pdf", )
+        print('Saving Figure: %s' % (self.plots_path + "/" + plot_name + ".pdf", ))
 
     # Guidance: attitude reference
     def plot_sigmaRN(self, sigmaRN):
@@ -77,4 +77,3 @@ class FSWPlotter(Plotter):
         if self.save_plots:
             self.save_plot(plot_name=fig.name)
         return
-
