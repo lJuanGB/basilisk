@@ -103,7 +103,8 @@ class EventHandlerClass:
             eventCount = self.checkCall(parentSim)
             self.prevTime = parentSim.TotalSim.CurrentNanos
             if eventCount > 0:
-                self.eventActive = False
+                #self.eventActive = False
+                self.eventActive = True
                 self.operateCall(parentSim)
                 self.occurCounter += 1
         return(nextTime)
@@ -372,24 +373,14 @@ class SimBaseClass:
         self.initializeEventChecks()
         nextStopTime = self.TotalSim.NextTaskTime
         nextPriority = -1
-        local_event_time = 0
-        step = 0
         while (self.TotalSim.NextTaskTime <= self.StopTime):
-            print "\n\nstep = ", step
             if(self.nextEventTime <= self.TotalSim.CurrentNanos and self.nextEventTime >= 0):
-                local_event_time += self.fsw_rate
-                self.operateInertialPoint()
-                print "local_event_time = ", local_event_time
                 self.nextEventTime = self.checkEvents()
-                #self.nextEventTime = local_event_time
-                print "checkEvents. nextEvenTime = ", self.nextEventTime
                 self.nextEventTime = self.nextEventTime if self.nextEventTime >= self.TotalSim.NextTaskTime else self.TotalSim.NextTaskTime
             if(self.nextEventTime >= 0 and self.nextEventTime < nextStopTime):
                 nextStopTime = self.nextEventTime
                 nextPriority = -1
             self.TotalSim.StepUntilStop(nextStopTime, nextPriority)
-            #self.TotalSim.singleStepNextTask(self.TotalSim.CurrentNanos)
-            step += 1
             nextPriority = -1
             nextStopTime = self.StopTime
             nextStopTime = nextStopTime if nextStopTime >= self.TotalSim.NextTaskTime else self.TotalSim.NextTaskTime
@@ -405,7 +396,6 @@ class SimBaseClass:
             pyProcPresent = True
             nextStopTime = self.pyProcList[0].nextCallTime()
 
-        steps = 0
         while (self.TotalSim.NextTaskTime <= self.StopTime):
             if(self.nextEventTime <= self.TotalSim.CurrentNanos and self.nextEventTime >= 0):
                 self.nextEventTime = self.checkEvents()
