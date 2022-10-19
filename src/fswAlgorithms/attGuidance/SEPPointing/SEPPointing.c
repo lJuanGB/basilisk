@@ -76,24 +76,29 @@ void Update_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_
     double BN[3][3];
     MRP2C(attNavIn.sigma_BN, BN);
 
-    // defining the current thrust direction in B frame and the target thrust direction in the N frame
+    // define the current thrust direction in B frame and the target thrust direction in the N frame
     // these are currently hardcoded but will have to be read from an input message
-    double F_current_B[3], F_target_N[3], a_B[3];
+    double F_current_B[3], F_requested_N[3], a_B[3];
+    v3Copy(configData->F_current_B, F_current_B);
+    v3Copy(configData->F_requested_N, F_requested_N);
+    v3Copy(configData->a_B, a_B);
+    /*
     F_current_B[0] = 0;  F_current_B[1] = 0;  F_current_B[2] = 1;
-    F_target_N[0]  = 0;  F_target_N[1]  = 0;  F_target_N[2]  = 1;
+    F_requested_N[0]  = 0;  F_requested_N[1]  = 0;  F_requested_N[2]  = 1;
     a_B[0] = 1;          a_B[0] = 0;          a_B[0] = 0;
+    */
 
     /* read Sun direction in B frame from the attNav message */
     double r_S_B[3];
     v3Copy(attNavIn.vehSunPntBdy, r_S_B);
 
     /* map requested thrust direction into B frame */
-    double F_target_B[3];
-    m33MultV3(BN, F_target_N, F_target_B);
+    double F_requested_B[3];
+    m33MultV3(BN, F_requested_N, F_requested_B);
 
     double phi, e_phi[3];
-    phi = acos( v3Dot(F_current_B, F_target_B) );
-    v3Cross(F_current_B, F_target_B, e_phi);
+    phi = acos( v3Dot(F_current_B, F_requested_B) );
+    v3Cross(F_current_B, F_requested_B, e_phi);
     v3Normalize(e_phi, e_phi);
     if (fabs(phi-M_PI) < 1e-6) {
         // e_phi can be any vector perpendicular to F_current_B

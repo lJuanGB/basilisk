@@ -29,6 +29,11 @@
 /*! @brief Top level structure for the sub-module routines. */
 typedef struct {
 
+    /* declare these quantities that will eventually become input modules */
+    double F_current_B[3];                        //!< current thrust direction in B frame
+    double F_requested_N[3];                         //!< required thrust direction in N frame
+    double a_B[3];                                //!< arrays axis direction in B frame
+
     /* declare module IO interfaces */
     NavAttMsg_C attNavInMsg;                      //!< input msg measured attitude
     AttRefMsg_C attRefOutMsg;                     //!< sample output message
