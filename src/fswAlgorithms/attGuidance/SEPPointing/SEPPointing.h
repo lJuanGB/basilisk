@@ -25,6 +25,8 @@
 #include "cMsgCInterface/AttRefMsg_C.h"
 #include "cMsgCInterface/NavAttMsg_C.h"
 
+#define EPS 1e-6
+
 
 /*! @brief Top level structure for the sub-module routines. */
 typedef struct {

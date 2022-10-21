@@ -79,9 +79,9 @@ void Update_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_
     // define the current thrust direction in B frame and the target thrust direction in the N frame
     // these are currently hardcoded but will have to be read from an input message
     double F_current_B[3], F_requested_N[3], a_B[3];
-    v3Copy(configData->F_current_B, F_current_B);
-    v3Copy(configData->F_requested_N, F_requested_N);
-    v3Copy(configData->a_B, a_B);
+    v3Normalize(configData->F_current_B, F_current_B);
+    v3Normalize(configData->F_requested_N, F_requested_N);
+    v3Normalize(configData->a_B, a_B);
     /*
     F_current_B[0] = 0;  F_current_B[1] = 0;  F_current_B[2] = 1;
     F_requested_N[0]  = 0;  F_requested_N[1]  = 0;  F_requested_N[2]  = 1;
@@ -96,18 +96,19 @@ void Update_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_
     double F_requested_B[3];
     m33MultV3(BN, F_requested_N, F_requested_B);
 
+    /* compute principal rotation angle (phi) and vector (e_phi) for the first rotation */
     double phi, e_phi[3];
-    phi = acos( v3Dot(F_current_B, F_requested_B) );
+    phi = acos( fmin( fmax( v3Dot(F_current_B, F_requested_B), -1 ), 1 ) );
     v3Cross(F_current_B, F_requested_B, e_phi);
-    v3Normalize(e_phi, e_phi);
-    if (fabs(phi-M_PI) < 1e-6) {
-        // e_phi can be any vector perpendicular to F_current_B
-        if (fabs(F_current_B[0]) > 1e-5) {
+    // If phi = PI, e_phi can be any vector perpendicular to F_current_B
+    if (fabs(phi-M_PI) < EPS) {
+        phi = M_PI;
+        if (fabs(F_current_B[0]) > EPS) {
             e_phi[0] = -(F_current_B[1]+F_current_B[2]) / F_current_B[0];
             e_phi[1] = 1;
             e_phi[2] = 1;
         }
-        else if (fabs(F_current_B[1]) > 1e-5) {
+        else if (fabs(F_current_B[1]) > EPS) {
             e_phi[0] = 1;
             e_phi[1] = -(F_current_B[0]+F_current_B[2]) / F_current_B[1];
             e_phi[2] = 1;
@@ -118,6 +119,11 @@ void Update_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_
             e_phi[2] = -(F_current_B[0]+F_current_B[1]) / F_current_B[2];
         }
     }
+    else if (fabs(phi) < EPS) {
+        phi = 0;
+    }
+    // normalize e_phi
+    v3Normalize(e_phi, e_phi);
 
     /* define intermediate rotation DB */
     double DB[3][3], PRV_phi[3];
@@ -141,33 +147,55 @@ void Update_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_
     Delta = B * B - 4 * A * C;
 
     /* compute exact solution or best solution depending on Delta */
-    double t, t1, t2, y1, y2;
-    if (Delta >= 0) {
-        t1 = (-B + sqrt(Delta)) / (2*A);
-        t2 = (-B - sqrt(Delta)) / (2*A);
-        t = t1;
-    }
-    else {
-        if (fabs(B) == 0.0) {
-            t = 0.0;
+    double t, t1, t2, y, y1, y2, psi;
+    if (fabs(A) < EPS) {
+        if (fabs(B) < EPS) {
+            if (C > 0) {
+                psi = M_PI;
+            }
+            else {
+                psi = 0.0;
+            }
         }
         else {
-            t1 = (A-C + sqrt((A-C)*(A-C) + B*B)) / B;
-            t2 = (A-C - sqrt((A-C)*(A-C) + B*B)) / B;
-            y1 = (A*t1*t1 + B*t1 + C) / (1 + t1*t1);
-            y2 = (A*t2*t2 + B*t2 + C) / (1 + t2*t2);
+            t = - C / B;
+            psi = 2*atan(t);
+        }
+    }
+    else {
+        if (Delta >= 0) {
+            t1 = (-B + sqrt(Delta)) / (2*A);
+            t2 = (-B - sqrt(Delta)) / (2*A);
+            t = fmin(t1, t2);
+            psi = 2*atan(t);
+        }
+        else {
+            if (fabs(B) < EPS) {
+                t = 0.0;
+            }
+            else {
+                t1 = (A-C + sqrt((A-C)*(A-C) + B*B)) / B;
+                t2 = (A-C - sqrt((A-C)*(A-C) + B*B)) / B;
+                y1 = (A*t1*t1 + B*t1 + C) / (1 + t1*t1);
+                y2 = (A*t2*t2 + B*t2 + C) / (1 + t2*t2);
 
-            t = t1;
-            if (fabs(y2) < fabs(y1)) {
-                t = t2;
+                t = t1;
+                if (fabs(y2) < fabs(y1)) {
+                    t = t2;
+                }
+            }
+            psi = 2*atan(t);
+            y = (A*t*t + B*t + C) / (1 + t*t);
+            if (fabs(A) < fabs(y)) {
+                psi = M_PI;
             }
         }
     }
 
-    /* compute second rotation using Gibs' vector */
-    double Q_psi[3], RD[3][3];
-    v3Scale(t, e_psi, Q_psi);
-    Gibbs2C(Q_psi, RD);
+    /* compute second rotation RD */
+    double RD[3][3], PRV_psi[3];
+    v3Scale(psi, e_psi, PRV_psi);
+    PRV2C(PRV_psi, RD);
 
     /* compute final reference frame w.r.t inertial frame */
     double DN[3][3], RN[3][3];

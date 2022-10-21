@@ -1,7 +1,7 @@
 #
 #  ISC License
 #
-#  Copyright (c) 2016, Autonomous Vehicle Systems Lab, University of Colorado at Boulder
+#  Copyright (c) 2022, Autonomous Vehicle Systems Lab, University of Colorado at Boulder
 #
 #  Permission to use, copy, modify, and/or distribute this software for any
 #  purpose with or without fee is hereby granted, provided that the above
@@ -19,9 +19,9 @@
 
 #
 #   Unit Test Script
-#   Module Name:        cModuleTemplateParametrized
-#   Author:             (First Name) (Last Name)
-#   Creation Date:      Month Day, Year
+#   Module Name:        SEPPointing
+#   Author:             Riccardo Calaon
+#   Creation Date:      October 20, 2022
 #
 
 import pytest
@@ -66,9 +66,8 @@ def computeGamma(alpha, delta):
 
 # The 'ang' array spans the interval from 0 to pi. 0 and pi are excluded because 
 # the code is less accurate around those points; it still provides accurate results at 1e-6
-ang = np.linspace(0, np.pi, 11, endpoint=False)
+ang = np.linspace(0, np.pi, 11, endpoint=True)
 ang = list(ang)
-ang.pop(0)
 # The following 'parametrize' function decorator provides the parameters and expected results for each
 # of the multiple test runs for this test.
 @pytest.mark.parametrize("alpha", ang)
@@ -134,34 +133,34 @@ def SEPPointingTestFunction(show_plots, alpha, delta, accuracy):
 
     gamma_true = computeGamma(alpha, delta)
 
-    rS_N = np.random.rand(3)              # randomly generated Sun direction in inertial coordinates
+    rS_N = np.array([0, 0, 1])                            # Sun direction in inertial coordinates
     rS_N = rS_N / np.linalg.norm(rS_N)
-    sA_B = np.random.rand(3)              # randomly generated array axis direction in body frame
+    sA_B = np.array([1, 0, 0])                            # array axis direction in body frame
     sA_B = sA_B / np.linalg.norm(sA_B)
 
     a = np.cross(rS_N, np.random.rand(3))
     a = a / np.linalg.norm(a)
-
+    
     d = np.cross(sA_B, np.random.rand(3))
     d = d / np.linalg.norm(d)
-
+    
     DCM1 = rbk.PRV2C(a * alpha)
     DCM2 = rbk.PRV2C(d * delta)
 
     F_N = np.matmul(DCM1, rS_N)             # required thrust direction in inertial frame, at an angle alpha from rS_N
     F_B = np.matmul(DCM2, sA_B)             # required thrust direction in inertial frame, at an angle alpha from rS_N
 
-    testFailCount = 0                       # zero unit test result counter
-    testMessages = []                       # create empty array to store test log messages
-    unitTaskName = "unitTask"               # arbitrary name (don't change)
-    unitProcessName = "TestProcess"         # arbitrary name (don't change)
+    testFailCount = 0                                        # zero unit test result counter
+    testMessages = []                                        # create empty array to store test log messages
+    unitTaskName = "unitTask"                                # arbitrary name (don't change)
+    unitProcessName = "TestProcess"                          # arbitrary name (don't change)
     bskLogging.setDefaultLogLevel(bskLogging.BSK_WARNING)
 
     # Create a sim module as an empty container
     unitTestSim = SimulationBaseClass.SimBaseClass()
 
     # Create test thread
-    testProcessRate = macros.sec2nano(0.5)     # update process rate update time
+    testProcessRate = macros.sec2nano(1.1)     # update process rate update time
     testProc = unitTestSim.CreateNewProcess(unitProcessName)
     testProc.addTask(unitTestSim.CreateNewTask(unitTaskName, testProcessRate))
 
@@ -213,13 +212,10 @@ def SEPPointingTestFunction(show_plots, alpha, delta, accuracy):
     sA_N = np.matmul(NR, sA_B)
     gamma_sim = np.arcsin( abs( np.clip( np.dot(rS_N, sA_N), -1, 1 ) ) )
 
-    print(gamma_sim, gamma_true)
-
     # set the filtered output truth states
     if not unitTestSupport.isDoubleEqual(gamma_sim, gamma_true, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + SEPWrap.ModelTag + " Wrong incidence angle for alpha = {} and delta = {} \n".format(alpha, delta))
-
+        testMessages.append("FAILED: " + SEPWrap.ModelTag + " Wrong incidence angle for alpha = {} and delta = {}")
 
     return [testFailCount, ''.join(testMessages)]
 
@@ -231,7 +227,7 @@ def SEPPointingTestFunction(show_plots, alpha, delta, accuracy):
 if __name__ == "__main__":
     SEPPointingTestFunction(
                  False,
-                 np.pi*0.95,     # alpha
-                 np.pi*0.05,     # delta
+                 np.pi/3,     # alpha
+                 np.pi/6,     # delta
                  1e-12        # accuracy
                )
