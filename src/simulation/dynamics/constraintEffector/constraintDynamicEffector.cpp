@@ -21,46 +21,37 @@
 #include <iostream>
 #include <cmath>
 
-#include "thrusterStateEffector.h"
+#include "constraintDynamicEffector.h"
 #include "architecture/utilities/linearAlgebra.h"
 #include "architecture/utilities/astroConstants.h"
 #include "architecture/utilities/macroDefinitions.h"
 #include "architecture/utilities/avsEigenSupport.h"
+#include <cstring>
+#include <iostream>
+#include <cmath>
 
 /*! The Constructor.*/
-ThrusterStateEffector::ThrusterStateEffector()
+ConstraintDynamicEffector::ConstraintDynamicEffector()
 {
-    // - zero the mass props and mass prop rates contributions
-    this->effProps.mEff = 0.0;
-    this->effProps.rEff_CB_B.fill(0.0);
-    this->effProps.IEffPntB_B.fill(0.0);
-    this->effProps.rEffPrime_CB_B.fill(0.0);
-    this->effProps.IEffPrimePntB_B.fill(0.0);
-
-    // initialize internal variables
-    this->effectorID++;
-
-    // TODO: intialize variables here (set some to 0, others to identity, whatever)
+    //TODO: Initialize all variables (can be 0 or not, whatever makes sense)
+    counter = 0;
 
     return;
 }
-
-uint64_t ThrusterStateEffector::effectorID = 1;
 
 /*! The destructor. */
-ThrusterStateEffector::~ThrusterStateEffector()
+ConstraintDynamicEffector::~ConstraintDynamicEffector()
 {
-    this->effectorID = 1;    /* reset the panel ID*/
-
     return;
 }
+
 
 /*! This method is used to reset the module.
  @return void
  */
-void ThrusterStateEffector::Reset(uint64_t CurrentSimNanos)
+void ConstraintDynamicEffector::Reset(uint64_t CurrentSimNanos)
 {
-    // TODO: set the integrator state to 0
+    // TODO: Reset the integral value
 
     return;
 }
@@ -69,35 +60,33 @@ void ThrusterStateEffector::Reset(uint64_t CurrentSimNanos)
  @return void
  @param states The states to link
  */
-void ThrusterStateEffector::linkInStates(DynParamManager& states){
-    this->hubSigma = states.getStateObject("hubSigma");
-	this->hubOmega = states.getStateObject("hubOmega");
-}
-
-/*! This method allows the thruster state effector to register its state kappa with the dyn param manager */
-void ThrusterStateEffector::registerStates(DynParamManager& states)
+void ConstraintDynamicEffector::linkInStates(DynParamManager& states)
 {
+    // TODO: yell scream and die if counter > 1: bskLogger.bskLog(BSK_ERROR, "constraintDynamicEffector: tried to attach more than 2 spacecraft");
+    this->hubSigma[counter] = states.getStateObject("hubSigma");
+	this->hubOmega[counter] = states.getStateObject("hubOmega");
+    this->hubPosition[counter] = states.getStateObject("hubPosition");
+    this->hubVelocity[counter] = states.getStateObject("hubVelocity");
 
-    // TODO: figure out integrator states
-
+    counter++;
     return;
 }
 
-/*! This method is used to find the derivatives for the thruster stateEffector */
-void ThrusterStateEffector::computeDerivatives(double integTime, Eigen::Vector3d rDDot_BN_N, Eigen::Vector3d omegaDot_BN_B, Eigen::Vector3d sigma_BN)
+/*! This method computes the Forces on Torque on the Spacecraft Body.
+ @return void
+ @param integTime Integration time
+ @param timeStep Current integration time step used
+ */
+void ConstraintDynamicEffector::computeForceTorque(double integTime, double timeStep)
 {
-
-    // TODO: figure out integrator states
-   
+    // TODO: Implement the logic for the constraints
+    // Populate this->forceExternal_N (or this->forceExternal_B) and this->forceExternal_B
+    // Have a flag set to 1 or -1 to know which spacecraft you're working with with if else statements
+    // To grab sigma_B1N, do this: sigma_B1N = this->hubSigma[0]->getState()
+    
     return;
 }
 
-void ThrusterStateEffector::updateContributions(double integTime, BackSubMatrices& backSubContr, Eigen::Vector3d sigma_BN, Eigen::Vector3d omega_BN_B, Eigen::Vector3d g_N)
-{
-    // TODO: compute the forces and torques with the PDI controller
-    // TODO: figure out how to affect both spacecraft
-
-}
 
 
 /*! This method is the main cyclical call for the scheduled part of the thruster
@@ -108,7 +97,8 @@ void ThrusterStateEffector::updateContributions(double integTime, BackSubMatrice
  @return void
  @param CurrentSimNanos The current simulation time in nanoseconds
  */
-void ThrusterStateEffector::UpdateState(uint64_t CurrentSimNanos)
+void ConstraintDynamicEffector::UpdateState(uint64_t CurrentSimNanos)
 {
+    // TODO: Compute integral feedback term
 
 }
