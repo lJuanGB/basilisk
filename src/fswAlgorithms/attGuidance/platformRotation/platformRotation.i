@@ -31,10 +31,8 @@
 
 %include "platformRotation.h"
 
-%include "architecture/msgPayloadDefC/NavAttMsgPayload.h"
-struct NavAttMsg_C;
-%include "architecture/msgPayloadDefC/AttRefMsgPayload.h"
-struct AttRefMsg_C;
+%include "architecture/msgPayloadDefC/VehicleConfigMsgPayload.h"
+struct VehicleConfigMsg_C;
 
 %pythoncode %{
 import sys
