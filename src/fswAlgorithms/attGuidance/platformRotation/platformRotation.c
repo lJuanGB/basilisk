@@ -36,7 +36,7 @@
  */
 void SelfInit_platformRotation(platformRotationConfig *configData, int64_t moduleID)
 {
-    AttRefMsg_C_init(&configData->attRefOutMsg);
+    // AttRefMsg_C_init(&configData->attRefOutMsg);
 }
 
 
@@ -50,8 +50,8 @@ void SelfInit_platformRotation(platformRotationConfig *configData, int64_t modul
 void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     // check if the required input message is included
-    if (!NavAttMsg_C_isLinked(&configData->attNavInMsg)) {
-        _bskLog(configData->bskLogger, BSK_ERROR, "Error: SEPPointing.attNavInMsg wasn't connected.");
+    if (!VehicleConfigMsg_C_isLinked(&configData->vehConfigInMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: platformRotation.vehConfigInMsg wasn't connected.");
     }
 }
 
@@ -64,119 +64,113 @@ void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTim
 void Update_platformRotation(platformRotationConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! - Read input message */
-    NavAttMsgPayload  attNavIn;
-    AttRefMsgPayload  attRefOut;
+    VehicleConfigMsgPayload  vehConfigMsgIn;
+    // AttRefMsgPayload  attRefOut;
 
     /*! - zero the output message */
-    attRefOut = AttRefMsg_C_zeroMsgPayload();
+    // attRefOut = AttRefMsg_C_zeroMsgPayload();
 
-    /* read the attitude navigation message */
-    attNavIn = NavAttMsg_C_read(&configData->attNavInMsg);
+    /*! read the attitude navigation message */
+    vehConfigMsgIn = VehicleConfigMsg_C_read(&configData->vehConfigInMsg);
 
-    double BN[3][3];
-    MRP2C(attNavIn.sigma_BN, BN);
+    /*! compute CM position w.r.t. M frame origin, in M coordinates */
+    double r_CM_M[3], r_CM_F[3], r_CB_B[3], r_CB_M[3], MB[3][3];
+    MRP2C(configData->sigma_MB, MB);
+    v3Copy(vehConfigMsgIn.CoM_B, r_CB_B);
+    m33MultV3(MB, r_CB_B, r_CB_M);
+    v3Add(r_CB_M, configData->r_BM_M, r_CM_M);
 
-    // defining the current thrust direction in B frame and the target thrust direction in the N frame
-    // these are currently hardcoded but will have to be read from an input message
-    double F_current_B[3], F_target_N[3], a_B[3];
-    F_current_B[0] = 0;  F_current_B[1] = 0;  F_current_B[2] = 1;
-    F_target_N[0]  = 0;  F_target_N[1]  = 0;  F_target_N[2]  = 1;
-    a_B[0] = 1;          a_B[0] = 0;          a_B[0] = 0;
+    /*! define unit vectors of CM direction in M coordinates and thrust direction in F coordinates */
+    double r_CM_M_hat[3], r_CM_F_hat[3], T_F_hat[3];
+    v3Normalize(r_CM_M, r_CM_M_hat);
+    v3Normalize(configData->T_F, T_F_hat);
+    v3Copy(r_CM_M_hat, r_CM_F_hat);        // assume zero initial rotation between F and M
 
-    /* read Sun direction in B frame from the attNav message */
-    double r_S_B[3];
-    v3Copy(attNavIn.vehSunPntBdy, r_S_B);
-
-    /* map requested thrust direction into B frame */
-    double F_target_B[3];
-    m33MultV3(BN, F_target_N, F_target_B);
-
+    /*! compute first rotation to make T_F parallel to r_CM */
     double phi, e_phi[3];
-    phi = acos( v3Dot(F_current_B, F_target_B) );
-    v3Cross(F_current_B, F_target_B, e_phi);
+    phi = acos( fmin( fmax( v3Dot(T_F_hat, r_CM_F_hat), -1 ), 1 ) );
+    v3Cross(T_F_hat, r_CM_F_hat, e_phi);
+    // If phi = PI, e_phi can be any vector perpendicular to F_current_B
+    if (fabs(phi-M_PI) < EPS) {
+        phi = M_PI;
+        if (fabs(T_F_hat[0]) > EPS) {
+            e_phi[0] = -(T_F_hat[1]+T_F_hat[2]) / T_F_hat[0];
+            e_phi[1] = 1;
+            e_phi[2] = 1;
+        }
+        else if (fabs(T_F_hat[1]) > EPS) {
+            e_phi[0] = 1;
+            e_phi[1] = -(T_F_hat[0]+T_F_hat[2]) / T_F_hat[1];
+            e_phi[2] = 1;
+        }
+        else {
+            e_phi[0] = 1;
+            e_phi[1] = 1;
+            e_phi[2] = -(T_F_hat[0]+T_F_hat[1]) / T_F_hat[2];
+        }
+    }
+    else if (fabs(phi) < EPS) {
+        phi = 0;
+    }
+    // normalize e_phi
     v3Normalize(e_phi, e_phi);
-    if (fabs(phi-M_PI) < 1e-6) {
-        // e_phi can be any vector perpendicular to F_current_B
-        if (fabs(F_current_B[0]) > 1e-5) {
-            e_phi[0] = -(F_current_B[1]+F_current_B[2]) / F_current_B[0];
-            e_phi[1] = 1;
-            e_phi[2] = 1;
-        }
-        else if (fabs(F_current_B[1]) > 1e-5) {
-            e_phi[0] = 1;
-            e_phi[1] = -(F_current_B[0]+F_current_B[2]) / F_current_B[1];
-            e_phi[2] = 1;
-        }
-        else {
-            e_phi[0] = 1;
-            e_phi[1] = 1;
-            e_phi[2] = -(F_current_B[0]+F_current_B[1]) / F_current_B[2];
-        }
-    }
 
-    /* define intermediate rotation DB */
-    double DB[3][3], PRV_phi[3];
+    /*! define intermediate platform rotation F1M */
+    double F1M[3][3], PRV_phi[3];
     v3Scale(phi, e_phi, PRV_phi);
-    PRV2C(PRV_phi, DB);
+    PRV2C(PRV_phi, F1M);
 
-    /* compute Sun direction vector in D frame coordinates */
-    double r_S_D[3];
-    m33MultV3(DB, r_S_B, r_S_D);
+    /*! rotate r_CM_F */
+    m33MultV3(F1M, r_CM_M, r_CM_F);
 
-    /* define second rotation vector to coincide with the thrust direction in B coordinates */
-    double e_psi[3];
-    v3Copy(F_current_B, e_psi);
+    /*! compute position of CM w.r.t. thrust application point T */
+    double r_CT_F[3], r_CT_F_hat[3];
+    v3Subtract(r_CM_F, configData->r_FM_F, r_CT_F);
+    v3Subtract(r_CT_F, configData->r_TF_F, r_CT_F);
+    v3Normalize(r_CT_F, r_CT_F_hat);
 
-    /* define the coefficients of the quadratic equation */
-    double A, B, C, Delta, b[3];
-    v3Cross(r_S_D, e_psi, b);
-    A = 2 * v3Dot(r_S_D, e_psi) * v3Dot(e_psi, a_B) - v3Dot(a_B, r_S_D);
-    B = 2 * v3Dot(a_B, b);
-    C = v3Dot(a_B, r_S_D);
-    Delta = B * B - 4 * A * C;
+    /*! compute second rotation to zero the offset between T_F and r_CT_F */
+    double psi, e_psi[3];
+    v3Cross(T_F_hat, r_CT_F_hat, e_psi);
+    v3Normalize(e_psi, e_psi);
+    psi = computeSecondRotation(r_CM_F, configData->r_FM_F, configData->r_TF_F, r_CT_F, T_F_hat);
 
-    /* compute exact solution or best solution depending on Delta */
-    double t, t1, t2, y1, y2;
-    if (Delta >= 0) {
-        t1 = (-B + sqrt(Delta)) / (2*A);
-        t2 = (-B - sqrt(Delta)) / (2*A);
-        t = t1;
-    }
-    else {
-        if (fabs(B) == 0.0) {
-            t = 0.0;
-        }
-        else {
-            t1 = (A-C + sqrt((A-C)*(A-C) + B*B)) / B;
-            t2 = (A-C - sqrt((A-C)*(A-C) + B*B)) / B;
-            y1 = (A*t1*t1 + B*t1 + C) / (1 + t1*t1);
-            y2 = (A*t2*t2 + B*t2 + C) / (1 + t2*t2);
+    /*! define intermediate platform rotation F1F2 */
+    double F2F1[3][3], PRV_psi[3];
+    v3Scale(psi, e_psi, PRV_psi);
+    PRV2C(PRV_psi, F2F1);
 
-            t = t1;
-            if (fabs(y2) < fabs(y1)) {
-                t = t2;
-            }
-        }
-    }
 
-    /* compute second rotation using Gibs' vector */
-    double Q_psi[3], RD[3][3];
-    v3Scale(t, e_psi, Q_psi);
-    Gibbs2C(Q_psi, RD);
-
-    /* compute final reference frame w.r.t inertial frame */
-    double DN[3][3], RN[3][3];
-    m33MultM33(DB, BN, DN);
-    m33MultM33(RD, DN, RN);
-
-    /* compute reference MRP */
-    double sigma_RN[3];
-    C2MRP(RN, sigma_RN);
-
-    v3Copy(sigma_RN, attRefOut.sigma_RN);
+    
 
     /* write output message */
-    AttRefMsg_C_write(&attRefOut, &configData->attRefOutMsg, moduleID, callTime);
+    // AttRefMsg_C_write(&attRefOut, &configData->attRefOutMsg, moduleID, callTime);
 
     return;
+}
+
+
+double computeSecondRotation(double r_CM_F[3], double r_FM_F[3], double r_TF_F[3], double r_CT_F[3], double T_F_hat[3])
+{
+    double a, b, c1, c2, aVec[3], bVec[3];
+
+    v3Add(r_FM_F, r_TF_F, aVec);
+    a = v3Norm(aVec);
+    v3Copy(r_CM_F, bVec);
+    b = v3Norm(bVec);
+    c1 = v3Norm(r_CT_F);
+
+    double beta, nu;
+    beta = acos( -fmin( fmax( v3Dot(aVec, T_F_hat) / a, -1 ), 1 ) );
+    nu = acos( -fmin( fmax( v3Dot(aVec, r_CT_F) / (a*c1), -1 ), 1 ) );
+
+    c2 = a*cos(beta) + sqrt(b*b - a*a*sin(beta)*sin(beta));
+
+    double cosGamma1, cosGamma2;
+    cosGamma1 = (a*a + b*b - c1*c1) / (2*a*b);
+    cosGamma2 = (a*a + b*b - c2*c2) / (2*a*b);
+
+    double psi = asin( fmin( fmax( (c1*sin(nu)*cosGamma2 - c2*sin(beta)*cosGamma1)/b, -1 ), 1 ) );
+
+    return psi;
 }
