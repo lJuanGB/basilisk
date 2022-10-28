@@ -52,6 +52,7 @@ extern "C" {
     void Update_platformRotation(platformRotationConfig *configData, uint64_t callTime, int64_t moduleID);
 
     double computeSecondRotation(double r_CM_F[3], double r_FM_F[3], double r_TF_F[3], double r_CT_F[3], double T_F_hat[3]);
+    double computeThirdRotation(double e_theta[3], double F2M[3][3]);
 
 #ifdef __cplusplus
 }
