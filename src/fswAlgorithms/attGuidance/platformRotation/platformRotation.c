@@ -136,7 +136,7 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     psi = computeSecondRotation(r_CM_F, configData->r_FM_F, configData->r_TF_F, r_CT_F, T_F_hat);
 
     /*! define intermediate platform rotation F2M */
-    double F2F1[3][3], F2M, PRV_psi[3];
+    double F2F1[3][3], F2M[3][3], PRV_psi[3];
     v3Scale(psi, e_psi, PRV_psi);
     PRV2C(PRV_psi, F2F1);
     m33MultM33(F2F1, F1M, F2M);
@@ -145,9 +145,18 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     double theta, e_theta[3];
     m33MultV3(F2M, r_CM_M, e_theta);
     v3Normalize(e_theta, e_theta);
+    theta = computeThirdRotation(e_theta, F2M);
 
+    /*! define final platform rotation F3M */
+    double F3F2[3][3], F3M[3][3], PRV_theta[3];
+    v3Scale(theta, e_theta, PRV_theta);
+    PRV2C(PRV_theta, F3F2);
+    m33MultM33(F3F2, F2M, F3M);
 
-    
+    /*! extract alpha and beta angles */
+    double alpha, beta;
+    alpha = atan2(F3M[1][2], F3M[1][1]);
+    beta  = atan2(F3M[2][0], F3M[0][0]);
 
     /* write output message */
     // AttRefMsg_C_write(&attRefOut, &configData->attRefOutMsg, moduleID, callTime);
@@ -192,5 +201,54 @@ double computeThirdRotation(double e_theta[3], double F2M[3][3])
     C = F2M[1][0];
     Delta = B*B - 4*A*C;
 
-    
+    /* compute exact solution or best solution depending on Delta */
+    double t, t1, t2, y, y1, y2, theta;
+    if (fabs(A) < EPS) {
+        if (fabs(B) < EPS) {
+            if (C > 0) {
+                theta = M_PI;
+            }
+            else {
+                theta = 0.0;
+            }
+        }
+        else {
+            t = - C / B;
+            theta = 2*atan(t);
+        }
+    }
+    else {
+        if (Delta >= 0) {
+            t1 = (-B + sqrt(Delta)) / (2*A);
+            t2 = (-B - sqrt(Delta)) / (2*A);
+            t = t1;
+            if (fabs(t2) < fabs(t1)) {
+                t = t2;
+            }
+            theta = 2*atan(t);
+        }
+        else {
+            if (fabs(B) < EPS) {
+                t = 0.0;
+            }
+            else {
+                t1 = (A-C + sqrt((A-C)*(A-C) + B*B)) / B;
+                t2 = (A-C - sqrt((A-C)*(A-C) + B*B)) / B;
+                y1 = (A*t1*t1 + B*t1 + C) / (1 + t1*t1);
+                y2 = (A*t2*t2 + B*t2 + C) / (1 + t2*t2);
+
+                t = t1;
+                if (fabs(y2) < fabs(y1)) {
+                    t = t2;
+                }
+            }
+            theta = 2*atan(t);
+            y = (A*t*t + B*t + C) / (1 + t*t);
+            if (fabs(A) < fabs(y)) {
+                theta = M_PI;
+            }
+        }
+    }
+
+    return theta;
 }
