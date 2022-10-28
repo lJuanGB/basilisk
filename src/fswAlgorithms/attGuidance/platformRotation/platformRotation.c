@@ -135,10 +135,16 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     v3Normalize(e_psi, e_psi);
     psi = computeSecondRotation(r_CM_F, configData->r_FM_F, configData->r_TF_F, r_CT_F, T_F_hat);
 
-    /*! define intermediate platform rotation F1F2 */
-    double F2F1[3][3], PRV_psi[3];
+    /*! define intermediate platform rotation F2M */
+    double F2F1[3][3], F2M, PRV_psi[3];
     v3Scale(psi, e_psi, PRV_psi);
     PRV2C(PRV_psi, F2F1);
+    m33MultM33(F2F1, F1M, F2M);
+
+    /*! compute third rotation to make the frame compliant with the platform constraint */
+    double theta, e_theta[3];
+    m33MultV3(F2M, r_CM_M, e_theta);
+    v3Normalize(e_theta, e_theta);
 
 
     
@@ -173,4 +179,18 @@ double computeSecondRotation(double r_CM_F[3], double r_FM_F[3], double r_TF_F[3
     double psi = asin( fmin( fmax( (c1*sin(nu)*cosGamma2 - c2*sin(beta)*cosGamma1)/b, -1 ), 1 ) );
 
     return psi;
+}
+
+double computeThirdRotation(double e_theta[3], double F2M[3][3])
+{
+    double e1, e2, e3;
+    e1 = e_theta[0];  e2 = e_theta[1];  e3 = e_theta[2];
+
+    double A, B, C, Delta;
+    A = 2 * (F2M[1][0]*e2*e2 + F2M[0][0]*e1*e2 + F2M[2][0]*e2*e3) - F2M[1][0];
+    B = 2 * (F2M[2][0]*e1 - F2M[0][0]*e3);
+    C = F2M[1][0];
+    Delta = B*B - 4*A*C;
+
+    
 }
