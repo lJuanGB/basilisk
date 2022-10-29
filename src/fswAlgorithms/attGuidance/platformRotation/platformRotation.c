@@ -65,10 +65,10 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
 {
     /*! - Read input message */
     VehicleConfigMsgPayload  vehConfigMsgIn;
-    // AttRefMsgPayload  attRefOut;
+    PlatformAnglesMsgPayload  platformAnglesOut;
 
     /*! - zero the output message */
-    // attRefOut = AttRefMsg_C_zeroMsgPayload();
+    platformAnglesOut = PlatformAnglesMsg_C_zeroMsgPayload();
 
     /*! read the attitude navigation message */
     vehConfigMsgIn = VehicleConfigMsg_C_read(&configData->vehConfigInMsg);
@@ -154,12 +154,11 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     m33MultM33(F3F2, F2M, F3M);
 
     /*! extract alpha and beta angles */
-    double alpha, beta;
-    alpha = atan2(F3M[1][2], F3M[1][1]);
-    beta  = atan2(F3M[2][0], F3M[0][0]);
+    platformAnglesOut.alpha = atan2(F3M[1][2], F3M[1][1]);
+    platformAnglesOut.beta  = atan2(F3M[2][0], F3M[0][0]);
 
     /* write output message */
-    // AttRefMsg_C_write(&attRefOut, &configData->attRefOutMsg, moduleID, callTime);
+    PlatformAnglesMsg_C_write(&platformAnglesOut, &configData->platformAnglesOutMsg, moduleID, callTime);
 
     return;
 }

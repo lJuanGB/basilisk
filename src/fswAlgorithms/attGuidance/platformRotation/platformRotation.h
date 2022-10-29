@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include "architecture/utilities/bskLogging.h"
 #include "cMsgCInterface/VehicleConfigMsg_C.h"
+#include "cMsgCInterface/PlatformAnglesMsg_C.h"
 
 #define EPS 1e-6
 
@@ -38,7 +39,8 @@ typedef struct {
 
     /* declare module IO interfaces */
     VehicleConfigMsg_C vehConfigInMsg;            //!< input msg vehicle configuration msg (needed for CM location)
-    
+    PlatformAnglesMsg_C platformAnglesOutMsg;     //!< output msg containing platform tip and tilt angles
+
     BSKLogger *bskLogger;                         //!< BSK Logging
 
 }platformRotationConfig;
