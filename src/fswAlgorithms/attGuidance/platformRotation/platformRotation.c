@@ -36,7 +36,7 @@
  */
 void SelfInit_platformRotation(platformRotationConfig *configData, int64_t moduleID)
 {
-    // AttRefMsg_C_init(&configData->attRefOutMsg);
+    PlatformAnglesMsg_C_init(&configData->platformAnglesOutMsg);
 }
 
 
