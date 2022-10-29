@@ -16,27 +16,16 @@
  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
  */
-%module platformRotation
-%{
-   #include "platformRotation.h"
-%}
 
-%include "swig_conly_data.i"
-%constant void SelfInit_platformRotation(void*, uint64_t);
-%ignore SelfInit_platformRotation;
-%constant void Reset_platformRotation(void*, uint64_t, uint64_t);
-%ignore Reset_platformRotation;
-%constant void Update_platformRotation(void*, uint64_t, uint64_t);
-%ignore Update_platformRotation;
+#ifndef PLATFORM_ANGLES_MESSAGE_H
+#define PLATFORM_ANGLES_MESSAGE_H
 
-%include "platformRotation.h"
 
-%include "architecture/msgPayloadDefC/VehicleConfigMsgPayload.h"
-struct VehicleConfigMsg_C;
-%include "architecture/msgPayloadDefC/PlatformAnglesMsgPayload.h"
-struct PlatformAnglesMsg_C;
+/*! @brief Output structure for SEP thruster platform containing tip and tilt angles alpha and beta */
+typedef struct {
+    double alpha;         //!< [rad] Tip angle
+    double beta;          //!< [rad] Tilt angle
+}PlatformAnglesMsgPayload;
 
-%pythoncode %{
-import sys
-protectAllClasses(sys.modules[__name__])
-%}
+
+#endif
