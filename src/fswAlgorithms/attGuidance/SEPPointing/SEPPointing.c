@@ -63,7 +63,7 @@ void Reset_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_t
 */
 void Update_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_t moduleID)
 {
-    /*! - Read input message */
+    /*! - Create buffer messages */
     NavAttMsgPayload  attNavIn;
     AttRefMsgPayload  attRefOut;
 

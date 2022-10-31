@@ -17,40 +17,39 @@
 
  */
 
-#ifndef _SEP_POINTING_
-#define _SEP_POINTING_
+#ifndef _SOLAR_ARRAY_ROTATION_
+#define _SOLAR_ARRAY_ROTATION_
 
 #include <stdint.h>
 #include "architecture/utilities/bskLogging.h"
-#include "cMsgCInterface/AttRefMsg_C.h"
 #include "cMsgCInterface/NavAttMsg_C.h"
-
-#define EPS 1e-6
+#include "cMsgCInterface/AttRefMsg_C.h"
+#include "cMsgCInterface/SolarArrayAngleMsg_C.h"
 
 
 /*! @brief Top level structure for the sub-module routines. */
 typedef struct {
 
     /* declare these quantities that will eventually become input modules */
-    double F_current_B[3];                        //!< current thrust direction in B frame
-    double F_requested_N[3];                         //!< required thrust direction in N frame
-    double a_B[3];                                //!< arrays axis direction in B frame
+    double a1_B[3];                 //!< solar array drive axis in body frame coordinates
+    double a2_B[3];                 //!< solar array nominal zero direction
 
     /* declare module IO interfaces */
     NavAttMsg_C attNavInMsg;                      //!< input msg measured attitude
-    AttRefMsg_C attRefOutMsg;                     //!< output attitude reference message
+    AttRefMsg_C attRefInMsg;                      //!< input attitude reference message
+    SolarArrayAngleMsg_C solarArrayAngleOutMsg;   //!< output msg containing solar array target angle and angle rate
 
     BSKLogger *bskLogger;                         //!< BSK Logging
 
-}SEPPointingConfig;
+}solarArrayRotationConfig;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-    void SelfInit_SEPPointing(SEPPointingConfig *configData, int64_t moduleID);
-    void Reset_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_t moduleID);
-    void Update_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_t moduleID);
+    void SelfInit_solarArrayRotation(solarArrayRotationConfig *configData, int64_t moduleID);
+    void Reset_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t callTime, int64_t moduleID);
+    void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t callTime, int64_t moduleID);
 
 #ifdef __cplusplus
 }
