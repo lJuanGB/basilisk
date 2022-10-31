@@ -25,7 +25,7 @@
 #
 
 import pytest
-import os, inspect
+import os, inspect, random
 import numpy as np
 
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -54,38 +54,39 @@ from Basilisk.architecture import bskLogging
 # of the multiple test runs for this test.  Note that the order in that you add the parametrize method
 # matters for the documentation in that it impacts the order in which the test arguments are shown.
 # The first parametrize arguments are shown last in the pytest argument list
-@pytest.mark.parametrize("accuracy", [1e-12])
-# @pytest.mark.parametrize("param1, param2", [
-#      (1, 1)
-#     ,(1, 3)
-#     ,(2, 2)
-# ])
+@pytest.mark.parametrize("seed", list(np.linspace(1,10,10)))
+@pytest.mark.parametrize("CM_offset", [0.1, 0.2, 0.3])
+@pytest.mark.parametrize("accuracy", [1e-7])
 
 # update "module" in this function name to reflect the module name
-def test_platformRotation(show_plots, accuracy):
+def test_platformRotation(show_plots, CM_offset, seed, accuracy):
     r"""
     **Validation Test Description**
 
     
     """
     # each test method requires a single assert method to be called
-    [testResults, testMessage] = platformRotationTestFunction(show_plots, accuracy)
+    [testResults, testMessage] = platformRotationTestFunction(show_plots, seed, accuracy)
     assert testResults < 1, testMessage
 
 
-def platformRotationTestFunction(show_plots, accuracy):
+def platformRotationTestFunction(show_plots, seed, accuracy):
 
-    sigma_MB = [0., 0., 0.]
-    r_CB_B = [0.0, 0.0, 0.0]
-    r_BM_M = [0.0, 0.1, 0.4]
-    r_FM_F = [0.0, 0.0, -0.1]
-    r_TF_F = [-0.01, 0.03, 0.02]
-    T_F    = [1.0, 1.0, 10.0]
+    random.seed(seed)
 
-    testFailCount = 0                       # zero unit test result counter
-    testMessages = []                       # create empty array to store test log messages
-    unitTaskName = "unitTask"               # arbitrary name (don't change)
-    unitProcessName = "TestProcess"         # arbitrary name (don't change)
+    sigma_MB = np.array([0., 0., 0.])
+    r_BM_M = np.array([0.0, 0.1, 0.4])
+    r_FM_F = np.array([0.0, 0.0, -0.1])
+    r_TF_F = np.array([-0.01, 0.03, 0.02])
+    T_F    = np.array([1.0, 1.0, 10.0])
+
+    r_CB_B = np.array([0,0,0]) + np.random.rand(3)
+    r_CB_B = r_CB_B / np.linalg.norm(r_CB_B) * 0.1
+
+    testFailCount = 0                        # zero unit test result counter
+    testMessages = []                        # create empty array to store test log messages
+    unitTaskName = "unitTask"                # arbitrary name (don't change)
+    unitProcessName = "TestProcess"          # arbitrary name (don't change)
     bskLogging.setDefaultLogLevel(bskLogging.BSK_WARNING)
 
     # Create a sim module as an empty container
@@ -134,18 +135,20 @@ def platformRotationTestFunction(show_plots, accuracy):
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
-    alpha = dataLog.alpha
-    beta = dataLog.beta
+    alpha = dataLog.alpha[0]
+    beta = dataLog.beta[0]
 
-    FM = np.array([[np.cos(beta),  np.sin(alpha)*np.sin(beta), -np.cos(alpha)*np.sin(beta)],
+    FM = [[np.cos(beta),  np.sin(alpha)*np.sin(beta), -np.cos(alpha)*np.sin(beta)],
                    [      0     ,        np.cos(alpha)       ,        np.sin(alpha)       ],
-                   [np.sin(beta), -np.sin(alpha)*np.cos(beta),  np.cos(alpha)*np.cos(beta)]], dtype=object)
+                   [np.sin(beta), -np.sin(alpha)*np.cos(beta),  np.cos(alpha)*np.cos(beta)]]
 
     MB = rbk.MRP2C(sigma_MB)
+
     r_CB_M = np.matmul(MB, r_CB_B)
-    r_CM_M = r_CB_M + np.array(r_BM_M)
+    r_CM_M = r_CB_M + r_BM_M
     r_CM_F = np.matmul(FM, r_CM_M)
-    r_CT_F = r_CM_F - np.array(r_FM_F) - np.array(r_TF_F)
+    r_CT_F = r_CM_F - r_FM_F - r_TF_F
+
     offset = np.arccos( min( max( np.dot(r_CT_F, np.array(T_F)) / np.linalg.norm(np.array(r_CT_F)) / np.linalg.norm(np.array(T_F)), -1), 1) )
 
     # compare the module results to the truth values
@@ -165,5 +168,6 @@ def platformRotationTestFunction(show_plots, accuracy):
 if __name__ == "__main__":
     test_platformRotation(              # update "module" in function name
                  False,
-                 1e-12        # accuracy
+                 np.random.rand(1)[0],
+                 1e-7        # accuracy
                )
