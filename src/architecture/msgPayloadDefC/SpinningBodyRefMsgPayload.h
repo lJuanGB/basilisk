@@ -17,17 +17,17 @@
 
  */
 
-#ifndef SA_REQUESTED_ANGLE_MESSAGE_H
-#define SA_REQUESTED_ANGLE_MESSAGE_H
+#ifndef spinningBodyRefMsg_h
+#define spinningBodyRefMsg_h
 
 
 /*! @brief Output structure for SEP thruster platform containing tip and tilt angles alpha and beta */
 typedef struct {
-    double thetaR;         //!< [rad]   Requested solar array rotation angle
-    double thetaDotR;      //!< [rad/s] Requested solar array rotation angle rate
-    double thetaC;         //!< [rad]   Current solar array rotation angle
-    double thetaDotC;      //!< [rad/s] Current solar array rotation angle rate
-}SARequestedAngleMsgPayload;
+    double thetaR;         //!< [rad]   Requested spinning body rotation angle
+    double thetaDotR;      //!< [rad/s] Requested spinning body rotation angle rate
+    double thetaC;         //!< [rad]   Current spinning body rotation angle
+    double thetaDotC;      //!< [rad/s] Current spinning body rotation angle rate
+}SpinningBodyRefMsgPayload;
 
 
 #endif
