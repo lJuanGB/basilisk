@@ -17,15 +17,17 @@
 
  */
 
-#ifndef PLATFORM_ANGLES_MESSAGE_H
-#define PLATFORM_ANGLES_MESSAGE_H
+#ifndef SA_REQUESTED_ANGLE_MESSAGE_H
+#define SA_REQUESTED_ANGLE_MESSAGE_H
 
 
 /*! @brief Output structure for SEP thruster platform containing tip and tilt angles alpha and beta */
 typedef struct {
-    double theta;         //!< [rad] Taget solar array rotation angle
-    double thetaDot;      //!< [rad/s] Taget solar array rotation angle rate
-}SolarArrayAngleMsgPayload;
+    double thetaR;         //!< [rad]   Requested solar array rotation angle
+    double thetaDotR;      //!< [rad/s] Requested solar array rotation angle rate
+    double thetaC;         //!< [rad]   Current solar array rotation angle
+    double thetaDotC;      //!< [rad/s] Current solar array rotation angle rate
+}SARequestedAngleMsgPayload;
 
 
 #endif
