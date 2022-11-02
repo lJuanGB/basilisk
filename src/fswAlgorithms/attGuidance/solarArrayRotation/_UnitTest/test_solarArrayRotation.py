@@ -201,10 +201,10 @@ def solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, bodyFra
     # compare the module results to the truth values
     if not unitTestSupport.isDoubleEqual(dataLog.theta[0], thetaR, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaR for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
+        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "solarArrayRotation module failed unit test on thetaR for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
     if not unitTestSupport.isDoubleEqual(dataLog.thetaDot[0], 0, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaDotR for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
+        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "solarArrayRotation module failed unit test on thetaDotR for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
 
     # each test method requires a single assert method to be called
     # this check below just makes sure no sub-test failures were found
