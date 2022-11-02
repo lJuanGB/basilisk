@@ -25,7 +25,6 @@
 #include "cMsgCInterface/NavAttMsg_C.h"
 #include "cMsgCInterface/AttRefMsg_C.h"
 #include "cMsgCInterface/SpinningBodyMsg_C.h"
-#include "cMsgCInterface/SpinningBodyRefMsg_C.h"
 
 #define EPS 1e-6                    //!< accuracy to check if a variable is zero
 
@@ -40,10 +39,10 @@ typedef struct {
     /* declare module IO interfaces */
     NavAttMsg_C attNavInMsg;                      //!< input msg measured attitude
     AttRefMsg_C attRefInMsg;                      //!< input attitude reference message
-    SpinningBodyMsg_C    spinningBodyInMsg;       //!< input spinning body message
-    SpinningBodyRefMsg_C spinningBodyRefOutMsg;   //!< output msg containing spinning body target angle and angle rate
+    SpinningBodyMsg_C  spinningBodyInMsg;         //!< input spinning body message
+    SpinningBodyMsg_C  spinningBodyRefOutMsg;     //!< output msg containing spinning body target angle and angle rate
 
-    BSKLogger *bskLogger;                       //!< BSK Logging
+    BSKLogger *bskLogger;                         //!< BSK Logging
 
 }solarArrayRotationConfig;
 
