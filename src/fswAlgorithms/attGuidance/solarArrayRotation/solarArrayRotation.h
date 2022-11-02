@@ -27,7 +27,7 @@
 #include "cMsgCInterface/SpinningBodyMsg_C.h"
 #include "cMsgCInterface/SpinningBodyRefMsg_C.h"
 
-#define EPS 1e-6
+#define EPS 1e-6                    //!< accuracy to check if a variable is zero
 
 /*! @brief Top level structure for the sub-module routines. */
 typedef struct {
@@ -35,6 +35,7 @@ typedef struct {
     /* declare these quantities that will eventually become input modules */
     double a1_B[3];                 //!< solar array drive axis in body frame coordinates
     double a2_B[3];                 //!< solar array nominal zero direction
+    int bodyFrame;                  //!< flag = 1: compute theta reference based on current attitude instead of attitude reference
 
     /* declare module IO interfaces */
     NavAttMsg_C attNavInMsg;                      //!< input msg measured attitude
