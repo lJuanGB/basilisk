@@ -60,6 +60,9 @@ public:
     double l;
     Eigen::Vector3d r_P2P1_B1Init; // precribed position vector from spacecraft 1 connection point to spacecraft 2 connection point
 
+    Eigen::Vector3d psi_N;
+    Eigen::Vector3d psiPrime_N;
+
 	std::vector<StateData*> hubSigma;                           // class variable
     std::vector<StateData*> hubOmega;                           // class varaible
     std::vector<StateData*> hubPosition;                        // class variable

@@ -76,7 +76,6 @@ def test_constraintEffector(show_plots):
     scObject2.ModelTag = "spacecraftBody2"
 
     # Create the constraint effector module
-    breakpoint()
     constraintEffector = constraintDynamicEffector.ConstraintDynamicEffector()
 
     # Define properties of the constraint
@@ -92,10 +91,10 @@ def test_constraintEffector(show_plots):
 
     # Define mass properties of the rigid hub of both spacecraft
     scObject1.hub.mHub = 750.0
-    scObject1.hub.r_BcB_B = [[0.0], [0.0], [1.0]]
+    scObject1.hub.r_BcB_B = [[0.0], [0.0], [0.0]]
     scObject1.hub.IHubPntBc_B = [[900.0, 0.0, 0.0], [0.0, 800.0, 0.0], [0.0, 0.0, 600.0]]
     scObject2.hub.mHub = 250.0
-    scObject2.hub.r_BcB_B = [[0.0], [1.0], [0.0]]
+    scObject2.hub.r_BcB_B = [[0.0], [0.0], [0.0]]
     scObject2.hub.IHubPntBc_B = [[300.0, 0.0, 0.0], [0.0, 250.0, 0.0], [0.0, 0.0, 200.0]]
 
     # Set the initial values for the states
@@ -103,7 +102,7 @@ def test_constraintEffector(show_plots):
     scObject1.hub.v_CN_NInit = [[-5199.77710904224], [-3436.681645356935], [1041.576797498721]]
     scObject1.hub.sigma_BNInit = [[0.0], [0.0], [0.0]]
     scObject1.hub.omega_BN_BInit = [[0.0], [0.0], [0.0]]
-    scObject2.hub.r_CN_NInit = scObject1.hub.r_CN_NInit
+    scObject2.hub.r_CN_NInit = scObject1.hub.r_CN_NInit + constraintEffector.r_P1B1_B1 + constraintEffector.r_P2B2_B2 + constraintEffector.r_P2P1_B1Init
     scObject2.hub.v_CN_NInit = scObject1.hub.v_CN_NInit
     scObject2.hub.sigma_BNInit = scObject1.hub.sigma_BNInit
     scObject2.hub.omega_BN_BInit = scObject1.hub.omega_BN_BInit
@@ -119,14 +118,18 @@ def test_constraintEffector(show_plots):
     earthGravBody.mu = 0.3986004415E+15  # meters!
     earthGravBody.isCentralBody = True
     earthGravBody.useSphericalHarmParams = False
-    # scObject1.gravField.gravBodies = spacecraft.GravBodyVector([earthGravBody])
-    # scObject2.gravField.gravBodies = spacecraft.GravBodyVector([earthGravBody])
+    scObject1.gravField.gravBodies = spacecraft.GravBodyVector([earthGravBody])
+    scObject2.gravField.gravBodies = spacecraft.GravBodyVector([earthGravBody])
 
     # Log the spacecraft state message
     datLog1 = scObject1.scStateOutMsg.recorder()
     datLog2 = scObject2.scStateOutMsg.recorder()
     unitTestSim.AddModelToTask(unitTaskName, datLog1)
     unitTestSim.AddModelToTask(unitTaskName, datLog2)
+
+    # Add energy and momentum variables to log
+    unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".psi_N", testProcessRate, 0, 0, 'double')
+    unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".psiPrime_N", testProcessRate, 0, 0, 'double')
 
     # Initialize the simulation
     unitTestSim.InitializeSimulation()
@@ -136,8 +139,26 @@ def test_constraintEffector(show_plots):
     unitTestSim.ConfigureStopTime(macros.sec2nano(stopTime))
     unitTestSim.ExecuteSimulation()
 
+    # Extract the logged variables
+    psi_N = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".psi_N")
+    psiPrime_N = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".psiPrime_N")
+
+    # Grab the time vector
+    timeData = psi_N[:, 0] * 1e-9
+
     # Plotting
     plt.close("all")
+    plt.figure()
+    plt.clf()
+    plt.plot(timeData, constraintEffector.l + psi_N[:, 1])
+    plt.xlabel('time (s)')
+    plt.ylabel('psi_N')
+
+    plt.figure()
+    plt.clf()
+    plt.plot(timeData, psiPrime_N[:, 1])
+    plt.xlabel('time (s)')
+    plt.ylabel('psiPrime_N')
 
     if show_plots:
         plt.show()
@@ -146,34 +167,8 @@ def test_constraintEffector(show_plots):
     # Testing setup
     accuracy = 1e-12
 
-    # for i in range(0, len(initialOrbAngMom_N)):
-    #     # check a vector values
-    #     if not unitTestSupport.isArrayEqualRelative(finalOrbAngMom[i], initialOrbAngMom_N[i], 3, accuracy):
-    #         testFailCount += 1
-    #         testMessages.append(
-    #             "FAILED: Spinning Body integrated test failed orbital angular momentum unit test")
-    #
-    # for i in range(0, len(initialRotAngMom_N)):
-    #     # check a vector values
-    #     if not unitTestSupport.isArrayEqualRelative(finalRotAngMom[i], initialRotAngMom_N[i], 3, accuracy):
-    #         testFailCount += 1
-    #         testMessages.append(
-    #             "FAILED: Spinning Body integrated test failed rotational angular momentum unit test")
-    #
-    # for i in range(0, len(initialRotEnergy)):
-    #     # check a vector values
-    #     if not unitTestSupport.isArrayEqualRelative(finalRotEnergy[i], initialRotEnergy[i], 1, accuracy):
-    #         testFailCount += 1
-    #         testMessages.append("FAILED: Spinning Body integrated test failed rotational energy unit test")
-    #
-    # for i in range(0, len(initialOrbEnergy)):
-    #     # check a vector values
-    #     if not unitTestSupport.isArrayEqualRelative(finalOrbEnergy[i], initialOrbEnergy[i], 1, accuracy):
-    #         testFailCount += 1
-    #         testMessages.append("FAILED: Spinning Body integrated test failed orbital energy unit test")
-
     if testFailCount == 0:
-        print("PASSED: " + " Spinning Body gravity integrated test")
+        print("PASSED: " + " Constraint Effector integrated test")
 
     assert testFailCount < 1, testMessages
     # return fail count and join into a single string all messages in the list
@@ -182,4 +177,4 @@ def test_constraintEffector(show_plots):
 
 
 if __name__ == "__main__":
-    constraintEffectorTest(False)
+    constraintEffectorTest(True)

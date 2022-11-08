@@ -128,7 +128,6 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
             Eigen::Vector3d r_P1B1_N = dcm_B1N.transpose() * this->r_P1B1_B1;
             Eigen::Vector3d r_P2B2_N = dcm_B2N.transpose() * this->r_P2B2_B2;
             Eigen::Vector3d r_P2P1_N = r_P2B2_N + r_B2N_N - r_P1B1_N - r_B1N_N;
-            Eigen::Vector3d psi_N = r_P2P1_N - dcm_B1N.transpose() * this->r_P2P1_B1Init;
 
             // computing length constraint rate of change psiDot in the N frame
             Eigen::Vector3d rDot_P1B1_B1 = omega_B1N_B1.cross(r_P1B1_B1);
@@ -137,7 +136,11 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
             Eigen::Vector3d rDot_P2N_N = rDot_B2N_N + dcm_B2N.transpose() * rDot_P2B2_B2;
             Eigen::Vector3d rDot_P2P1_N = rDot_P2N_N - rDot_P1N_N;
             Eigen::Vector3d omega_B1N_N = dcm_B1N.transpose() * omega_B1N_B1;
-            Eigen::Vector3d psiPrime_N = rDot_P2P1_N - omega_B1N_N.cross(r_P2P1_N);
+            
+
+            // define the constraints
+            this->psi_N = r_P2P1_N - dcm_B1N.transpose() * this->r_P2P1_B1Init;
+            this->psiPrime_N = rDot_P2P1_N - omega_B1N_N.cross(r_P2P1_N);
 
             // calculative the difference in angular rate
             Eigen::Vector3d omega_B1N_B2 = dcm_B2N * dcm_B1N.transpose() * omega_B1N_B1;
@@ -147,7 +150,7 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
             Eigen::Vector3d sigma_B2B1 = eigenMRPd2Vector3d(eigenC2MRP(dcm_B2N * dcm_B1N.transpose()));
 
             // computing the constraint force
-            this->Fc_N = this->k * psi_N + this->c * psiPrime_N;
+            this->Fc_N = this->k * this->psi_N + this->c * this->psiPrime_N;
             this->forceExternal_N = this->Fc_N;
 
             // computing constraint torque from direction constraint
