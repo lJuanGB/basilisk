@@ -46,24 +46,40 @@ public:
     
 
 public:
+    // type of constraint to be implemented
+    std::string constraint_type;
+    
     // Gains for PD controller
     double alpha;
     double beta;
     double kI;
-    Eigen::Matrix3d K;
-    Eigen::Matrix3d P;
+    double kI_att;
+    double K;
+    double P;
 
-	std::vector<StateData*> hubSigma;                           //!< class variable
-    std::vector<StateData*> hubOmega;                           //!< class varaible
-    std::vector<StateData*> hubPosition;                           //!< class variable
-    std::vector<StateData*> hubVelocity;                           //!< class varaible
-    BSKLogger bskLogger;                      //!< -- BSK Logging
+    // Constraint length and direction
+    Eigen::Vector3d r_P1B1_B1; // position vector from spacecraft 1 hub to its connection point P1
+    Eigen::Vector3d r_P2B2_B2; // position vector from spacecraft 2 hub to its connection point P2
+    double l;
+    Eigen::Vector3d rInit_P2P1_B1; // precribed position vector from spacecraft 1 connection point to spacecraft 2 connection point
+
+	std::vector<StateData*> hubSigma;                           // class variable
+    std::vector<StateData*> hubOmega;                           // class varaible
+    std::vector<StateData*> hubPosition;                        // class variable
+    std::vector<StateData*> hubVelocity;                        // class varaible
+    BSKLogger bskLogger;                      //BSK Logging
 
 private:
-    double counter;
+    // Spacecraft order flag
+    int scCounterFlag;
+    // Spacecraft initialization counter, to kill simulation if more than two different spacecraft are called
+    double scInitCounter;
 
-    double c;
-    double p;
+    double k; // proportional gain
+    double c; // derivative gain
+
+    Eigen::Vector3d Fc_N;
+    Eigen::Vector3d L_B2;
 
 };
 
