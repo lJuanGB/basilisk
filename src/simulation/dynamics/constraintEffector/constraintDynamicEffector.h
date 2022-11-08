@@ -45,10 +45,7 @@ public:
     void UpdateState(uint64_t CurrentSimNanos);
     
 
-public:
-    // type of constraint to be implemented
-    std::string constraint_type;
-    
+public:   
     // Gains for PD controller
     double alpha;
     double beta;

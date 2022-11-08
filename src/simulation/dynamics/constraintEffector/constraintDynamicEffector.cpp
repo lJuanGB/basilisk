@@ -33,10 +33,7 @@
 
 /*! The Constructor.*/
 ConstraintDynamicEffector::ConstraintDynamicEffector()
-{
-    // type of constraint to be implemented
-    this->constraint_type = '';
-    
+{ 
     // counters and flags
     this->scInitCounter = 0.0;
     this->scCounterFlag = 1;
@@ -116,11 +113,13 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
         Eigen::Vector3d r_B1N_N = this->hubPosition[0]->getState();
         Eigen::Vector3d rDot_B1N_N = this->hubVelocity[0]->getState();
         Eigen::Vector3d omega_B1N_B1 = this->hubOmega[0]->getState();
-        Eigen::MRPd sigma_B1N = (Eigen::Vector3d) this->hubSigma[0]->getState();
+        Eigen::MRPd sigma_B1N;
+        sigma_B1N = (Eigen::Vector3d) this->hubSigma[0]->getState();
         Eigen::Vector3d r_B2N_N = this->hubPosition[1]->getState();
         Eigen::Vector3d rDot_B2N_N = this->hubVelocity[1]->getState();
         Eigen::Vector3d omega_B2N_B2 = this->hubOmega[1]->getState();
-        Eigen::MRPd sigma_B2N = (Eigen::Vector3d) this->hubOmega[1]->getState();
+        Eigen::MRPd sigma_B2N;
+        sigma_B2N = (Eigen::Vector3d) this->hubOmega[1]->getState();
 
         // computing direction constraint psi in the N frame
         Eigen::Matrix3d dcm_B1N = (sigma_B1N.toRotationMatrix()).transpose();
@@ -146,7 +145,7 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
         Eigen::Vector3d omega_B2B1_B2 = omega_B2N_B2 - omega_B1N_B2;
 
         // calculate the difference in attitude
-        Eigen::MRPd sigma_B2B1 = eigenC2MRP(dcm_B2N*dcm_NB1);
+        Eigen::Vector3d sigma_B2B1 = eigenMRPd2Vector3d(eigenC2MRP(dcm_B2N*dcm_NB1));
 
         // computing the constraint force
         this->Fc_N = this->k*psi_N + this->c*psiPrime_N;
@@ -159,7 +158,7 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
         Eigen::Vector3d L_B2_len = this->r_P2B2_B2.cross(Fc_B2);
 
         // computing constraint torque from attitude constraint
-        Eigen::Vector3d L_B2_att = -this->K*sigma_B2B1-this->P*omega_B2B1_B2;
+        Eigen::Vector3d L_B2_att = - this->K * sigma_B2B1 - this->P * omega_B2B1_B2;
 
         // total torque imparted on spacecraft 2
         this->L_B2 = L_B2_len + L_B2_att;
