@@ -66,11 +66,11 @@ def test_platformRotation(show_plots, CM_offset, seed, accuracy):
     
     """
     # each test method requires a single assert method to be called
-    [testResults, testMessage] = platformRotationTestFunction(show_plots, seed, accuracy)
+    [testResults, testMessage] = platformRotationTestFunction(show_plots, CM_offset, seed, accuracy)
     assert testResults < 1, testMessage
 
 
-def platformRotationTestFunction(show_plots, seed, accuracy):
+def platformRotationTestFunction(show_plots, CM_offset, seed, accuracy):
 
     random.seed(seed)
 
@@ -80,8 +80,10 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
     r_TF_F = np.array([-0.01, 0.03, 0.02])
     T_F    = np.array([1.0, 1.0, 10.0])
 
+    T_F_hat = T_F / np.linalg.norm(T_F)
+
     r_CB_B = np.array([0,0,0]) + np.random.rand(3)
-    r_CB_B = r_CB_B / np.linalg.norm(r_CB_B) * 0.1
+    r_CB_B = r_CB_B / np.linalg.norm(r_CB_B) * CM_offset
 
     testFailCount = 0                        # zero unit test result counter
     testMessages = []                        # create empty array to store test log messages
@@ -109,19 +111,26 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
     platformConfig.sigma_MB = sigma_MB
     platformConfig.r_BM_M = r_BM_M
     platformConfig.r_FM_F = r_FM_F
-    platformConfig.r_TF_F = r_TF_F
-    platformConfig.T_F    = T_F
 
-    # Create input message and size it because the regular creator of that message
-    # is not part of the test.
-    inputMessageData = messaging.VehicleConfigMsgPayload()    # Create a structure for the input message
-    inputMessageData.CoM_B = r_CB_B                 # Set up a list as a 3-vector
-    inputMsg = messaging.VehicleConfigMsg().write(inputMessageData)
-    platformConfig.vehConfigInMsg.subscribeTo(inputMsg)
+    # Create input VehicleConfigMsg
+    vehConfigData = messaging.VehicleConfigMsgPayload()    # Create a structure for the input message
+    vehConfigData.CoM_B = r_CB_B                 
+    vehConfigMsg = messaging.VehicleConfigMsg().write(vehConfigData)
+    platformConfig.vehConfigInMsg.subscribeTo(vehConfigMsg)
+
+    # Create input THRConfigMsg
+    THRConfigData = messaging.THRConfigMsgPayload()    # Create a structure for the input message
+    THRConfigData.rThrust_B = r_TF_F
+    THRConfigData.tHatThrust_B = T_F_hat
+    THRConfigData.maxThrust = np.linalg.norm(T_F)
+    THRConfigMsg = messaging.THRConfigMsg().write(THRConfigData)
+    platformConfig.thrConfigFInMsg.subscribeTo(THRConfigMsg)
 
     # Setup logging on the test module output message so that we get all the writes to it
-    dataLog = platformConfig.platformAnglesOutMsg.recorder()
-    unitTestSim.AddModelToTask(unitTaskName, dataLog)
+    anglesLog = platformConfig.platformAnglesOutMsg.recorder()
+    unitTestSim.AddModelToTask(unitTaskName, anglesLog)
+    thrDataLog = platformConfig.thrConfigBOutMsg.recorder()
+    unitTestSim.AddModelToTask(unitTaskName, thrDataLog)
 
     # Need to call the self-init and cross-init methods
     unitTestSim.InitializeSimulation()
@@ -135,8 +144,11 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
-    alpha = dataLog.alpha[0]
-    beta = dataLog.beta[0]
+    alpha = anglesLog.alpha[0]
+    beta = anglesLog.beta[0]
+
+    T_B_hat_output = thrDataLog.tHatThrust_B[0]
+    r_TB_B_output = thrDataLog.rThrust_B[0]
 
     FM = [[np.cos(beta),  np.sin(alpha)*np.sin(beta), -np.cos(alpha)*np.sin(beta)],
                    [      0     ,        np.cos(alpha)       ,        np.sin(alpha)       ],
@@ -144,17 +156,39 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
 
     MB = rbk.MRP2C(sigma_MB)
 
+    FB = np.matmul(FM, MB)
+
     r_CB_M = np.matmul(MB, r_CB_B)
     r_CM_M = r_CB_M + r_BM_M
     r_CM_F = np.matmul(FM, r_CM_M)
     r_CT_F = r_CM_F - r_FM_F - r_TF_F
 
+    r_TB_B = np.matmul(FB.transpose(), r_TF_F + r_FM_F) - np.matmul(MB.transpose(), r_BM_M)
+
     offset = np.arccos( min( max( np.dot(r_CT_F, np.array(T_F)) / np.linalg.norm(np.array(r_CT_F)) / np.linalg.norm(np.array(T_F)), -1), 1) )
 
-    # compare the module results to the truth values
+    T_B_hat = np.matmul(FB.transpose(), T_F_hat)
+
+    # check that the offset between thrust direction and CM is zero
     if not unitTestSupport.isDoubleEqual(offset, 0.0, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + platformWrap.ModelTag + "platformRotation module failed unit test\n")
+        testMessages.append("FAILED: " + platformWrap.ModelTag + "platformRotation module failed zero offset unit test\n")
+
+    # check that the thrust direction in body frame coordinates is correct
+    if not unitTestSupport.isVectorEqual(T_B_hat_output, T_B_hat, accuracy):
+        testFailCount += 1
+        testMessages.append("FAILED: " + platformWrap.ModelTag + "platformRotation module failed output thrust direction unit test\n")
+
+    # check that the thrust application point in B frame coordinates is correct
+    if not unitTestSupport.isVectorEqual(r_TB_B_output, r_TB_B, accuracy):
+        testFailCount += 1
+        testMessages.append("FAILED: " + platformWrap.ModelTag + "platformRotation module failed output thrust application point unit test\n")
+
+    # check that the output max trust is correct
+    if not unitTestSupport.isDoubleEqual(THRConfigData.maxThrust, thrDataLog.maxThrust[0], accuracy):
+        testFailCount += 1
+        testMessages.append("FAILED: " + platformWrap.ModelTag + "platformRotation module failed maximum thrust unit test\n")
+
 
     # each test method requires a single assert method to be called
     # this check below just makes sure no sub-test failures were found
@@ -168,6 +202,7 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
 if __name__ == "__main__":
     test_platformRotation(              # update "module" in function name
                  False,
+                 0.1,
                  np.random.rand(1)[0],
                  1e-7        # accuracy
                )
