@@ -37,6 +37,7 @@
 void SelfInit_platformRotation(platformRotationConfig *configData, int64_t moduleID)
 {
     PlatformAnglesMsg_C_init(&configData->platformAnglesOutMsg);
+    THRConfigMsg_C_init(&configData->thrConfigBOutMsg);
 }
 
 
@@ -53,6 +54,9 @@ void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTim
     if (!VehicleConfigMsg_C_isLinked(&configData->vehConfigInMsg)) {
         _bskLog(configData->bskLogger, BSK_ERROR, "Error: platformRotation.vehConfigInMsg wasn't connected.");
     }
+    if (!THRConfigMsg_C_isLinked(&configData->thrConfigFInMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: platformRotation.thrConfigFInMsg wasn't connected.");
+    }
 }
 
 /*! This method updates the platformAngles message based on the updated information about the system center of mass
@@ -64,14 +68,20 @@ void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTim
 void Update_platformRotation(platformRotationConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! - Read input message */
-    VehicleConfigMsgPayload  vehConfigMsgIn;
+    VehicleConfigMsgPayload   vehConfigMsgIn;
+    THRConfigMsgPayload       thrConfigIn_F;
+    THRConfigMsgPayload       thrConfigOut_B;
     PlatformAnglesMsgPayload  platformAnglesOut;
 
-    /*! - zero the output message */
+    /*! - zero the output messages */
     platformAnglesOut = PlatformAnglesMsg_C_zeroMsgPayload();
+    thrConfigOut_B = THRConfigMsg_C_zeroMsgPayload();
 
     /*! read the attitude navigation message */
     vehConfigMsgIn = VehicleConfigMsg_C_read(&configData->vehConfigInMsg);
+
+    /*! read the thruster configuration message */
+    thrConfigIn_F = THRConfigMsg_C_read(&configData->thrConfigFInMsg);
 
     /*! compute CM position w.r.t. M frame origin, in M coordinates */
     double r_CM_M[3], r_CM_F[3], r_CB_B[3], r_CB_M[3], MB[3][3];
@@ -83,7 +93,7 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     /*! define unit vectors of CM direction in M coordinates and thrust direction in F coordinates */
     double r_CM_M_hat[3], r_CM_F_hat[3], T_F_hat[3];
     v3Normalize(r_CM_M, r_CM_M_hat);
-    v3Normalize(configData->T_F, T_F_hat);
+    v3Normalize(thrConfigIn_F.tHatThrust_B, T_F_hat);
     v3Copy(r_CM_M_hat, r_CM_F_hat);        // assume zero initial rotation between F and M
 
     /*! compute first rotation to make T_F parallel to r_CM */
@@ -124,16 +134,17 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     m33MultV3(F1M, r_CM_M, r_CM_F);
 
     /*! compute position of CM w.r.t. thrust application point T */
-    double r_CT_F[3], r_CT_F_hat[3];
+    double r_TF_F[3], r_CT_F[3], r_CT_F_hat[3];
+    v3Copy(thrConfigIn_F.rThrust_B, r_TF_F);
     v3Subtract(r_CM_F, configData->r_FM_F, r_CT_F);
-    v3Subtract(r_CT_F, configData->r_TF_F, r_CT_F);
+    v3Subtract(r_CT_F, r_TF_F, r_CT_F);
     v3Normalize(r_CT_F, r_CT_F_hat);
 
     /*! compute second rotation to zero the offset between T_F and r_CT_F */
     double psi, e_psi[3];
     v3Cross(T_F_hat, r_CT_F_hat, e_psi);
     v3Normalize(e_psi, e_psi);
-    psi = computeSecondRotation(r_CM_F, configData->r_FM_F, configData->r_TF_F, r_CT_F, T_F_hat);
+    psi = computeSecondRotation(r_CM_F, configData->r_FM_F, r_TF_F, r_CT_F, T_F_hat);
 
     /*! define intermediate platform rotation F2M */
     double F2F1[3][3], F2M[3][3], PRV_psi[3];
@@ -157,8 +168,24 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     platformAnglesOut.alpha = atan2(F3M[1][2], F3M[1][1]);
     platformAnglesOut.beta  = atan2(F3M[2][0], F3M[0][0]);
 
-    /* write output message */
+    /*! define mapping between final platform frame F3 and body frame F3B */
+    double F3B[3][3];
+    m33MultM33(F3M, MB, F3B);
+
+    /*! compute thruster application point w.r.t. B frame, in B frame components r_TB_B */
+    double r_BM_F[3], r_TB_F[3];
+    m33MultV3(F3M, configData->r_BM_M, r_BM_F);
+    v3Add(configData->r_FM_F, r_TF_F, r_TB_F);
+    v3Subtract(r_TB_F, r_BM_F, r_BM_F);
+
+    /*! populate thrConfigOut_B */
+    m33tMultV3(F3B, r_BM_F, thrConfigOut_B.rThrust_B);
+    m33tMultV3(F3B, T_F_hat, thrConfigOut_B.tHatThrust_B);
+    thrConfigOut_B.maxThrust = thrConfigIn_F.maxThrust;
+
+    /* write output messages */
     PlatformAnglesMsg_C_write(&platformAnglesOut, &configData->platformAnglesOutMsg, moduleID, callTime);
+    THRConfigMsg_C_write(&thrConfigOut_B, &configData->thrConfigBOutMsg, moduleID, callTime);
 
     return;
 }

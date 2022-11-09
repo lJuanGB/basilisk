@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include "architecture/utilities/bskLogging.h"
 #include "cMsgCInterface/VehicleConfigMsg_C.h"
+#include "cMsgCInterface/THRConfigMsg_C.h"
 #include "cMsgCInterface/PlatformAnglesMsg_C.h"
 
 #define EPS 1e-6
@@ -34,11 +35,11 @@ typedef struct {
     double sigma_MB[3];                      //!< orientation of the M frame w.r.t. the B frame
     double r_BM_M[3];                        //!< position of B frame origin w.r.t. M frame origin, in M frame coordinates
     double r_FM_F[3];                        //!< position of F frame origin w.r.t. M frame origin, in F frame coordinates
-    double r_TF_F[3];                        //!< position of the thrust application point w.r.t. F frame origin, in F frame coordinates
-    double T_F[3];                           //!< thrust vector in F frame coordinates
-
+    
     /* declare module IO interfaces */
-    VehicleConfigMsg_C vehConfigInMsg;            //!< input msg vehicle configuration msg (needed for CM location)
+    VehicleConfigMsg_C  vehConfigInMsg;           //!< input msg vehicle configuration msg (needed for CM location)
+    THRConfigMsg_C      thrConfigFInMsg;          //!< input thruster config msg expressed in the platform frame F
+    THRConfigMsg_C      thrConfigBOutMsg;         //!< output thruster config msg expressed in the body frame B
     PlatformAnglesMsg_C platformAnglesOutMsg;     //!< output msg containing platform tip and tilt angles
 
     BSKLogger *bskLogger;                         //!< BSK Logging

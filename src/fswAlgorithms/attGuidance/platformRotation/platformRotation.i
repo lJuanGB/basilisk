@@ -33,6 +33,8 @@
 
 %include "architecture/msgPayloadDefC/VehicleConfigMsgPayload.h"
 struct VehicleConfigMsg_C;
+%include "architecture/msgPayloadDefC/THRConfigMsgPayload.h"
+struct THRConfigMsg_C;
 %include "architecture/msgPayloadDefC/PlatformAnglesMsgPayload.h"
 struct PlatformAnglesMsg_C;
 
