@@ -33,6 +33,8 @@
 
 %include "architecture/msgPayloadDefC/NavAttMsgPayload.h"
 struct NavAttMsg_C;
+%include "architecture/msgPayloadDefC/THRConfigMsgPayload.h"
+struct THRConfigMsg_C;
 %include "architecture/msgPayloadDefC/AttRefMsgPayload.h"
 struct AttRefMsg_C;
 

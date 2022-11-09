@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include "architecture/utilities/bskLogging.h"
 #include "cMsgCInterface/AttRefMsg_C.h"
+#include "cMsgCInterface/THRConfigMsg_C.h"
 #include "cMsgCInterface/NavAttMsg_C.h"
 
 #define EPS 1e-6
@@ -32,13 +33,13 @@
 typedef struct {
 
     /* declare these quantities that will eventually become input modules */
-    double F_current_B[3];                        //!< current thrust direction in B frame
-    double F_requested_N[3];                         //!< required thrust direction in N frame
+    double F_requested_N[3];                      //!< required thrust direction in N frame
     double a_B[3];                                //!< arrays axis direction in B frame
 
     /* declare module IO interfaces */
-    NavAttMsg_C attNavInMsg;                      //!< input msg measured attitude
-    AttRefMsg_C attRefOutMsg;                     //!< output attitude reference message
+    NavAttMsg_C    attNavInMsg;                   //!< input msg measured attitude
+    THRConfigMsg_C thrConfigInMsg;                //!< input thruster config msg
+    AttRefMsg_C    attRefOutMsg;                  //!< output attitude reference message
 
     BSKLogger *bskLogger;                         //!< BSK Logging
 

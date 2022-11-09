@@ -53,6 +53,9 @@ void Reset_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_t
     if (!NavAttMsg_C_isLinked(&configData->attNavInMsg)) {
         _bskLog(configData->bskLogger, BSK_ERROR, "Error: SEPPointing.attNavInMsg wasn't connected.");
     }
+    if (!THRConfigMsg_C_isLinked(&configData->thrConfigInMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: SEPPointing.thrConfigInMsg wasn't connected.");
+    }
 }
 
 /*! Add a description of what this main Update() routine does for this module
@@ -64,8 +67,9 @@ void Reset_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_t
 void Update_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! - Create buffer messages */
-    NavAttMsgPayload  attNavIn;
-    AttRefMsgPayload  attRefOut;
+    NavAttMsgPayload    attNavIn;
+    THRConfigMsgPayload thrConfigIn;
+    AttRefMsgPayload    attRefOut;
 
     /*! - zero the output message */
     attRefOut = AttRefMsg_C_zeroMsgPayload();
@@ -73,13 +77,16 @@ void Update_SEPPointing(SEPPointingConfig *configData, uint64_t callTime, int64_
     /* read the attitude navigation message */
     attNavIn = NavAttMsg_C_read(&configData->attNavInMsg);
 
+    /*! read the thruster configuration message */
+    thrConfigIn = THRConfigMsg_C_read(&configData->thrConfigInMsg);
+
     double BN[3][3];
     MRP2C(attNavIn.sigma_BN, BN);
 
     // define the current thrust direction in B frame and the target thrust direction in the N frame
     // these are currently hardcoded but will have to be read from an input message
     double F_current_B[3], F_requested_N[3], a_B[3];
-    v3Normalize(configData->F_current_B, F_current_B);
+    v3Normalize(thrConfigIn.tHatThrust_B, F_current_B);
     v3Normalize(configData->F_requested_N, F_requested_N);
     v3Normalize(configData->a_B, a_B);
     /*

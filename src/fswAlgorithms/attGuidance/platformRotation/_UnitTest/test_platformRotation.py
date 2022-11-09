@@ -54,7 +54,7 @@ from Basilisk.architecture import bskLogging
 # of the multiple test runs for this test.  Note that the order in that you add the parametrize method
 # matters for the documentation in that it impacts the order in which the test arguments are shown.
 # The first parametrize arguments are shown last in the pytest argument list
-@pytest.mark.parametrize("seed", list(np.linspace(1,10,10)))
+@pytest.mark.parametrize("seed", list(np.linspace(1,10,5)))
 @pytest.mark.parametrize("CM_offset", [0.1, 0.2, 0.3])
 @pytest.mark.parametrize("accuracy", [1e-7])
 
