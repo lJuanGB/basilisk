@@ -174,7 +174,6 @@ def SEPPointingTestFunction(show_plots, alpha, delta, accuracy):
 
     # Initialize the test module configuration data
     # These will eventually become input messages
-    SEPConfig.F_current_B = F_B
     SEPConfig.F_requested_N = F_N
     SEPConfig.a_B = sA_B
 
@@ -188,6 +187,13 @@ def SEPPointingTestFunction(show_plots, alpha, delta, accuracy):
     NavAttMsg = messaging.NavAttMsg().write(NavAttMessageData)
     SEPConfig.attNavInMsg.subscribeTo(NavAttMsg)
 
+    # Create input THRConfigMsg
+    THRConfigData = messaging.THRConfigMsgPayload()    # Create a structure for the input message
+    THRConfigData.rThrust_B = [0, 0, 0]                # not relevant for this unit test
+    THRConfigData.tHatThrust_B = F_B
+    THRConfigData.maxThrust = 10                       # not relevant for this unit test
+    THRConfigMsg = messaging.THRConfigMsg().write(THRConfigData)
+    SEPConfig.thrConfigInMsg.subscribeTo(THRConfigMsg)
 
     # Setup logging on the test module output message so that we get all the writes to it
     dataLog = SEPConfig.attRefOutMsg.recorder()
