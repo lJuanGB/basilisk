@@ -1,21 +1,15 @@
 Executive Summary
 -----------------
-Provide a brief introduction to purpose and intent of this module.  This should be a short description.
-If this requires lots explanation, images, equations, etc., then use the `Detailed Module Description`_
-section below.
+
+This module is used to calculate the required rotation angle for a solar array that is able to rotate about its drive axis. The degree of freedom associated with the rotation of the array about
+the drive axis makes it such that it is possible to improve the incidence angle between the sun and the array surface, thus ensuring maximum power generation.
+
 
 Message Connection Descriptions
 -------------------------------
-The following table lists all the module input and output messages.  The module msg variable name is set by the
+The following table lists all the module input and output messages.  The module msg connection is set by the
 user from python.  The msg type contains a link to the message structure definition, while the description
 provides information on what this message is used for.
-
-.. _ModuleIO_FSW_MODULE_TEMPLATE:
-.. figure:: /../../src/moduleTemplates/cModuleTemplate/_Documentation/Images/moduleIOcModuleTemplate.svg
-    :align: center
-
-    Figure 1: ``cModuleTemplate()`` Module I/O Illustration
-
 
 .. list-table:: Module I/O Messages
     :widths: 25 25 50
@@ -24,292 +18,80 @@ provides information on what this message is used for.
     * - Msg Variable Name
       - Msg Type
       - Description
-    * - dataInMsg
-      - :ref:`CModuleTemplateMsgPayload`
-      - (optional) Input message description.  Note here if this message is optional, and what the default behavior
-        is if this message is not provided.
-    * - dataOutMsg
-      - :ref:`CModuleTemplateMsgPayload`
-      - Output message description.
-
-Detailed Module Description
----------------------------
-Provide a brief introduction to the material being discussed in this report.  For example, include what the
-motivation is, maybe provide a supportive figure such as shown below, reference earlier work if needed in a
-literature review web links. Describe the module including mathematics, implementation, etc.
-
-Equations
-^^^^^^^^^
-Equations can be provided with LaTeX as well.  For example, the code::
-
-    :math:`a = b^{2}`
-
-produces this equation inline :math:`a = b^{2}` equation.  In contrast, this code::
-
-    .. math::
-        a = b^2
-
-or this compact version for 1 liners::
-
-    .. math:: a = b^2
-
-creates this block of math.
-
-.. math::
-    a = b^2
-
-To create a numbered equation you need to add a label::
-
-    .. math::
-        :label: eq-fswModule-firstLaw
-
-        a = b^2
-
-which creates this
-
-.. math::
-    :label: eq-fswModule-firstLaw
-
-    a = b^2
-
-This label can be referenced using ``:eq:`eq-fswModule-firstLaw``` to cite Eq. :eq:`eq-fswModule-firstLaw`.
-Note that these label names must be unique across all of the Basilisk RST documentation.  It is encouraged to use
-a module-unique naming scheme.
-
-To do bold math, we can't use the popular ``\bm`` command.  Instead, we can use ``{\bf u}`` (regular letters) or
-``\pmb \omega`` (greek letters).  The following math is an example of this showing both bold and un-bold letters
-next to each other:
-
-.. math:: {\bf u} u = 3 \hat{\bf e}_3
-    :label: eq-2
-
-.. math::  \pmb \omega \omega = 2 \hat{\imath}_{\theta}
-    :label: eq-3
-
-More details on how to typeset TeX math in Sphinx can be found `here <https://documentation.help/Sphinx/math.html>`__.
-
-If the module description requires extensive math discussion, this can be TeX'd up using the technical note
-template inside the ``_Documentation`` folder. A link should be included in the HTML documentation to
-the :download:`Detailed PDF Documentation </../../src/moduleTemplates/cModuleTemplate/_Documentation/Basilisk-MODULENAME.pdf>`
-using the code::
-
-    :download:`Detailed PDF Documentation </../../src/moduleTemplates/cModuleTemplate/_Documentation/Basilisk-MODULENAME.pdf>`
-
-The PDF technical should only be used as a last resort effort if the math is simply too complex and long to
-include in the `spinx` documentation.  Another option is to link to a web site, conference paper, journal
-paper, book or thesis document that discussed the mathematical developments used.
-
-Citations
-^^^^^^^^^
-If you want to cite other papers or text, provide a web link to a paper.  For example::
-
-    `The link text <http://example.net/>`__
-
-creates `The link text <http://example.net/>`__.
-
-Images and Figures
-^^^^^^^^^^^^^^^^^^
-To include static, non-``pytest`` generated images and figures, you must copy the web compatible image (svg, jpg, png)
-to a local sub-folder ``cModuleTemplate/_Documentation/Images/``.   This keeps the modules images grouped
-within this sub-folder and contained within the main module folder.  The SVG image format is preferred as it is
-a vectorized format that renders in a higher quality.  Further, when viewed in dark mode the svg will
-automatically convert to a dark image (preserving colors).  Pixelated formats such as jpg and png remain the same
-in light and dark mode of the documentation web page.
-
-For example, to include an image (has no caption) you can use code such as::
-
-    .. image:: /../../src/moduleTemplates/cModuleTemplate/_Documentation/Images/fig1.svg
-        :align: center
-
-to generate the following image.
-
-.. image:: /../../src/moduleTemplates/cModuleTemplate/_Documentation/Images/fig1.svg
-     :align: center
-
-Note that with pixelated images such as ``jpg`` and ``png`` format save the file at twice the resolution
-that you need, then provide ``:scale: 50 %`` to shrink it to the normal size.  This way the image has
-enough resolution to look good on high-resolution displays.
-
-To include a figure (has a caption and you can add label), use the following code::
-
-    .. _figLabel:
-    .. figure:: /../../src/moduleTemplates/cModuleTemplate/_Documentation/Images/fig1.svg
-        :align: center
-
-        Figure 2: Concept Illustration of the Math used in this Module
-
-This yields
-
-.. _figLabel:
-.. figure:: /../../src/moduleTemplates/cModuleTemplate/_Documentation/Images/fig1.svg
-    :align: center
-
-    Figure 2: Concept Illustration of the Math used in this Module
-
-You can cite the figure using ``:ref:`figLabel```. For example, as seen in :ref:`figLabel`, the figure can
-now be referenced.
-
-More information on how to include images or figures using sphinx can be found
-`here <http://docutils.sourceforge.net/docs/ref/rst/directives.html#images>`__.  In particular, it is
-also possible to include an image as a figure which has a caption.
-
-
-Tables
-^^^^^^
-The standard sphinx table formatting can be used to generate tables.  More information on spinx table formatting
-can be found `here <http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html#grid-tables>`__.
-For example, the code::
-
-    .. table:: Module I/O Messages
-
-        +------------------------+------------+----------+----------+
-        | Header row, column 1   | Header 2   | Header 3 | Header 4 |
-        | (header rows optional) |            |          |          |
-        +========================+============+==========+==========+
-        | body row 1, column 1   | column 2   | column 3 | column 4 |
-        +------------------------+------------+----------+----------+
-        | body row 2             | Cells may span columns.          |
-        +------------------------+------------+---------------------+
-        | body row 3             | Cells may  | - Table cells       |
-        +------------------------+ span rows. | - contain           |
-        | body row 4             |            | - body elements.    |
-        +------------------------+------------+---------------------+
-
-will generate the following table:
-
-.. table:: Module I/O Messages
-
-        +------------------------+------------+----------+----------+
-        | Header row, column 1   | Header 2   | Header 3 | Header 4 |
-        | (header rows optional) |            |          |          |
-        +========================+============+==========+==========+
-        | body row 1, column 1   | column 2   | column 3 | column 4 |
-        +------------------------+------------+----------+----------+
-        | body row 2             | Cells may span columns.          |
-        +------------------------+------------+---------------------+
-        | body row 3             | Cells may  | - Table cells       |
-        +------------------------+ span rows. | - contain           |
-        | body row 4             |            | - body elements.    |
-        +------------------------+------------+---------------------+
-
-
-
-.. note:: Doing tables with spinx is not simple.  The table outline must abide by tedious spacing rules.
-
-The ``list-table`` command is nice in that it allows for a simple table to be created where the table
-structure does not have to be drawn with ASCII vertical and horizontal lines.  However, the formatting options
-are more limited than with the above method.  See
-`documentation <https://docutils.sourceforge.io/docs/ref/rst/directives.html#list-table>`__ for more info.
-For example, the code::
-
-    .. list-table:: List Based Table Title
-        :widths: auto
-        :header-rows: 1
-
-        * - Header 1
-          - Header 2
-          - Header 3
-        * - Label 1
-          - text
-          - more text
-        * - Label 2
-          - text
-          -
-        * - Label 3
-          - text
-          - some more text
-
-will produce this table:
-
-.. list-table:: List Based Table Title
-    :widths: auto
-    :header-rows: 1
-
-    * - Header 1
-      - Header 2
-      - Header 3
-    * - Label 1
-      - text
-      - more text
-    * - Label 2
-      - text
-      -
-    * - Label 3
-      - text
-      - some more text
-
-HTML Highlight Options
-----------------------
-With Sphinx you can easily create HTML highlight blocks called admonitions such as
-attention, caution, danger, error, hint, important, note, tip, warning.  Here are samples of what these
-blocks look like.
-
-.. danger::
-
-    text goes here
-
-.. error::
-
-    text goes here
-
-.. attention::
-
-    text goes here
-
-.. caution::
-
-    text goes here
-
-.. warning::
-
-    text goes here
-
-.. hint::
-
-    text goes here
-
-.. important::
-
-    text goes here
-
-.. tip::
-
-    text goes here
-
-.. note::
-
-    text goes here
+    * - spinningBodyRefOutMsg
+      - :ref:`SpinningBodyRefMsgPayload`
+      - Output Spinning Body Reference Message.
+    * - attNavInMsg
+      - :ref:`NavAttMsgPayload`
+      - Input Attitude Navigation Message.
+    * - attRefInMsg
+      - :ref:`AttRefMsgPayload`
+      - Input Attitude Reference Message.
+    * - spinningBodyInMsg
+      - :ref:`SpinningBodyMsgPayload`
+      - Input Spinning Body Message Message.
 
 
 Module Assumptions and Limitations
 ----------------------------------
-This section should describe the assumptions used in formulating the mathematical model and how those assumptions
-limit the usefulness of the module.
+This module computes the rotation angle required to achieve the best incidence angle between the Sun direction and the solar array surface(s). This does not mean that
+perfect incidence (Sun direction perpendicular to array surface) is always achievable. This module assumes that the solar array is symmetrical, which in this case means
+that both surfaces are able to generate power when sunlit. This bounds the output reference angle :math:`\theta_R` between :math:`0` and :math:`\pi`. Perfect incidence
+is achievable when the solar array drive direction and the Sun direction are perpendicular. Conversely, when they are parallel, no power generation is possible, and
+the reference angle is set to the current angle, to avoid pointless energy consumption attempting to rotate the array(s).
+
+The Sun direction in body-frame components is extracted from the ``attNavInMsg``. The output reference angle :math:`\theta_R`, however, can be computed either based on the 
+reference attitude contained in ``attRefInMsg``, or the current spacecraft attitude contained also in ``attNavInMsg``. This depends on the frequency with which the arrays
+are actuated, in comparison with the frequency with which the motion of the spacecraft hub is controlled. The module input ``bodyFrame`` allows the user to set whether to 
+compute the reference angle based on the reference attitude or current spacecraft attitude.
+
+
+Detailed Module Description
+---------------------------
+For this module to operate, the user needs to provide two unit directions as inputs:
+
+- :math:`{}^\mathcal{B}\boldsymbol{\hat{a}}_1`: direction of the solar array drive, about which the rotation happens;
+- :math:`{}^\mathcal{B}\boldsymbol{\hat{a}}_2`: direction perpendicular to the solar array surface, corresponding to a zero rotation.
+
+To compute the reference rotation :math:`\theta_R`, the module computes the unit vector :math:`{}^\mathcal{R}\boldsymbol{\hat{a}}_2'`, which is coplanar with 
+:math:`{}^\mathcal{R}\boldsymbol{\hat{a}}_1` and the Sun direction :math:`{}^\mathcal{R}\boldsymbol{\hat{r}}_S`. This is obtained as:
+
+.. math::
+    {}^\mathcal{R}\boldsymbol{a}_2' = {}^\mathcal{R}\boldsymbol{\hat{r}}_S - ({}^\mathcal{R}\boldsymbol{\hat{r}}_S \cdot {}^\mathcal{B}\boldsymbol{\hat{a}}_1) {}^\mathcal{B}\boldsymbol{\hat{a}}_1
+
+and then normalizing to obtain :math:`{}^\mathcal{R}\boldsymbol{\hat{a}}_2'`. The reference angle :math:`\theta_R` is the angle between :math:`{}^\mathcal{R}\boldsymbol{\hat{a}}_2` and 
+:math:`{}^\mathcal{R}\boldsymbol{\hat{a}}_2'`:
+
+.. math::
+    \theta_R = \arccos ({}^\mathcal{R}\boldsymbol{\hat{a}}_2 \cdot {}^\mathcal{R}\boldsymbol{\hat{a}}_2').
+
+The same math applies to the case where the body reference is used. In that case, the same vectors are expressed in body-frame coordinates. Note that the unit directions 
+:math:`\boldsymbol{\hat{a}}_i` have the same components in both the body and reference frame, because they are body-fixed and rotate with the spacecraft hub.
 
 
 User Guide
 ----------
-This section contains information directed specifically to users. It contains clear descriptions of what inputs
-are needed and what effect they have. It should also help the user be able to use the model for the first time.
+The required module configuration is::
 
-Add sample code as needed.  For example, to specify that the module variables ``dummy`` and ``dumVector`` must
-be setup first, you can include python formatted code block using::
+    solarArrayConfig = solarArrayRotation.solarArrayRotationConfig()
+    solarArrayWrap = unitTestSim.setModelDataWrap(solarArrayConfig)
+    solarArrayWrap.ModelTag = "solarArrayRotation"  
+    solarArrayConfig.a1_B = [1, 0, 0]
+    solarArrayConfig.a2_B = [0, 0, 1]
+    solarArrayConfig.bodyFrame = 0
+    unitTestSim.AddModelToTask(unitTaskName, solarArrayWrap, solarArrayConfig)
+	
+The module is configurable with the following parameters:
 
-    .. code-block:: python
-        :linenos:
+.. list-table:: Module Parameters
+   :widths: 34 66
+   :header-rows: 1
 
-        moduleConfig.dummy = 1
-        moduleConfig.dumVector = [1., 2., 3.]
-
-to show:
-
-.. code-block:: python
-    :linenos:
-
-    moduleConfig.dummy = 1
-    moduleConfig.dumVector = [1., 2., 3.]
-
-More information of including code blocks can be found `here <https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#directive-code-block>`_.
-
-In the user guide, provide sub-sections as need to help explain how to use this module, list what variables
-must be set, discuss variables that might have default values if not specified by the user, etc.
+   * - Parameter
+     - Description
+   * - ``a1_B``
+     - solar array drive direction in B-frame coordinates
+   * - ``a2_B``
+     - solar array zero-rotation direction, in B-frame coordinates
+   * - ``bodyFrame``
+     - 0 for reference angle computed w.r.t reference frame; 1 for reference angle computed w.r.t. body frame; defaults to 0 if not specified
