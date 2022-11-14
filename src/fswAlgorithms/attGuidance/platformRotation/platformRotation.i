@@ -35,6 +35,8 @@
 struct VehicleConfigMsg_C;
 %include "architecture/msgPayloadDefC/PlatformAnglesMsgPayload.h"
 struct PlatformAnglesMsg_C;
+%include "architecture/msgPayloadDefC/BodyHeadingMsgPayload.h"
+struct BodyHeadingMsg_C;
 
 %pythoncode %{
 import sys
