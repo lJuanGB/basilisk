@@ -36,7 +36,7 @@
  */
 void SelfInit_solarArrayRotation(solarArrayRotationConfig *configData, int64_t moduleID)
 {
-    SpinningBodyRefMsg_C_init(&configData->spinningBodyRefOutMsg);
+    SpinningBodyMsg_C_init(&configData->spinningBodyRefOutMsg);
 }
 
 
@@ -63,7 +63,7 @@ void Reset_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t cal
     }
 }
 
-/*! Add a description of what this main Update() routine does for this module
+/*! This method computes the updated rotation angle reference based on current attitude, reference attitude, and current rotation angle
  @return void
  @param configData The configuration data associated with the module
  @param callTime The clock time at which the function was called (nanoseconds)
@@ -72,13 +72,13 @@ void Reset_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t cal
 void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! - Create buffer messages */
-    NavAttMsgPayload            attNavIn;
-    AttRefMsgPayload            attRefIn;
-    SpinningBodyMsgPayload      spinningBodyIn;
-    SpinningBodyRefMsgPayload   spinningBodyRefOut;
+    NavAttMsgPayload         attNavIn;
+    AttRefMsgPayload         attRefIn;
+    SpinningBodyMsgPayload   spinningBodyIn;
+    SpinningBodyMsgPayload   spinningBodyRefOut;
 
     /*! - zero the output message */
-    spinningBodyRefOut = SpinningBodyRefMsg_C_zeroMsgPayload();
+    spinningBodyRefOut = SpinningBodyMsg_C_zeroMsgPayload();
 
     /*! read the attitude navigation message */
     attNavIn = NavAttMsg_C_read(&configData->attNavInMsg);
@@ -121,34 +121,34 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     }
     v3Normalize(a2_R_target, a2_R_target);
 
-    /* compute rotation angle theta */
+    /* compute reference rotation angle theta */
     double thetaR;
     double thetaC, sinThetaC, cosThetaC;
-    // clip thetaC between 0 an pi
+    // clip theta current between 0 an pi
     sinThetaC = sin(spinningBodyIn.theta);
     cosThetaC = cos(spinningBodyIn.theta);
     thetaC = atan2(sinThetaC, cosThetaC);
     // compute shortest angle difference
     if (v3Norm(a2_R_target) < EPS) {
-        thetaR = thetaC;
+        spinningBodyRefOut.theta = spinningBodyIn.theta;
     }
     else {
         thetaR = acos( fmin(fmax(v3Dot(a2_R_nominal, a2_R_target),-1),1) );
         if (thetaR - thetaC > M_PI/2) {
-            thetaC += M_PI;
+            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC - M_PI;
         }
         else if (thetaR - thetaC < - M_PI/2) {
-            thetaC -= M_PI;
+            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC + M_PI;
+        }
+        else {
+            spinningBodyRefOut.theta = thetaR;
         }
     }
 
-    spinningBodyRefOut.thetaR = thetaR;
-    spinningBodyRefOut.thetaDotR = 0;
-    spinningBodyRefOut.thetaC = thetaC;
-    spinningBodyRefOut.thetaDotC = spinningBodyIn.thetaDot;
+    spinningBodyRefOut.thetaDot = 0;
 
     /* write output message */
-    SpinningBodyRefMsg_C_write(&spinningBodyRefOut, &configData->spinningBodyRefOutMsg, moduleID, callTime);
+    SpinningBodyMsg_C_write(&spinningBodyRefOut, &configData->spinningBodyRefOutMsg, moduleID, callTime);
 
     return;
 }

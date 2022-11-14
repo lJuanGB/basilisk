@@ -19,7 +19,7 @@ provides information on what this message is used for.
       - Msg Type
       - Description
     * - spinningBodyRefOutMsg
-      - :ref:`SpinningBodyRefMsgPayload`
+      - :ref:`SpinningBodyMsgPayload`
       - Output Spinning Body Reference Message.
     * - attNavInMsg
       - :ref:`NavAttMsgPayload`
@@ -67,6 +67,9 @@ and then normalizing to obtain :math:`{}^\mathcal{R}\boldsymbol{\hat{a}}_2'`. Th
 
 The same math applies to the case where the body reference is used. In that case, the same vectors are expressed in body-frame coordinates. Note that the unit directions 
 :math:`\boldsymbol{\hat{a}}_i` have the same components in both the body and reference frame, because they are body-fixed and rotate with the spacecraft hub.
+
+Some logic is implemented such that the computed reference angle :math:`\theta_R` and the current rotation angle :math:`\theta_C` received as input from the ``spinningBodyInMsg`` are never
+more than :math:`\pi/2` apart.
 
 
 User Guide
