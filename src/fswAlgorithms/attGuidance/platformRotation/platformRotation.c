@@ -55,7 +55,7 @@ void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTim
     }
 }
 
-/*! Add a description of what this main Update() routine does for this module
+/*! This method updates the platformAngles message based on the updated information about the system center of mass
  @return void
  @param configData The configuration data associated with the module
  @param callTime The clock time at which the function was called (nanoseconds)

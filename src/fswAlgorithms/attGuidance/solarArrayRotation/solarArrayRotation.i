@@ -37,8 +37,6 @@ struct NavAttMsg_C;
 struct AttRefMsg_C;
 %include "architecture/msgPayloadDefC/SpinningBodyMsgPayload.h"
 struct SpinningBodyMsg_C;
-%include "architecture/msgPayloadDefC/SpinningBodyRefMsgPayload.h"
-struct SpinningBodyRefMsg_C;
 
 %pythoncode %{
 import sys

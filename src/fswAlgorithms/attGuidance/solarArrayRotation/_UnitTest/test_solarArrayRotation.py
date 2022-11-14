@@ -109,10 +109,8 @@ def test_solarArrayRotation(show_plots, rS_N, sigma_BN, sigma_RN, bodyFrame, acc
 
     - ``spinningBodyRefOutMsg``
 
-    in all its parts. The reference angle ``thetaR`` is checked versus the value computed by a python function that computes the same angle. 
-    The reference angle derivative ``thetaDotR`` is checked versus zero. The current angle and angle rate ``thetaC`` and ``thetaDotC`` are 
-    checked versus the values used at the beginning of the script. The current angle ``thetaC`` is increased by :math:`\pm \pi` in order
-    to maintain :math:`|\theta_R-\theta_C| < \pi/2`.
+    in all its parts. The reference angle ``theta`` is checked versus the value computed by a python function that computes the same angle. 
+    The reference angle derivative ``thetaDot`` is checked versus zero.
     """
     # each test method requires a single assert method to be called
     [testResults, testMessage] = solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, bodyFrame, accuracy)
@@ -196,22 +194,17 @@ def solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, bodyFra
     else:
         thetaR = computeRotationAngle(sigma_BN, rS_N, a1_B, a2_B, thetaC)
     if thetaR-thetaC > np.pi/2:
-        thetaC += np.pi
+        thetaR -= np.pi
     elif thetaR-thetaC < -np.pi/2:
-        thetaC -= np.pi
+        thetaR += np.pi
+    print(thetaR, dataLog.theta[0])
     # compare the module results to the truth values
-    if not unitTestSupport.isDoubleEqual(dataLog.thetaR[0], thetaR, accuracy):
+    if not unitTestSupport.isDoubleEqual(dataLog.theta[0], thetaR, accuracy):
         testFailCount += 1
         testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaR for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
-    if not unitTestSupport.isDoubleEqual(dataLog.thetaDotR[0], 0, accuracy):
+    if not unitTestSupport.isDoubleEqual(dataLog.thetaDot[0], 0, accuracy):
         testFailCount += 1
         testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaDotR for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
-    if not unitTestSupport.isDoubleEqual(dataLog.thetaC[0], thetaC, accuracy):
-        testFailCount += 1
-        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaC for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
-    if not unitTestSupport.isDoubleEqual(dataLog.thetaDotC[0], thetaDotC, accuracy):
-        testFailCount += 1
-        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaDotC for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
 
     # each test method requires a single assert method to be called
     # this check below just makes sure no sub-test failures were found
