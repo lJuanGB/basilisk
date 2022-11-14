@@ -26,6 +26,7 @@
 /* Support files.  Be sure to use the absolute path relative to Basilisk directory. */
 #include "architecture/utilities/linearAlgebra.h"
 #include "architecture/utilities/rigidBodyKinematics.h"
+#include "architecture/utilities/astroConstants.h"
 
 
 /*!
@@ -164,8 +165,8 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     phi = acos( fmin( fmax( v3Dot(hRef_B, hReq_B), -1 ), 1 ) );
     v3Cross(hRef_B, hReq_B, e_phi);
     // If phi = PI, e_phi can be any vector perpendicular to F_current_B
-    if (fabs(phi-M_PI) < EPS) {
-        phi = M_PI;
+    if (fabs(phi-MPI) < EPS) {
+        phi = MPI;
         v3Perpendicular(hRef_B, e_phi);
     }
     else if (fabs(phi) < EPS) {
@@ -200,7 +201,7 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     if (fabs(A) < EPS) {
         if (fabs(B) < EPS) {
             if (C > 0) {
-                psi = M_PI;
+                psi = MPI;
             }
             else {
                 psi = 0.0;
@@ -236,7 +237,7 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
             psi = 2*atan(t);
             y = (A*t*t + B*t + C) / (1 + t*t);
             if (fabs(A) < fabs(y)) {
-                psi = M_PI;
+                psi = MPI;
             }
         }
     }
@@ -275,7 +276,7 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
         }
         else {
             // if Sun direction and solar array drive are not perpendicular, project solar array drive a_B onto perpendicular plane (aP_B) and compute third rotation
-            if (fabs(theta-M_PI/2) > EPS) {
+            if (fabs(theta-MPI/2) > EPS) {
                 for (int i = 0; i < 3; i++) {
                     aP_B[i] = (a_B[i] - sTheta * rSun_R2[i]) / (1 - sTheta * sTheta);
                 }
