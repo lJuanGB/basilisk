@@ -66,11 +66,11 @@ def test_platformRotation(show_plots, CM_offset, seed, accuracy):
     
     """
     # each test method requires a single assert method to be called
-    [testResults, testMessage] = platformRotationTestFunction(show_plots, seed, accuracy)
+    [testResults, testMessage] = platformRotationTestFunction(show_plots, CM_offset, seed, accuracy)
     assert testResults < 1, testMessage
 
 
-def platformRotationTestFunction(show_plots, seed, accuracy):
+def platformRotationTestFunction(show_plots, CM_offset, seed, accuracy):
 
     random.seed(seed)
 
@@ -119,9 +119,11 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
     inputMsg = messaging.VehicleConfigMsg().write(inputMessageData)
     platformConfig.vehConfigInMsg.subscribeTo(inputMsg)
 
-    # Setup logging on the test module output message so that we get all the writes to it
-    dataLog = platformConfig.platformAnglesOutMsg.recorder()
-    unitTestSim.AddModelToTask(unitTaskName, dataLog)
+    # Setup logging on the test module output messages so that we get all the writes to it
+    anglesLog = platformConfig.platformAnglesOutMsg.recorder()
+    unitTestSim.AddModelToTask(unitTaskName, anglesLog)
+    bodyHeadingLog = platformConfig.bodyHeadingOutMsg.recorder()
+    unitTestSim.AddModelToTask(unitTaskName, bodyHeadingLog)
 
     # Need to call the self-init and cross-init methods
     unitTestSim.InitializeSimulation()
@@ -135,8 +137,8 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
-    alpha = dataLog.alpha[0]
-    beta = dataLog.beta[0]
+    alpha = anglesLog.alpha[0]
+    beta = anglesLog.beta[0]
 
     FM = [[np.cos(beta),  np.sin(alpha)*np.sin(beta), -np.cos(alpha)*np.sin(beta)],
                    [      0     ,        np.cos(alpha)       ,        np.sin(alpha)       ],
@@ -154,7 +156,16 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
     # compare the module results to the truth values
     if not unitTestSupport.isDoubleEqual(offset, 0.0, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + platformWrap.ModelTag + "platformRotation module failed unit test\n")
+        testMessages.append("FAILED: " + platformWrap.ModelTag + "platformRotation module failed unit test on zero offset \n")
+
+    T_B_hat_sim = bodyHeadingLog.rHat_XB_B[0]
+    FB = np.matmul(FM, MB)
+    T_B_hat = np.matmul(FB.transpose(), T_F) / np.linalg.norm(T_F)
+
+    # compare the module results to the truth values
+    if not unitTestSupport.isVectorEqual(T_B_hat_sim, T_B_hat, accuracy):
+        testFailCount += 1
+        testMessages.append("FAILED: " + platformWrap.ModelTag + "platformRotation module failed unit test on body frame thruster direction \n")
 
     # each test method requires a single assert method to be called
     # this check below just makes sure no sub-test failures were found
@@ -168,6 +179,7 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
 if __name__ == "__main__":
     test_platformRotation(              # update "module" in function name
                  False,
+                 0.1,
                  np.random.rand(1)[0],
                  1e-7        # accuracy
                )
