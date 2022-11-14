@@ -37,6 +37,7 @@
 void SelfInit_platformRotation(platformRotationConfig *configData, int64_t moduleID)
 {
     PlatformAnglesMsg_C_init(&configData->platformAnglesOutMsg);
+    BodyHeadingMsg_C_init(&configData->bodyHeadingOutMsg);
 }
 
 
@@ -63,12 +64,14 @@ void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTim
 */
 void Update_platformRotation(platformRotationConfig *configData, uint64_t callTime, int64_t moduleID)
 {
-    /*! - Read input message */
-    VehicleConfigMsgPayload  vehConfigMsgIn;
+    /*! - Create message buffers */
+    VehicleConfigMsgPayload   vehConfigMsgIn;
     PlatformAnglesMsgPayload  platformAnglesOut;
+    BodyHeadingMsgPayload     bodyHeadingOut;
 
-    /*! - zero the output message */
+    /*! - zero the output messages */
     platformAnglesOut = PlatformAnglesMsg_C_zeroMsgPayload();
+    bodyHeadingOut = BodyHeadingMsg_C_zeroMsgPayload();
 
     /*! read the attitude navigation message */
     vehConfigMsgIn = VehicleConfigMsg_C_read(&configData->vehConfigInMsg);
@@ -159,6 +162,16 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
 
     /* write output message */
     PlatformAnglesMsg_C_write(&platformAnglesOut, &configData->platformAnglesOutMsg, moduleID, callTime);
+
+    /*! define mapping between final platform frame and body frame F3B */
+    double F3B[3][3];
+    m33MultM33(F3M, MB, F3B);
+
+    /*! compute thruster direction in body frame coordinates */
+    m33tMultV3(F3B, T_F_hat, bodyHeadingOut.rHat_XB_B);
+
+    /* write output message */
+    BodyHeadingMsg_C_write(&bodyHeadingOut, &configData->bodyHeadingOutMsg, moduleID, callTime);
 
     return;
 }
