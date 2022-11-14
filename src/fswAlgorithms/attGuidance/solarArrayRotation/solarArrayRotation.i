@@ -35,10 +35,10 @@
 struct NavAttMsg_C;
 %include "architecture/msgPayloadDefC/AttRefMsgPayload.h"
 struct AttRefMsg_C;
-%include "architecture/msgPayloadDefC/SAAngleMsgPayload.h"
-struct SAAngleMsg_C;
-%include "architecture/msgPayloadDefC/SARequestedAngleMsgPayload.h"
-struct SARequestedAngleMsg_C;
+%include "architecture/msgPayloadDefC/SpinningBodyMsgPayload.h"
+struct SpinningBodyMsg_C;
+%include "architecture/msgPayloadDefC/SpinningBodyRefMsgPayload.h"
+struct SpinningBodyRefMsg_C;
 
 %pythoncode %{
 import sys

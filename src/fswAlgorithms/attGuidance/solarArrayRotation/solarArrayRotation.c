@@ -36,7 +36,7 @@
  */
 void SelfInit_solarArrayRotation(solarArrayRotationConfig *configData, int64_t moduleID)
 {
-    SARequestedAngleMsg_C_init(&configData->saReqAngleOutMsg);
+    SpinningBodyRefMsg_C_init(&configData->spinningBodyRefOutMsg);
 }
 
 
@@ -58,8 +58,8 @@ void Reset_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t cal
         _bskLog(configData->bskLogger, BSK_ERROR, "Error: solarArrayAngle.attRefInMsg wasn't connected.");
     }
     // check if the required input message is included
-    if (!SAAngleMsg_C_isLinked(&configData->saAngleInMsg)) {
-        _bskLog(configData->bskLogger, BSK_ERROR, "Error: solarArrayAngle.saAngleInMsg wasn't connected.");
+    if (!SpinningBodyMsg_C_isLinked(&configData->spinningBodyInMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: solarArrayAngle.spinningBodyInMsg wasn't connected.");
     }
 }
 
@@ -74,11 +74,11 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     /*! - Create buffer messages */
     NavAttMsgPayload            attNavIn;
     AttRefMsgPayload            attRefIn;
-    SAAngleMsgPayload           saAngleIn;
-    SARequestedAngleMsgPayload  saAngleOut;
+    SpinningBodyMsgPayload      spinningBodyIn;
+    SpinningBodyRefMsgPayload   spinningBodyRefOut;
 
     /*! - zero the output message */
-    saAngleOut = SARequestedAngleMsg_C_zeroMsgPayload();
+    spinningBodyRefOut = SpinningBodyRefMsg_C_zeroMsgPayload();
 
     /*! read the attitude navigation message */
     attNavIn = NavAttMsg_C_read(&configData->attNavInMsg);
@@ -87,7 +87,7 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     attRefIn = AttRefMsg_C_read(&configData->attRefInMsg);
 
     /*! read the solar array angle message */
-    saAngleIn = SAAngleMsg_C_read(&configData->saAngleInMsg);
+    spinningBodyIn = SpinningBodyMsg_C_read(&configData->spinningBodyInMsg);
 
     /* read Sun direction in B frame from the attNav message */
     double rS_B[3];
@@ -106,23 +106,33 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     v3Normalize(a2_B_target, a2_B_nominal);
 
     /* compute rotation angle theta */
-    double theta;
+    double thetaR;
+    double thetaC, sinThetaC, cosThetaC;
+    // clip thetaC between 0 an pi
+    sinThetaC = sin(spinningBodyIn.theta);
+    cosThetaC = cos(spinningBodyIn.theta);
+    thetaC = atan2(sinThetaC, cosThetaC);
+    // compute shortest angle difference
     if (v3Norm(a2_B_target) < EPS) {
-        theta = saAngleIn.thetaC;
+        thetaR = thetaC;
     }
     else {
-        theta = acos( fmin(fmax(v3Dot(a2_B_nominal, a2_B_target),-1),1) );
+        thetaR = acos( fmin(fmax(v3Dot(a2_B_nominal, a2_B_target),-1),1) );
+        if (thetaR - thetaC > M_PI/2) {
+            thetaC += M_PI;
+        }
+        else if (thetaR - thetaC < - M_PI/2) {
+            thetaC -= M_PI;
+        }
     }
 
-    saAngleOut.thetaR = theta;
-    saAngleOut.thetaDotR = 0;
-    saAngleOut.thetaC = saAngleIn.thetaC;
-    saAngleOut.thetaDotC = saAngleIn.thetaDotC;
-
-    // add logic to discriminate between short and long rotation
+    spinningBodyRefOut.thetaR = thetaR;
+    spinningBodyRefOut.thetaDotR = 0;
+    spinningBodyRefOut.thetaC = thetaC;
+    spinningBodyRefOut.thetaDotC = spinningBodyIn.thetaDot;
 
     /* write output message */
-    SARequestedAngleMsg_C_write(&saAngleOut, &configData->saReqAngleOutMsg, moduleID, callTime);
+    SpinningBodyRefMsg_C_write(&spinningBodyRefOut, &configData->spinningBodyRefOutMsg, moduleID, callTime);
 
     return;
 }
