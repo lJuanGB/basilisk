@@ -73,8 +73,8 @@ void Reset_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, i
             configData->flagN = 1;
         }
         else if (!InertialHeadingMsg_C_isLinked(&configData->inertialHeadingInMsg) && EphemerisMsg_C_isLinked(&configData->ephemerisInMsg)) {
-            if (!NavTransMsg_C_isLinked(&configData->attTransInMsg)) {
-                _bskLog(configData->bskLogger, BSK_ERROR, "Error: threeAxesPoint.ephemerisInMsg was specified but threeAxesPoint.attTransInMsg was not.");
+            if (!NavTransMsg_C_isLinked(&configData->transNavInMsg)) {
+                _bskLog(configData->bskLogger, BSK_ERROR, "Error: threeAxesPoint.ephemerisInMsg was specified but threeAxesPoint.transNavInMsg was not.");
             }
             else {
                 configData->flagN = 2;
@@ -138,7 +138,7 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     }
     else if (configData->flagN == 2) {
         ephemerisIn = EphemerisMsg_C_read(&configData->ephemerisInMsg);
-        transNavIn = NavTransMsg_C_read(&configData->attTransInMsg);
+        transNavIn = NavTransMsg_C_read(&configData->transNavInMsg);
         v3Subtract(ephemerisIn.r_BdyZero_N, transNavIn.r_BN_N, hReq_N);
         v3Normalize(hReq_N, hReq_N);
     }

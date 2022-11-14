@@ -48,7 +48,7 @@ typedef struct {
     NavAttMsg_C          attNavInMsg;             //!< input msg measured attitude
     BodyHeadingMsg_C     bodyHeadingInMsg;        //!< input body heading msg
     InertialHeadingMsg_C inertialHeadingInMsg;    //!< input inertial heading msg
-    NavTransMsg_C        attTransInMsg;           //!< input msg measured position
+    NavTransMsg_C        transNavInMsg;           //!< input msg measured position
     EphemerisMsg_C       ephemerisInMsg;          //!< input ephemeris msg
     AttRefMsg_C          attRefOutMsg;            //!< output attitude reference message
 
