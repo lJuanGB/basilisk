@@ -89,21 +89,25 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     /*! read the solar array angle message */
     spinningBodyIn = SpinningBodyMsg_C_read(&configData->spinningBodyInMsg);
 
-    /* read Sun direction in B frame from the attNav message */
-    double rS_B[3];
+    /* read Sun direction in B frame from the attNav message and map it to R frame */
+    double rS_B[3], rS_R[3], BN[3][3], RN[3][3], RB[3][3];
     v3Normalize(attNavIn.vehSunPntBdy, rS_B);
+    MRP2C(attNavIn.sigma_BN, BN);
+    MRP2C(attRefIn.sigma_RN, RN);
+    m33MultM33t(RN, BN, RB);
+    m33MultV3(RB, rS_B, rS_R);
 
     /* normalize a1_B and a2_B from module input */
-    double a1_B[3], a2_B_nominal[3], a2_B_target[3];
-    v3Normalize(configData->a1_B, a1_B);
-    v3Normalize(configData->a2_B, a2_B_nominal);
+    double a1_R[3], a2_R_nominal[3], a2_R_target[3];
+    v3Normalize(configData->a1_B, a1_R);                    // a1 and a2 are body fixed, therefore their coordinates in B and R remain the same
+    v3Normalize(configData->a2_B, a2_R_nominal);
 
-    /* compute a2_B target */
-    double dotP = v3Dot(a1_B, rS_B);
+    /* compute a2_R target */
+    double dotP = v3Dot(a1_R, rS_R);
     for (int n = 0; n < 3; n++) {
-        a2_B_target[n] = rS_B[n] - dotP * a1_B[n];
+        a2_R_target[n] = rS_R[n] - dotP * a1_R[n];
     }
-    v3Normalize(a2_B_target, a2_B_nominal);
+    v3Normalize(a2_R_target, a2_R_target);
 
     /* compute rotation angle theta */
     double thetaR;
@@ -113,11 +117,11 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     cosThetaC = cos(spinningBodyIn.theta);
     thetaC = atan2(sinThetaC, cosThetaC);
     // compute shortest angle difference
-    if (v3Norm(a2_B_target) < EPS) {
+    if (v3Norm(a2_R_target) < EPS) {
         thetaR = thetaC;
     }
     else {
-        thetaR = acos( fmin(fmax(v3Dot(a2_B_nominal, a2_B_target),-1),1) );
+        thetaR = acos( fmin(fmax(v3Dot(a2_R_nominal, a2_R_target),-1),1) );
         if (thetaR - thetaC > M_PI/2) {
             thetaC += M_PI;
         }
