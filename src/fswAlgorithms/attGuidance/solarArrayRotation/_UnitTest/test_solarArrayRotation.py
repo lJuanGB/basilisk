@@ -19,9 +19,9 @@
 
 #
 #   Unit Test Script
-#   Module Name:        platformRotation
+#   Module Name:        solarArrayRotation
 #   Author:             Riccardo Calaon
-#   Creation Date:      October 29, 2022
+#   Creation Date:      November 1, 2022
 #
 
 import pytest
@@ -37,12 +37,32 @@ splitPath = path.split(bskName)
 
 # Import all of the modules that we are going to be called in this simulation
 from Basilisk.utilities import SimulationBaseClass
-from Basilisk.utilities import unitTestSupport                  # general support file with common unit test functions
-from Basilisk.fswAlgorithms import platformRotation                # import the module that is to be tested
+from Basilisk.utilities import unitTestSupport                   # general support file with common unit test functions
+from Basilisk.fswAlgorithms import solarArrayRotation            # import the module that is to be tested
 from Basilisk.utilities import macros
 from Basilisk.utilities import RigidBodyKinematics as rbk
 from Basilisk.architecture import messaging                      # import the message definitions
 from Basilisk.architecture import bskLogging
+
+
+def computeRotationAngle(sigma_RN, rS_N, a1_R, a2_R, theta0):
+
+    RN = rbk.MRP2C(sigma_RN)
+    rS_R = np.matmul(RN, rS_N)
+
+    a2_R_target = []
+    dotP = np.dot(rS_R, a1_R)
+    for n in range(3):
+        a2_R_target.append(rS_R[n] - dotP * a1_R[n])
+    a2_R_target = np.array(a2_R_target)
+    a2_R_norm = np.linalg.norm(a2_R_target)
+    if a2_R_norm > 1e-6:
+        a2_R_target = a2_R_target / a2_R_norm
+        theta = np.arccos(min(max(np.dot(a2_R, a2_R_target),-1),1))
+    else:
+        theta = theta0
+
+    return theta
 
 
 # Uncomment this line is this test is to be skipped in the global unit test run, adjust message as needed.
@@ -54,34 +74,34 @@ from Basilisk.architecture import bskLogging
 # of the multiple test runs for this test.  Note that the order in that you add the parametrize method
 # matters for the documentation in that it impacts the order in which the test arguments are shown.
 # The first parametrize arguments are shown last in the pytest argument list
-@pytest.mark.parametrize("seed", list(np.linspace(1,10,10)))
-@pytest.mark.parametrize("CM_offset", [0.1, 0.2, 0.3])
-@pytest.mark.parametrize("accuracy", [1e-7])
+@pytest.mark.parametrize("rS_N", [[1, 0, 0],
+                                  [0, 0, 1]])
+@pytest.mark.parametrize("sigma_BN", [[0.1, 0.2, 0.3],
+                                      [0.5, 0.4, 0.3]])
+@pytest.mark.parametrize("sigma_RN", [[0.3, 0.2, 0.1],
+                                      [0.9, 0.7, 0.8]])
+@pytest.mark.parametrize("accuracy", [1e-12])
+
 
 # update "module" in this function name to reflect the module name
-def test_platformRotation(show_plots, CM_offset, seed, accuracy):
+def test_solarArrayRotation(show_plots, rS_N, sigma_BN, sigma_RN, accuracy):
     r"""
     **Validation Test Description**
 
     
     """
     # each test method requires a single assert method to be called
-    [testResults, testMessage] = platformRotationTestFunction(show_plots, seed, accuracy)
+    [testResults, testMessage] = solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, accuracy)
     assert testResults < 1, testMessage
 
 
-def platformRotationTestFunction(show_plots, seed, accuracy):
+def solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, accuracy):
 
-    random.seed(seed)
-
-    sigma_MB = np.array([0., 0., 0.])
-    r_BM_M = np.array([0.0, 0.1, 0.4])
-    r_FM_F = np.array([0.0, 0.0, -0.1])
-    r_TF_F = np.array([-0.01, 0.03, 0.02])
-    T_F    = np.array([1.0, 1.0, 10.0])
-
-    r_CB_B = np.array([0,0,0]) + np.random.rand(3)
-    r_CB_B = r_CB_B / np.linalg.norm(r_CB_B) * 0.1
+    a1_B = np.array([1, 0, 0])
+    a2_B = np.array([0, 1, 0])
+    BN = rbk.MRP2C(sigma_BN)
+    rS_B = np.matmul(BN, rS_N)
+    theta0 = 0
 
     testFailCount = 0                        # zero unit test result counter
     testMessages = []                        # create empty array to store test log messages
@@ -98,29 +118,39 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
     testProc.addTask(unitTestSim.CreateNewTask(unitTaskName, testProcessRate))
 
     # Construct algorithm and associated C++ container
-    platformConfig = platformRotation.platformRotationConfig()                     # update with current values
-    platformWrap = unitTestSim.setModelDataWrap(platformConfig)
-    platformWrap.ModelTag = "platformRotation"                                     # update python name of test module
+    solarArrayConfig = solarArrayRotation.solarArrayRotationConfig()                     # update with current values
+    solarArrayWrap = unitTestSim.setModelDataWrap(solarArrayConfig)
+    solarArrayWrap.ModelTag = "solarArrayRotation"                                     # update python name of test module
 
     # Add test module to runtime call list
-    unitTestSim.AddModelToTask(unitTaskName, platformWrap, platformConfig)
+    unitTestSim.AddModelToTask(unitTaskName, solarArrayWrap, solarArrayConfig)
 
     # Initialize the test module configuration data
-    platformConfig.sigma_MB = sigma_MB
-    platformConfig.r_BM_M = r_BM_M
-    platformConfig.r_FM_F = r_FM_F
-    platformConfig.r_TF_F = r_TF_F
-    platformConfig.T_F    = T_F
+    solarArrayConfig.a1_B = a1_B
+    solarArrayConfig.a2_B = a2_B
 
-    # Create input message and size it because the regular creator of that message
-    # is not part of the test.
-    inputMessageData = messaging.VehicleConfigMsgPayload()    # Create a structure for the input message
-    inputMessageData.CoM_B = r_CB_B                 # Set up a list as a 3-vector
-    inputMsg = messaging.VehicleConfigMsg().write(inputMessageData)
-    platformConfig.vehConfigInMsg.subscribeTo(inputMsg)
+    # Create input attitude navigation message
+    NatAttInMsgData = messaging.NavAttMsgPayload()
+    NatAttInMsgData.sigma_BN = sigma_BN
+    NatAttInMsgData.vehSunPntBdy = rS_B
+    NatAttInMsg = messaging.NavAttMsg().write(NatAttInMsgData)
+    solarArrayConfig.attNavInMsg.subscribeTo(NatAttInMsg)
+
+    # Create input attitude reference message
+    AttRefInMsgData = messaging.AttRefMsgPayload()
+    AttRefInMsgData.sigma_RN = sigma_RN
+    AttRefInMsg = messaging.AttRefMsg().write(AttRefInMsgData)
+    solarArrayConfig.attRefInMsg.subscribeTo(AttRefInMsg)
+
+    # Create input spinning body message
+    SpinningBodyInMsgData = messaging.SpinningBodyMsgPayload()
+    SpinningBodyInMsgData.theta = theta0
+    SpinningBodyInMsgData.thetaDot = 0
+    SpinningBodyInMsg = messaging.SpinningBodyMsg().write(SpinningBodyInMsgData)
+    solarArrayConfig.spinningBodyInMsg.subscribeTo(SpinningBodyInMsg)
 
     # Setup logging on the test module output message so that we get all the writes to it
-    dataLog = platformConfig.platformAnglesOutMsg.recorder()
+    dataLog = solarArrayConfig.spinningBodyRefOutMsg.recorder()
     unitTestSim.AddModelToTask(unitTaskName, dataLog)
 
     # Need to call the self-init and cross-init methods
@@ -135,26 +165,13 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
-    alpha = dataLog.alpha[0]
-    beta = dataLog.beta[0]
-
-    FM = [[np.cos(beta),  np.sin(alpha)*np.sin(beta), -np.cos(alpha)*np.sin(beta)],
-                   [      0     ,        np.cos(alpha)       ,        np.sin(alpha)       ],
-                   [np.sin(beta), -np.sin(alpha)*np.cos(beta),  np.cos(alpha)*np.cos(beta)]]
-
-    MB = rbk.MRP2C(sigma_MB)
-
-    r_CB_M = np.matmul(MB, r_CB_B)
-    r_CM_M = r_CB_M + r_BM_M
-    r_CM_F = np.matmul(FM, r_CM_M)
-    r_CT_F = r_CM_F - r_FM_F - r_TF_F
-
-    offset = np.arccos( min( max( np.dot(r_CT_F, np.array(T_F)) / np.linalg.norm(np.array(r_CT_F)) / np.linalg.norm(np.array(T_F)), -1), 1) )
+    thetaR_output = dataLog.thetaR[0]
+    thetaR = computeRotationAngle(sigma_RN, rS_N, a1_B, a2_B, theta0)
 
     # compare the module results to the truth values
-    if not unitTestSupport.isDoubleEqual(offset, 0.0, accuracy):
+    if not unitTestSupport.isDoubleEqual(thetaR_output, thetaR, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + platformWrap.ModelTag + "platformRotation module failed unit test\n")
+        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test\n")
 
     # each test method requires a single assert method to be called
     # this check below just makes sure no sub-test failures were found
@@ -166,8 +183,10 @@ def platformRotationTestFunction(show_plots, seed, accuracy):
 # stand-along python script
 #
 if __name__ == "__main__":
-    test_platformRotation(              # update "module" in function name
+    test_solarArrayRotation(              # update "module" in function name
                  False,
-                 np.random.rand(1)[0],
-                 1e-7        # accuracy
+                 np.array([1, 0, 0]),
+                 np.array([0.1, 0.2, 0.3]),
+                 np.array([0.3, 0.2, 0.1]),
+                 1e-12        # accuracy
                )
