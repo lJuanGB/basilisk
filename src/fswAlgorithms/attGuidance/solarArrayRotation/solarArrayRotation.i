@@ -35,8 +35,10 @@
 struct NavAttMsg_C;
 %include "architecture/msgPayloadDefC/AttRefMsgPayload.h"
 struct AttRefMsg_C;
-%include "architecture/msgPayloadDefC/SolarArrayAngleMsgPayload.h"
-struct SolarArrayAngleMsg_C;
+%include "architecture/msgPayloadDefC/SAAngleMsgPayload.h"
+struct SAAngleMsg_C;
+%include "architecture/msgPayloadDefC/SARequestedAngleMsgPayload.h"
+struct SARequestedAngleMsg_C;
 
 %pythoncode %{
 import sys
