@@ -80,28 +80,53 @@ def computeRotationAngle(sigma_RN, rS_N, a1_R, a2_R, theta0):
                                       [0.5, 0.4, 0.3]])
 @pytest.mark.parametrize("sigma_RN", [[0.3, 0.2, 0.1],
                                       [0.9, 0.7, 0.8]])
+@pytest.mark.parametrize("bodyFrame", [0, 1])                                      
 @pytest.mark.parametrize("accuracy", [1e-12])
 
 
 # update "module" in this function name to reflect the module name
-def test_solarArrayRotation(show_plots, rS_N, sigma_BN, sigma_RN, accuracy):
+def test_solarArrayRotation(show_plots, rS_N, sigma_BN, sigma_RN, bodyFrame, accuracy):
     r"""
     **Validation Test Description**
 
-    
+    This unit test verifies the correctness of the output reference angle computed by the :ref:`solarArrayRotation`.
+    The inputs provided are the inertial Sun direction, current attitude of the hub, and reference frame. Based on
+    current attitude, the sun direction vector is mapped into body frame coordinates and passed into the Attitude
+    Navigation Message.
+
+    **Test Parameters**
+
+    Args:
+        rS_N[3] (double): Sun direction vector, in inertial frame components;
+        sigma_BN[3] (double): spacecraft hub attitude with respect to the inertial frame, in MRP;
+        sigma_RN[3] (double): reference frame attitude with respect to the inertial frame, in MRP;
+        bodyFrame (int): 0 to calculate reference rotation angle w.r.t. reference frame, 1 to calculate it w.r.t the current spacecraft attitude;
+        accuracy (float): absolute accuracy value used in the validation tests.
+
+    **Description of Variables Being Tested**
+
+    This unit test checks the correctness of the output attitude reference message 
+
+    - ``spinningBodyRefOutMsg``
+
+    in all its parts. The reference angle ``thetaR`` is checked versus the value computed by a python function that computes the same angle. 
+    The reference angle derivative ``thetaDotR`` is checked versus zero. The current angle and angle rate ``thetaC`` and ``thetaDotC`` are 
+    checked versus the values used at the beginning of the script. The current angle ``thetaC`` is increased by :math:`\pm \pi` in order
+    to maintain :math:`|\theta_R-\theta_C| < \pi/2`.
     """
     # each test method requires a single assert method to be called
-    [testResults, testMessage] = solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, accuracy)
+    [testResults, testMessage] = solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, bodyFrame, accuracy)
     assert testResults < 1, testMessage
 
 
-def solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, accuracy):
+def solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, bodyFrame, accuracy):
 
     a1_B = np.array([1, 0, 0])
     a2_B = np.array([0, 1, 0])
     BN = rbk.MRP2C(sigma_BN)
     rS_B = np.matmul(BN, rS_N)
-    theta0 = 0
+    thetaC = 0
+    thetaDotC = 0
 
     testFailCount = 0                        # zero unit test result counter
     testMessages = []                        # create empty array to store test log messages
@@ -128,6 +153,7 @@ def solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, accurac
     # Initialize the test module configuration data
     solarArrayConfig.a1_B = a1_B
     solarArrayConfig.a2_B = a2_B
+    solarArrayConfig.bodyFrame = bodyFrame
 
     # Create input attitude navigation message
     NatAttInMsgData = messaging.NavAttMsgPayload()
@@ -144,8 +170,8 @@ def solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, accurac
 
     # Create input spinning body message
     SpinningBodyInMsgData = messaging.SpinningBodyMsgPayload()
-    SpinningBodyInMsgData.theta = theta0
-    SpinningBodyInMsgData.thetaDot = 0
+    SpinningBodyInMsgData.theta = thetaC
+    SpinningBodyInMsgData.thetaDot = thetaDotC
     SpinningBodyInMsg = messaging.SpinningBodyMsg().write(SpinningBodyInMsgData)
     solarArrayConfig.spinningBodyInMsg.subscribeTo(SpinningBodyInMsg)
 
@@ -165,13 +191,27 @@ def solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, accurac
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
-    thetaR_output = dataLog.thetaR[0]
-    thetaR = computeRotationAngle(sigma_RN, rS_N, a1_B, a2_B, theta0)
-
+    if bodyFrame == 0:
+        thetaR = computeRotationAngle(sigma_RN, rS_N, a1_B, a2_B, thetaC)
+    else:
+        thetaR = computeRotationAngle(sigma_BN, rS_N, a1_B, a2_B, thetaC)
+    if thetaR-thetaC > np.pi/2:
+        thetaC += np.pi
+    elif thetaR-thetaC < -np.pi/2:
+        thetaC -= np.pi
     # compare the module results to the truth values
-    if not unitTestSupport.isDoubleEqual(thetaR_output, thetaR, accuracy):
+    if not unitTestSupport.isDoubleEqual(dataLog.thetaR[0], thetaR, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test\n")
+        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaR for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
+    if not unitTestSupport.isDoubleEqual(dataLog.thetaDotR[0], 0, accuracy):
+        testFailCount += 1
+        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaDotR for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
+    if not unitTestSupport.isDoubleEqual(dataLog.thetaC[0], thetaC, accuracy):
+        testFailCount += 1
+        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaC for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
+    if not unitTestSupport.isDoubleEqual(dataLog.thetaDotC[0], thetaDotC, accuracy):
+        testFailCount += 1
+        testMessages.append("FAILED: " + solarArrayWrap.ModelTag + "platformRotation module failed unit test on thetaDotC for sigma_BN = [{},{},{}], sigma_RN = [{},{},{}] and bodyFrame = {} \n".format(sigma_BN[0],sigma_BN[1],sigma_BN[2],sigma_RN[0],sigma_RN[1],sigma_RN[2],bodyFrame))
 
     # each test method requires a single assert method to be called
     # this check below just makes sure no sub-test failures were found
@@ -188,5 +228,6 @@ if __name__ == "__main__":
                  np.array([1, 0, 0]),
                  np.array([0.1, 0.2, 0.3]),
                  np.array([0.3, 0.2, 0.1]),
+                 0,
                  1e-12        # accuracy
                )
