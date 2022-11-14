@@ -24,8 +24,10 @@
 #include "architecture/utilities/bskLogging.h"
 #include "cMsgCInterface/NavAttMsg_C.h"
 #include "cMsgCInterface/AttRefMsg_C.h"
-#include "cMsgCInterface/SolarArrayAngleMsg_C.h"
+#include "cMsgCInterface/SAAngleMsg_C.h"
+#include "cMsgCInterface/SARequestedAngleMsg_C.h"
 
+#define EPS 1e-6
 
 /*! @brief Top level structure for the sub-module routines. */
 typedef struct {
@@ -35,11 +37,12 @@ typedef struct {
     double a2_B[3];                 //!< solar array nominal zero direction
 
     /* declare module IO interfaces */
-    NavAttMsg_C attNavInMsg;                      //!< input msg measured attitude
-    AttRefMsg_C attRefInMsg;                      //!< input attitude reference message
-    SolarArrayAngleMsg_C solarArrayAngleOutMsg;   //!< output msg containing solar array target angle and angle rate
+    NavAttMsg_C attNavInMsg;                    //!< input msg measured attitude
+    AttRefMsg_C attRefInMsg;                    //!< input attitude reference message
+    SAAngleMsg_C saAngleInMsg;                  //!< input solar array angle message
+    SARequestedAngleMsg_C saReqAngleOutMsg;     //!< output msg containing solar array target angle and angle rate
 
-    BSKLogger *bskLogger;                         //!< BSK Logging
+    BSKLogger *bskLogger;                       //!< BSK Logging
 
 }solarArrayRotationConfig;
 
