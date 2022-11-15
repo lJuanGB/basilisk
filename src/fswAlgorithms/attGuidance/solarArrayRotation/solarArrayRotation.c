@@ -26,6 +26,7 @@
 /* Support files.  Be sure to use the absolute path relative to Basilisk directory. */
 #include "architecture/utilities/linearAlgebra.h"
 #include "architecture/utilities/rigidBodyKinematics.h"
+#include "architecture/utilities/astroConstants.h"
 
 
 /*!
@@ -134,11 +135,11 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     }
     else {
         thetaR = acos( fmin(fmax(v3Dot(a2_R_nominal, a2_R_target),-1),1) );
-        if (thetaR - thetaC > M_PI/2) {
-            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC - M_PI;
+        if (thetaR - thetaC > MPI/2) {
+            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC - MPI;
         }
-        else if (thetaR - thetaC < - M_PI/2) {
-            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC + M_PI;
+        else if (thetaR - thetaC < - MPI/2) {
+            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC + MPI;
         }
         else {
             spinningBodyRefOut.theta = thetaR;
