@@ -1,4 +1,3 @@
-
 # Copyright (c) 2016, Autonomous Vehicle Systems Lab, University of Colorado at Boulder
 #
 # Permission to use, copy, modify, and/or distribute this software for any
@@ -62,58 +61,57 @@ def test_scenarioDragOrbit():
     testResults = []
     testMessage = []
     [leoResults, leoMessages] = run(
-            showVal, orb1, earthCase)
-    #[gtoResults, gtoMessages] = run(
+        showVal, orb1, earthCase)
+    # [gtoResults, gtoMessages] = run(
     #    showVal, orb2, earthCase)
-    #[lmoResults, lmoMessages] = run(
-        #showVal, orb1, marsCase)
-    #[mtoResults, mtoMessages] = run(
-        #showVal, orb2, marsCase)
+    # [lmoResults, lmoMessages] = run(
+    # showVal, orb1, marsCase)
+    # [mtoResults, mtoMessages] = run(
+    # showVal, orb2, marsCase)
 
-    testResults = leoResults#+gtoResults#+lmoResults+mtoResults
+    testResults = leoResults  # +gtoResults#+lmoResults+mtoResults
     testMessage.append(leoMessages)
-    #testMessage.append(gtoMessages)
+    # testMessage.append(gtoMessages)
     ##testMessage.append(lmoMessages)
-    #testMessage.append(mtoMessages)
+    # testMessage.append(mtoMessages)
 
     assert testResults < 1, testMessage
 
+
 def expAtmoComp(alt, baseDens, scaleHeight):
-    dens = baseDens * math.exp(-alt/scaleHeight)
+    dens = baseDens * math.exp(-alt / scaleHeight)
     return dens
+
 
 def cannonballDragComp(dragCoeff, dens, area, vel, att):
     dragDir_N = -vel / np.linalg.norm(vel)
     dcm_BN = RigidBodyKinematics.MRP2C(att)
     dragDir_B = dcm_BN.dot(dragDir_N)
 
-    dragForce = 0.5 * dragCoeff * dens * area * np.linalg.norm(vel)**2.0 * dragDir_B
+    dragForce = 0.5 * dragCoeff * dens * area * np.linalg.norm(vel) ** 2.0 * dragDir_B
     return dragForce
 
 
 def run(show_plots, orbitCase, planetCase):
     """Call this routine directly to run the tutorial scenario."""
-    testFailCount = 0                       # zero unit test result counter
-    testMessages = []                       # create empty array to store test log messages
-
+    testFailCount = 0  # zero unit test result counter
+    testMessages = []  # create empty array to store test log messages
 
     # Create simulation variable names
     simTaskName = "simTask"
     simProcessName = "simProcess"
 
-    #  Create a sim module as an empty container
+    # Create a sim module as an empty container
     scSim = SimulationBaseClass.SimBaseClass()
 
-    #  create the simulation process
+    # create the simulation process
     dynProcess = scSim.CreateNewProcess(simProcessName)
 
     # create the dynamics task and specify the integration update time
     simulationTimeStep = macros.sec2nano(1.0)
     dynProcess.addTask(scSim.CreateNewTask(simTaskName, simulationTimeStep))
 
-
-
-    #   Initialize new atmosphere and drag model, add them to task
+    # Initialize new atmosphere and drag model, add them to task
     newAtmo = exponentialAtmosphere.ExponentialAtmosphere()
     atmoTaskName = "atmosphere"
     newAtmo.ModelTag = "ExpAtmo"
@@ -133,7 +131,7 @@ def run(show_plots, orbitCase, planetCase):
     scSim.AddModelToTask(atmoTaskName, newAtmo)
 
     #
-    #   setup the simulation tasks/objects
+    #   Set up the simulation tasks/objects
     #
 
     # initialize spacecraft object and set properties
@@ -160,20 +158,18 @@ def run(show_plots, orbitCase, planetCase):
         planet = gravFactory.createEarth()
     elif planetCase == "Mars":
         planet = gravFactory.createMars()
-        planet.isCentralBody = True          # ensure this is the central gravitational body
+        planet.isCentralBody = True  # ensure this is the central gravitational body
     mu = planet.mu
     # attach gravity model to spacecraft
     scObject.gravField.gravBodies = spacecraft.GravBodyVector(list(gravFactory.gravBodies.values()))
 
-    #
-    #   setup orbit and simulation time
+    # setup orbit and simulation time
     oe = orbitalMotion.ClassicElements()
 
     if planetCase == "Earth":
-        r_eq = 6371*1000.0
+        r_eq = 6371 * 1000.0
         refBaseDens = 1.217
         refScaleHeight = 8500.0
-
     elif planetCase == "Mars":
         refBaseDens = 0.020
         refScaleHeight = 11100.0
@@ -184,10 +180,10 @@ def run(show_plots, orbitCase, planetCase):
     orbAltMin = None
     orbAltMax = None
     if orbitCase == "LPO":
-        orbAltMin = 300.0*1000.0
+        orbAltMin = 300.0 * 1000.0
         orbAltMax = orbAltMin
     elif orbitCase == "LTO":
-        orbAltMin = 300*1000.0
+        orbAltMin = 300 * 1000.0
         orbAltMax = 800.0 * 1000.0
 
     newAtmo.planetRadius = r_eq
@@ -196,28 +192,26 @@ def run(show_plots, orbitCase, planetCase):
 
     rMin = r_eq + orbAltMin
     rMax = r_eq + orbAltMax
-    oe.a = (rMin+rMax)/2.0
-    oe.e = 1.0 - rMin/oe.a
-    oe.i = 0.0*macros.D2R
+    oe.a = (rMin + rMax) / 2.0
+    oe.e = 1.0 - rMin / oe.a
+    oe.i = 0.0 * macros.D2R
 
-    oe.Omega = 0.0*macros.D2R
-    oe.omega = 0.0*macros.D2R
-    oe.f     = 0.0*macros.D2R
+    oe.Omega = 0.0 * macros.D2R
+    oe.omega = 0.0 * macros.D2R
+    oe.f = 0.0 * macros.D2R
     rN, vN = orbitalMotion.elem2rv(mu, oe)
-    oe = orbitalMotion.rv2elem(mu, rN, vN)      # this stores consistent initial orbit elements
-                                                # with circular or equatorial orbit, some angles are
-                                                # arbitrary
+    # this stores consistent initial orbit elements with circular or equatorial orbit, some angles are arbitrary
+    oe = orbitalMotion.rv2elem(mu, rN, vN)
 
     # set the simulation time
-    n = np.sqrt(mu/oe.a/oe.a/oe.a)
-    P = 2.*np.pi/n
+    n = np.sqrt(mu / oe.a / oe.a / oe.a)
+    P = 2. * np.pi / n
 
-    simulationTime = macros.sec2nano(1*P)
+    simulationTime = macros.sec2nano(1 * P)
 
     #
-    #   Setup data logging before the simulation is initialized
+    #   Set up data logging before the simulation is initialized
     #
-
     numDataPoints = 100
     samplingTime = unitTestSupport.samplingTime(simulationTime, simulationTimeStep, numDataPoints)
     dataLog = scObject.scStateOutMsg.recorder(samplingTime)
@@ -253,16 +247,14 @@ def run(show_plots, orbitCase, planetCase):
     densData = dataNewAtmoLog.neutralDensity
     np.set_printoptions(precision=16)
 
-    #   Compare to expected values
-
+    #   Compare to expected values\
     endInd = dragForce.shape[0]
-
-    refDragForce = np.zeros([endInd,3])
-    refDensData = np.zeros([endInd,1])
+    refDragForce = np.zeros([endInd, 3])
+    refDensData = np.zeros([endInd, 1])
     accuracy = 1e-13
     # print planetCase
     # print orbitCase
-    for ind in range(0, endInd-1):
+    for ind in range(0, endInd - 1):
         # print "Position data:", posData[ind,1:]
         # print "Velocity data:", velData[ind,1:]
         # print "Density data:", densData[ind,1]
@@ -275,12 +267,12 @@ def run(show_plots, orbitCase, planetCase):
         # print "Drag Data:", dragForce[ind,1:]
         # print ""
         # check a vector values
-    for ind in range(1,endInd-1):
-        if not unitTestSupport.isArrayEqual(dragForce[ind,1:4], refDragForce[ind],3,accuracy):
+    for ind in range(1, endInd - 1):
+        if not unitTestSupport.isArrayEqual(dragForce[ind, 1:4], refDragForce[ind], 3, accuracy):
             testFailCount += 1
             testMessages.append(
                 "FAILED:  DragEffector failed force unit test with a value difference of "
-                + str(np.linalg.norm(dragForce[ind,1:4]-refDragForce[ind])))
+                + str(np.linalg.norm(dragForce[ind, 1:4] - refDragForce[ind])))
 
     #
     #   plot the results
@@ -293,45 +285,45 @@ def run(show_plots, orbitCase, planetCase):
         fig = plt.gcf()
         ax = fig.gca()
         ax.ticklabel_format(useOffset=False, style='plain')
-        for idx in range(0,3):
-            plt.plot(dataLog.times()*macros.NANO2SEC/P, posData[:, idx]/1000.,
-                     color=unitTestSupport.getLineColor(idx,3),
-                     label='$r_{BN,'+str(idx)+'}$')
+        for idx in range(0, 3):
+            plt.plot(dataLog.times() * macros.NANO2SEC / P, posData[:, idx] / 1000.,
+                     color=unitTestSupport.getLineColor(idx, 3),
+                     label='$r_{BN,' + str(idx) + '}$')
         plt.legend(loc='lower right')
         plt.xlabel('Time [orbits]')
         plt.ylabel('Inertial Position [km]')
 
         # draw orbit in perifocal frame
-        b = oe.a*np.sqrt(1-oe.e*oe.e)
-        p = oe.a*(1-oe.e*oe.e)
-        plt.figure(2,figsize=np.array((1.0, b/oe.a))*4.75,dpi=100)
-        plt.axis(np.array([-oe.rApoap, oe.rPeriap, -b, b])/1000*1.25)
+        b = oe.a * np.sqrt(1 - oe.e * oe.e)
+        p = oe.a * (1 - oe.e * oe.e)
+        plt.figure(2, figsize=np.array((1.0, b / oe.a)) * 4.75, dpi=100)
+        plt.axis(np.array([-oe.rApoap, oe.rPeriap, -b, b]) / 1000 * 1.25)
         # draw the planet
         fig = plt.gcf()
         ax = fig.gca()
 
-        planetColor= '#008800'
-        planetRadius = planet.radEquator/1000
+        planetColor = '#008800'
+        planetRadius = planet.radEquator / 1000
         ax.add_artist(plt.Circle((0, 0), planetRadius, color=planetColor))
         # draw the actual orbit
-        rData=[]
-        fData=[]
-        for idx in range(0,len(posData)):
-            oeData = orbitalMotion.rv2elem(mu,posData[idx,0:3],velData[idx,0:3])
+        rData = []
+        fData = []
+        for idx in range(0, len(posData)):
+            oeData = orbitalMotion.rv2elem(mu, posData[idx, 0:3], velData[idx, 0:3])
             rData.append(oeData.rmag)
             fData.append(oeData.f + oeData.omega - oe.omega)
-        plt.plot(rData*np.cos(fData)/1000, rData*np.sin(fData)/1000
-                 ,color='#aa0000'
-                 ,linewidth = 3.0
+        plt.plot(rData * np.cos(fData) / 1000, rData * np.sin(fData) / 1000,
+                 color='#aa0000',
+                 linewidth=3.0
                  )
         # draw the full osculating orbit from the initial conditions
-        fData = np.linspace(0,2*np.pi,100)
+        fData = np.linspace(0, 2 * np.pi, 100)
         rData = []
-        for idx in range(0,len(fData)):
-            rData.append(p/(1+oe.e*np.cos(fData[idx])))
-        plt.plot(rData*np.cos(fData)/1000, rData*np.sin(fData)/1000
-                 ,'--'
-                 , color='#555555'
+        for idx in range(0, len(fData)):
+            rData.append(p / (1 + oe.e * np.cos(fData[idx])))
+        plt.plot(rData * np.cos(fData) / 1000, rData * np.sin(fData) / 1000,
+                 '--',
+                 color='#555555'
                  )
         plt.xlabel('$i_e$ Cord. [km]')
         plt.ylabel('$i_p$ Cord. [km]')
@@ -344,19 +336,16 @@ def run(show_plots, orbitCase, planetCase):
         smaData = []
         for idx in range(0, len(posData)):
             oeData = orbitalMotion.rv2elem(mu, posData[idx, 0:3], velData[idx, 0:3])
-            smaData.append(oeData.a/1000.)
-        plt.plot(posData[:, 0]*macros.NANO2SEC/P, smaData
-                 ,color='#aa0000',
-                 )
+            smaData.append(oeData.a / 1000.)
+        plt.plot(posData[:, 0] * macros.NANO2SEC / P, smaData, color='#aa0000')
         plt.xlabel('Time [orbits]')
         plt.ylabel('SMA [km]')
-
 
         plt.figure()
         fig = plt.gcf()
         ax = fig.gca()
         ax.ticklabel_format(useOffset=False, style='sci')
-        plt.plot( dataNewAtmoLog.times()*macros.NANO2SEC, densData)
+        plt.plot(dataNewAtmoLog.times() * macros.NANO2SEC, densData)
         plt.title('Density Data vs. Time')
         plt.xlabel('Time')
         plt.ylabel('Density in kg/m^3')
@@ -371,6 +360,6 @@ def run(show_plots, orbitCase, planetCase):
 
     return testFailCount, testMessages
 
-    # close the plots being saved off to avoid over-writing old and new figures
+
 if __name__ == '__main__':
-    run(True,"LPO","Earth")
+    run(True, "LPO", "Earth")
