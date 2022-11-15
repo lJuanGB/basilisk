@@ -35,9 +35,7 @@ DragDynamicEffector::DragDynamicEffector()
 }
 
 /*! The destructor.*/
-DragDynamicEffector::~DragDynamicEffector()
-{
-}
+DragDynamicEffector::~DragDynamicEffector() = default;
 
 
 /*! This method is used to reset the module.
