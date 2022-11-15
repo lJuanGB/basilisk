@@ -155,6 +155,7 @@ def run(show_plots, orbitCase, planetCase):
 
     dragEffector.atmoDensInMsg.subscribeTo(newAtmo.envOutMsgs[0])
 
+    planet = None
     if planetCase == "Earth":
         planet = gravFactory.createEarth()
     elif planetCase == "Mars":
@@ -179,6 +180,9 @@ def run(show_plots, orbitCase, planetCase):
         r_eq = 3389.5 * 1000.0
     else:
         return 1, "Test failed- did not initialize planets."
+
+    orbAltMin = None
+    orbAltMax = None
     if orbitCase == "LPO":
         orbAltMin = 300.0*1000.0
         orbAltMax = orbAltMin
