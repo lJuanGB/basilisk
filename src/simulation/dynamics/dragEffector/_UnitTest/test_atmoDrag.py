@@ -122,18 +122,17 @@ def run(show_plots, orbitCase, planetCase):
     atmoTaskName = "atmosphere"
     newAtmo.ModelTag = "ExpAtmo"
 
-    projArea = 10.0  # Set drag area in m^2
-    dragCoeff = 2.2  # Set drag ceofficient
-
-    dragEffector = dragDynamicEffector.DragDynamicEffector()
+    dragEffector = dragDynamicEffector.DragDynamicEffector(dragDynamicEffector.DragModel_CANNONBALL)
     dragEffector.ModelTag = "DragEff"
 
-    dragEffectorTaskName = "drag"
-    dragEffector.coreParams.projectedArea = projArea
-    dragEffector.coreParams.dragCoeff = dragCoeff
-    dragEffector.coreParams.comOffset = [1., 0., 0.]
+    dragParams = dragDynamicEffector.DragBaseData()
+    dragParams.projectedArea = 10.0  # Set drag area in m^2
+    dragParams.dragCoeff = 2.2  # Set drag ceofficient
+    dragParams.comOffset = [1., 0., 0.]
+    dragEffector.setCoreParams(dragParams)
 
     dynProcess.addTask(scSim.CreateNewTask(atmoTaskName, simulationTimeStep))
+    dragEffectorTaskName = "drag"
     dynProcess.addTask(scSim.CreateNewTask(dragEffectorTaskName, simulationTimeStep))
     scSim.AddModelToTask(atmoTaskName, newAtmo)
 
@@ -267,7 +266,11 @@ def run(show_plots, orbitCase, planetCase):
         # print "Position data:", posData[ind,1:]
         # print "Velocity data:", velData[ind,1:]
         # print "Density data:", densData[ind,1]
-        refDragForce[ind] = cannonballDragComp(dragCoeff,densData[ind],projArea,velData[ind], attData[ind])
+        refDragForce[ind] = cannonballDragComp(dragParams.dragCoeff,
+                                               densData[ind],
+                                               dragParams.projectedArea,
+                                               velData[ind],
+                                               attData[ind])
         # print "Reference drag data:", refDragForce[ind,:]
         # print "Drag Data:", dragForce[ind,1:]
         # print ""

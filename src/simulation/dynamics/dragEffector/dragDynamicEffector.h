@@ -60,20 +60,20 @@ public:
     bool ReadInputs();
     void cannonballDrag();
     void updateDragDir();
+    const DragBaseData &getCoreParams() const;
+    void setCoreParams(const DragBaseData &coreParams);
 
-public:
-    DragBaseData coreParams;                               //!< -- Struct used to hold drag parameters
     ReadFunctor<AtmoPropsMsgPayload> atmoDensInMsg;        //!< -- message used to read density inputs
-
-    StateData *hubSigma;                                   //!< -- Hub/Inertial attitude represented by MRP
-    StateData *hubVelocity;                                //!< m/s Hub inertial velocity vector
-    Eigen::Vector3d v_B;                                   //!< m/s local variable to hold the inertial velocity
-    Eigen::Vector3d v_hat_B;                               //!< -- Drag force direction in the inertial frame
     BSKLogger bskLogger;                                   //!< -- BSK Logging
 
 private:
     AtmoPropsMsgPayload atmoInData;
-    DragModel modelType;                                 //!< -- Enum the type of model used to compute drag
+    DragModel modelType;                                   //!< -- Enum the type of model used to compute drag
+    DragBaseData coreParams;                               //!< -- Struct used to hold drag parameters
+    Eigen::Vector3d v_B;                                   //!< m/s local variable to hold the inertial velocity
+    Eigen::Vector3d v_hat_B;                               //!< -- Drag force direction in the inertial frame
+    StateData *hubSigma;                                 //!< -- Hub/Inertial attitude represented by MRP
+    StateData *hubVelocity;                              //!< m/s Hub inertial velocity vector
 };
 
 

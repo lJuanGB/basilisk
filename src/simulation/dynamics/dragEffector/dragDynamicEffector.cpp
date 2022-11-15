@@ -123,3 +123,11 @@ void DragDynamicEffector::UpdateState(uint64_t CurrentSimNanos)
 {
 	ReadInputs();
 }
+
+const DragBaseData &DragDynamicEffector::getCoreParams() const {
+    return coreParams;
+}
+
+void DragDynamicEffector::setCoreParams(const DragBaseData &coreParams) {
+    DragDynamicEffector::coreParams = coreParams;
+}
