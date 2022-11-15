@@ -21,13 +21,11 @@
 #include "dragDynamicEffector.h"
 #include "architecture/utilities/linearAlgebra.h"
 #include "architecture/utilities/astroConstants.h"
-
-DragDynamicEffector::DragDynamicEffector()
+DragDynamicEffector::DragDynamicEffector(DragModel model): modelType(model)
 {
-	this->coreParams.projectedArea = 0.0;
+    this->coreParams.projectedArea = 0.0;
 	this->coreParams.dragCoeff = 0.0;
     this->coreParams.comOffset.setZero();
-	this->modelType = "cannonball";
 	this->forceExternal_B.fill(0.0);
 	this->torqueExternalPntB_B.fill(0.0);
 	this->v_B.fill(0.0);
@@ -109,9 +107,10 @@ selecting the model type based on the settable attribute "modelType."
 */
 void DragDynamicEffector::computeForceTorque(double integTime, double timeStep){
 	updateDragDir();
-	if(this->modelType == "cannonball"){
-		cannonballDrag();
-  	}
+
+    if (this->modelType == DragModel::CANNONBALL) {
+        this->cannonballDrag();
+    }
 }
 
 /*! This method is called to update the local atmospheric conditions at each timestep.

@@ -45,10 +45,12 @@ typedef struct {
     Eigen::Vector3d comOffset;               //!< m distance from center of mass to center of projected area
 }DragBaseData;
 
+enum class DragModel { CANNONBALL };
+
 /*! @brief drag dynamic effector */
 class DragDynamicEffector: public SysModel, public DynamicEffector {
 public:
-    DragDynamicEffector();
+    explicit DragDynamicEffector(DragModel model);
     ~DragDynamicEffector();
     void linkInStates(DynParamManager& states);             //!< class method
     void computeForceTorque(double integTime, double timeStep);
@@ -62,7 +64,7 @@ public:
 public:
     DragBaseData coreParams;                               //!< -- Struct used to hold drag parameters
     ReadFunctor<AtmoPropsMsgPayload> atmoDensInMsg;        //!< -- message used to read density inputs
-    std::string modelType;                                 //!< -- String used to set the type of model used to compute drag
+
     StateData *hubSigma;                                   //!< -- Hub/Inertial attitude represented by MRP
     StateData *hubVelocity;                                //!< m/s Hub inertial velocity vector
     Eigen::Vector3d v_B;                                   //!< m/s local variable to hold the inertial velocity
@@ -71,7 +73,7 @@ public:
 
 private:
     AtmoPropsMsgPayload atmoInData;
-    
+    DragModel modelType;                                 //!< -- Enum the type of model used to compute drag
 };
 
 
