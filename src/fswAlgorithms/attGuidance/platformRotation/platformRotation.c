@@ -26,6 +26,7 @@
 /* Support files.  Be sure to use the absolute path relative to Basilisk directory. */
 #include "architecture/utilities/linearAlgebra.h"
 #include "architecture/utilities/rigidBodyKinematics.h"
+#include "architecture/utilities/astroConstants.h"
 
 
 /*!
@@ -94,8 +95,8 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     phi = acos( fmin( fmax( v3Dot(T_F_hat, r_CM_F_hat), -1 ), 1 ) );
     v3Cross(T_F_hat, r_CM_F_hat, e_phi);
     // If phi = PI, e_phi can be any vector perpendicular to F_current_B
-    if (fabs(phi-M_PI) < EPS) {
-        phi = M_PI;
+    if (fabs(phi-MPI) < EPS) {
+        phi = MPI;
         if (fabs(T_F_hat[0]) > EPS) {
             e_phi[0] = -(T_F_hat[1]+T_F_hat[2]) / T_F_hat[0];
             e_phi[1] = 1;
@@ -218,7 +219,7 @@ double computeThirdRotation(double e_theta[3], double F2M[3][3])
     if (fabs(A) < EPS) {
         if (fabs(B) < EPS) {
             if (C > 0) {
-                theta = M_PI;
+                theta = MPI;
             }
             else {
                 theta = 0.0;
@@ -257,7 +258,7 @@ double computeThirdRotation(double e_theta[3], double F2M[3][3])
             theta = 2*atan(t);
             y = (A*t*t + B*t + C) / (1 + t*t);
             if (fabs(A) < fabs(y)) {
-                theta = M_PI;
+                theta = MPI;
             }
         }
     }
