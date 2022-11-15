@@ -69,7 +69,7 @@ bool DragDynamicEffector::ReadInputs()
 	bool dataGood;
     this->atmoInData = this->atmoDensInMsg();
     dataGood = this->atmoDensInMsg.isWritten();
-	return(dataGood);
+	return dataGood;
 }
 
 /*!
