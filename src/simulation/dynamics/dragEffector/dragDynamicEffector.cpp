@@ -48,11 +48,12 @@ void DragDynamicEffector::Reset(uint64_t CurrentSimNanos)
 
 }
 
-/*! The DragEffector does not write output messages to the rest of the sim.
+/*!
 @return void
  */
 void DragDynamicEffector::WriteOutputMessages(uint64_t CurrentClock)
 {
+    // Abstract method required but this module does not write output messages.
 }
 
 
