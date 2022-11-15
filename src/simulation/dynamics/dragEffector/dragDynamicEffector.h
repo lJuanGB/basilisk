@@ -17,28 +17,24 @@
 
  */
 
-
 #ifndef DRAG_DYNAMIC_EFFECTOR_H
 #define DRAG_DYNAMIC_EFFECTOR_H
 
-#include <Eigen/Dense>
-#include <vector>
 #include "simulation/dynamics/_GeneralModuleFiles/dynamicEffector.h"
 #include "simulation/dynamics/_GeneralModuleFiles/stateData.h"
 #include "architecture/_GeneralModuleFiles/sys_model.h"
-
 #include "architecture/msgPayloadDefC/AtmoPropsMsgPayload.h"
 #include "architecture/messaging/messaging.h"
-
 #include "architecture/utilities/avsEigenMRP.h"
 #include "architecture/utilities/avsEigenSupport.h"
 #include "architecture/utilities/bskLogging.h"
 
+#include <Eigen/Dense>
+#include <vector>
 
-
-
-
-//! @brief Container for basic drag parameters - the spacecraft's atmosphere-relative velocity, its projected area, and its drag coefficient.
+/*! @brief Container for basic drag parameters - the spacecraft's atmosphere-relative velocity,
+    its projected area, and its drag coefficient.
+*/
 typedef struct {
     double projectedArea;                    //!< m^2   Area of spacecraft projected in velocity direction
     double dragCoeff;                        //!< --  Nondimensional drag coefficient
