@@ -77,4 +77,4 @@ private:
 };
 
 
-#endif /* THRUSTER_DYNAMIC_EFFECTOR_H */
+#endif /* DRAG_DYNAMIC_EFFECTOR_H */
