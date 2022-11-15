@@ -52,10 +52,10 @@ class DragDynamicEffector: public SysModel, public DynamicEffector {
 public:
     explicit DragDynamicEffector(DragModel model);
     ~DragDynamicEffector();
-    void linkInStates(DynParamManager& states);             //!< class method
-    void computeForceTorque(double integTime, double timeStep);
-    void Reset(uint64_t CurrentSimNanos);
-    void UpdateState(uint64_t CurrentSimNanos);
+    void linkInStates(DynParamManager& states) override;
+    void computeForceTorque(double integTime, double timeStep) override;
+    void Reset(uint64_t CurrentSimNanos) override;
+    void UpdateState(uint64_t CurrentSimNanos) override;
     void WriteOutputMessages(uint64_t CurrentClock);
     bool ReadInputs();
     void cannonballDrag();
