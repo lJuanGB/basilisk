@@ -20,6 +20,7 @@
 #include "dragDynamicEffector.h"
 #include "architecture/utilities/linearAlgebra.h"
 #include "architecture/utilities/astroConstants.h"
+
 DragDynamicEffector::DragDynamicEffector(DragModel model): modelType(model)
 {
     this->coreParams.projectedArea = 0.0;
@@ -34,7 +35,6 @@ DragDynamicEffector::DragDynamicEffector(DragModel model): modelType(model)
 /*! The destructor.*/
 DragDynamicEffector::~DragDynamicEffector() = default;
 
-
 /*! This method is used to reset the module.
  @return void
  */
@@ -44,7 +44,6 @@ void DragDynamicEffector::Reset(uint64_t CurrentSimNanos)
     if (!this->atmoDensInMsg.isLinked()) {
         bskLogger.bskLog(BSK_ERROR, "dragDynamicEffector.atmoDensInMsg was not linked.");
     }
-
 }
 
 /*!
@@ -54,7 +53,6 @@ void DragDynamicEffector::WriteOutputMessages(uint64_t CurrentClock)
 {
     // Abstract method required but this module does not write output messages.
 }
-
 
 /*! This method is used to read the incoming density message and update the internal density/
 atmospheric data.

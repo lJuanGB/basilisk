@@ -72,5 +72,4 @@ private:
     StateData *hubVelocity;                              //!< m/s Hub inertial velocity vector
 };
 
-
 #endif /* DRAG_DYNAMIC_EFFECTOR_H */
