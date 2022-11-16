@@ -81,7 +81,7 @@ def platformRotationTestFunction(show_plots, CM_offset, seed, accuracy):
     T_F    = np.array([1.0, 1.0, 10.0])
 
     r_CB_B = np.array([0,0,0]) + np.random.rand(3)
-    r_CB_B = r_CB_B / np.linalg.norm(r_CB_B) * 0.1
+    r_CB_B = r_CB_B / np.linalg.norm(r_CB_B) * CM_offset
 
     testFailCount = 0                        # zero unit test result counter
     testMessages = []                        # create empty array to store test log messages
