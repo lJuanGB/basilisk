@@ -47,7 +47,6 @@ typedef struct {
     /* declare these internal variables that are used by the module and should not be declared by the user */
     int          flagB;
     int          flagN;
-    AttRefMsgPayload  priorAttRefMsg;
 
     /* declare module IO interfaces */
     NavAttMsg_C          attNavInMsg;             //!< input msg measured attitude
