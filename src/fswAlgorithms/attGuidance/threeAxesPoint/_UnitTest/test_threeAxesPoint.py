@@ -66,14 +66,14 @@ def computeGamma(alpha, delta):
 
 # The 'ang' array spans the interval from 0 to pi. 0 and pi are excluded because 
 # the code is less accurate around those points; it still provides accurate results at 1e-6
-ang = np.linspace(0, np.pi, 11, endpoint=True)
+ang = np.linspace(0, np.pi, 5, endpoint=True)
 ang = list(ang)
 # The following 'parametrize' function decorator provides the parameters and expected results for each
 # of the multiple test runs for this test.
 @pytest.mark.parametrize("alpha", ang)
 @pytest.mark.parametrize("delta", ang)
 @pytest.mark.parametrize("flagB", [0,1])
-@pytest.mark.parametrize("flagN", [0,1])
+@pytest.mark.parametrize("flagN", [0,1,2])
 @pytest.mark.parametrize("priorityFlag", [0,1])
 @pytest.mark.parametrize("accuracy", [1e-6])
 
@@ -177,7 +177,7 @@ def threeAxesPointTestFunction(show_plots, alpha, delta, flagB, flagN, priorityF
 
     # Initialize the test module configuration data
     # These will eventually become input messages
-    threeAxConfig.a_B = sA_B
+    threeAxConfig.a1_B = sA_B
     threeAxConfig.priorityFlag = priorityFlag
 
     # Create input message
@@ -265,7 +265,7 @@ if __name__ == "__main__":
                  0,     # alpha
                  0,     # delta
                  0,           # flagB
-                 2,           # flagN
+                 0,           # flagN
                  0,           # priorityFlag
                  1e-6         # accuracy
                )
