@@ -31,11 +31,11 @@ filename = inspect.getframeinfo(inspect.currentframe()).filename
 path = os.path.dirname(os.path.abspath(filename))
 splitPath = path.split('simulation')
 
-from Basilisk.utilities import SimulationBaseClass
-from Basilisk.utilities import unitTestSupport  # general support file with common unit test functions
+from Basilisk.utilities import SimulationBaseClass, unitTestSupport, orbitalMotion, macros
+from Basilisk.simulation import spacecraft, constraintDynamicEffector, gravityEffector, svIntegrators
 import matplotlib.pyplot as plt
-from Basilisk.simulation import spacecraft, constraintDynamicEffector, gravityEffector
-from Basilisk.utilities import macros
+import numpy as np
+
 
 
 # uncomment this line is this test is to be skipped in the global unit test run, adjust message as needed
@@ -65,7 +65,7 @@ def test_constraintEffector(show_plots):
     # Create test thread
     unitTaskName = "unitTask"  # arbitrary name (don't change)
     unitProcessName = "TestProcess"  # arbitrary name (don't change)
-    testProcessRate = macros.sec2nano(0.001)  # update process rate update time
+    testProcessRate = macros.sec2nano(0.0001)  # update process rate update time
     testProc = unitTestSim.CreateNewProcess(unitProcessName)
     testProc.addTask(unitTestSim.CreateNewTask(unitTaskName, testProcessRate))
 
@@ -75,42 +75,32 @@ def test_constraintEffector(show_plots):
     scObject2 = spacecraft.Spacecraft()
     scObject2.ModelTag = "spacecraftBody2"
 
+    # Set the integrator to RKF45
+    # integratorObject1 = svIntegrators.svIntegratorRKF78(scObject1)
+    # scObject1.setIntegrator(integratorObject1)
+    # integratorObject2 = svIntegrators.svIntegratorRKF78(scObject2)
+    # scObject2.setIntegrator(integratorObject2)
+
     # Create the constraint effector module
     constraintEffector = constraintDynamicEffector.ConstraintDynamicEffector()
 
     # Define properties of the constraint
-    constraintEffector.r_P1B1_B1 = [1, 0, 1]
-    constraintEffector.r_P2B2_B2 = [0, -1, 0.5]
-    constraintEffector.r_P2P1_B1Init = [0, 1, 0]
-    constraintEffector.l = 1.0
+    r_P1B1_B1 = [1, 0, 0]
+    r_P2B2_B2 = [0, 1, 0]
+    l = 0.1
+    r_P2P1_B1Init = np.dot([0, 1, 0], l)
+
+    # Set up the constraint effector
+    constraintEffector.r_P1B1_B1 = r_P1B1_B1
+    constraintEffector.r_P2B2_B2 = r_P2B2_B2
+    constraintEffector.r_P2P1_B1Init = r_P2P1_B1Init
+    constraintEffector.alpha = 1e1
+    constraintEffector.beta = 1e1
     constraintEffector.ModelTag = "constraintEffector"
 
     # Add constraints to both spacecraft
     scObject1.addDynamicEffector(constraintEffector)
     scObject2.addDynamicEffector(constraintEffector)
-
-    # Define mass properties of the rigid hub of both spacecraft
-    scObject1.hub.mHub = 750.0
-    scObject1.hub.r_BcB_B = [[0.0], [0.0], [0.0]]
-    scObject1.hub.IHubPntBc_B = [[900.0, 0.0, 0.0], [0.0, 800.0, 0.0], [0.0, 0.0, 600.0]]
-    scObject2.hub.mHub = 250.0
-    scObject2.hub.r_BcB_B = [[0.0], [0.0], [0.0]]
-    scObject2.hub.IHubPntBc_B = [[300.0, 0.0, 0.0], [0.0, 250.0, 0.0], [0.0, 0.0, 200.0]]
-
-    # Set the initial values for the states
-    scObject1.hub.r_CN_NInit = [[-4020338.690396649], [7490566.741852513], [5248299.211589362]]
-    scObject1.hub.v_CN_NInit = [[-5199.77710904224], [-3436.681645356935], [1041.576797498721]]
-    scObject1.hub.sigma_BNInit = [[0.0], [0.0], [0.0]]
-    scObject1.hub.omega_BN_BInit = [[0.0], [0.0], [0.0]]
-    scObject2.hub.r_CN_NInit = scObject1.hub.r_CN_NInit + constraintEffector.r_P1B1_B1 + constraintEffector.r_P2B2_B2 + constraintEffector.r_P2P1_B1Init
-    scObject2.hub.v_CN_NInit = scObject1.hub.v_CN_NInit
-    scObject2.hub.sigma_BNInit = scObject1.hub.sigma_BNInit
-    scObject2.hub.omega_BN_BInit = scObject1.hub.omega_BN_BInit
-
-    # Add test module to runtime call list
-    unitTestSim.AddModelToTask(unitTaskName, scObject1)
-    unitTestSim.AddModelToTask(unitTaskName, scObject2)
-    unitTestSim.AddModelToTask(unitTaskName, constraintEffector)
 
     # Add Earth gravity to the simulation
     earthGravBody = gravityEffector.GravBodyData()
@@ -121,6 +111,41 @@ def test_constraintEffector(show_plots):
     scObject1.gravField.gravBodies = spacecraft.GravBodyVector([earthGravBody])
     scObject2.gravField.gravBodies = spacecraft.GravBodyVector([earthGravBody])
 
+    # Find r and v from orbital elements
+    oe = orbitalMotion.ClassicElements()
+    oe.a = earthGravBody.radEquator + 500e3  # meters
+    oe.e = 0.01
+    oe.i = 55.0 * macros.D2R
+    oe.Omega = 0.0 * macros.D2R
+    oe.omega = 0.0 * macros.D2R
+    oe.f = 0.0 * macros.D2R
+    r_B1N_N, rDot_B1N_N = orbitalMotion.elem2rv(earthGravBody.mu, oe)
+    r_B2N_N = r_B1N_N + r_P1B1_B1 + r_P2P1_B1Init - r_P2B2_B2
+    rDot_B2N_N = rDot_B1N_N
+
+    # Define mass properties of the rigid hub of both spacecraft
+    scObject1.hub.mHub = 750.0
+    scObject1.hub.r_BcB_B = [[0.0], [0.0], [0.0]]
+    scObject1.hub.IHubPntBc_B = [[900.0, 0.0, 0.0], [0.0, 800.0, 0.0], [0.0, 0.0, 600.0]]
+    scObject2.hub.mHub = 250.0
+    scObject2.hub.r_BcB_B = [[0.0], [0.0], [0.0]]
+    scObject2.hub.IHubPntBc_B = [[300.0, 0.0, 0.0], [0.0, 250.0, 0.0], [0.0, 0.0, 200.0]]
+
+    # Set the initial values for the states
+    scObject1.hub.r_CN_NInit = r_B1N_N
+    scObject1.hub.v_CN_NInit = rDot_B1N_N
+    scObject1.hub.sigma_BNInit = [[0.0], [0.0], [0.0]]
+    scObject1.hub.omega_BN_BInit = [[0.0], [0.0], [0.0]]
+    scObject2.hub.r_CN_NInit = r_B2N_N
+    scObject2.hub.v_CN_NInit = rDot_B2N_N
+    scObject2.hub.sigma_BNInit = [[0.0], [0.0], [0.0]]
+    scObject2.hub.omega_BN_BInit = [[0.0], [0.0], [0.0]]
+
+    # Add test module to runtime call list
+    unitTestSim.AddModelToTask(unitTaskName, scObject1)
+    unitTestSim.AddModelToTask(unitTaskName, scObject2)
+    unitTestSim.AddModelToTask(unitTaskName, constraintEffector)
+
     # Log the spacecraft state message
     datLog1 = scObject1.scStateOutMsg.recorder()
     datLog2 = scObject2.scStateOutMsg.recorder()
@@ -128,10 +153,11 @@ def test_constraintEffector(show_plots):
     unitTestSim.AddModelToTask(unitTaskName, datLog2)
 
     # Add energy and momentum variables to log
-    unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".psi_N", testProcessRate, 0, 0, 'double')
-    unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".psiPrime_N", testProcessRate, 0, 0, 'double')
+    unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".psi_B1", testProcessRate, 0, 2, 'double')
+    unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".psiPrime_B1", testProcessRate, 0, 2, 'double')
 
     # Initialize the simulation
+    # breakpoint()
     unitTestSim.InitializeSimulation()
 
     # Setup and run the simulation
@@ -140,25 +166,29 @@ def test_constraintEffector(show_plots):
     unitTestSim.ExecuteSimulation()
 
     # Extract the logged variables
-    psi_N = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".psi_N")
-    psiPrime_N = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".psiPrime_N")
+    psi_B1 = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".psi_B1")
+    psiPrime_B1 = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".psiPrime_B1")
 
     # Grab the time vector
-    timeData = psi_N[:, 0] * 1e-9
+    timeData = psi_B1[:, 0] * macros.NANO2SEC
 
     # Plotting
     plt.close("all")
     plt.figure()
     plt.clf()
-    plt.plot(timeData, constraintEffector.l + psi_N[:, 1])
+    psi_B1 = np.delete(psi_B1, 0, axis=1)
+    for i in range(3):
+        plt.plot(timeData, psi_B1[:, i])
     plt.xlabel('time (s)')
-    plt.ylabel('psi_N')
+    plt.ylabel('psi_B1')
 
     plt.figure()
     plt.clf()
-    plt.plot(timeData, psiPrime_N[:, 1])
+    psiPrime_B1 = np.delete(psiPrime_B1, 0, axis=1)
+    for i in range(3):
+        plt.plot(timeData, psiPrime_B1[:, i])
     plt.xlabel('time (s)')
-    plt.ylabel('psiPrime_N')
+    plt.ylabel('psiPrime_B1')
 
     if show_plots:
         plt.show()
