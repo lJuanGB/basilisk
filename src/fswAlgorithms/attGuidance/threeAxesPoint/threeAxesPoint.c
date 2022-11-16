@@ -149,8 +149,8 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     MRP2C(attNavIn.sigma_BN, BN);
 
     /*! get the solar array drive direction in body frame coordinates */
-    double a_B[3];
-    v3Normalize(configData->a_B, a_B);
+    double a1_B[3];
+    v3Normalize(configData->a1_B, a1_B);
 
     /*! read Sun direction in B frame from the attNav message */
     double rSun_B[3];
@@ -175,7 +175,7 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     // normalize e_phi
     v3Normalize(e_phi, e_phi);
 
-    /*! define intermediate rotation R1B */
+    /*! define first rotation R1B */
     double R1B[3][3], PRV_phi[3];
     v3Scale(phi, e_phi, PRV_phi);
     PRV2C(PRV_phi, R1B);
@@ -188,13 +188,27 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     double e_psi[3];
     v3Copy(hRef_B, e_psi);
 
-    /*! define the coefficients of the quadratic equation */
+    /*! define the coefficients of the quadratic equation A, B and C */
     double A, B, C, Delta, b[3];
     v3Cross(rSun_R1, e_psi, b);
-    A = 2 * v3Dot(rSun_R1, e_psi) * v3Dot(e_psi, a_B) - v3Dot(a_B, rSun_R1);
-    B = 2 * v3Dot(a_B, b);
-    C = v3Dot(a_B, rSun_R1);
+    A = 2 * v3Dot(rSun_R1, e_psi) * v3Dot(e_psi, a1_B) - v3Dot(a1_B, rSun_R1);
+    B = 2 * v3Dot(a1_B, b);
+    C = v3Dot(a1_B, rSun_R1);
     Delta = B * B - 4 * A * C;
+
+    /*! get the body direction that must be kept close to Sun and compute the coefficients of the quadratic equation E, F and G */
+    double E, F, G;
+    double a2_B[3];
+    if (v3Norm(configData->a2_B) > EPS) {
+        E = 2 * v3Dot(rSun_R1, e_psi) * v3Dot(e_psi, a2_B) - v3Dot(a2_B, rSun_R1);
+        F = 2 * v3Dot(a2_B, b);
+        G = v3Dot(a2_B, rSun_R1);
+    }
+    else {
+        a2_B[0] = 0; a2_B[1] = 0; a2_B[2] = 0;
+        E = 0;       F = 0;       G = 0;
+    }
+    
 
     /*! compute exact solution or best solution depending on Delta */
     double t, t1, t2, y, y1, y2, psi;
@@ -213,13 +227,7 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
         }
     }
     else {
-        if (Delta >= 0) {
-            t1 = (-B + sqrt(Delta)) / (2*A);
-            t2 = (-B - sqrt(Delta)) / (2*A);
-            t = fmin(t1, t2);
-            psi = 2*atan(t);
-        }
-        else {
+        if (Delta < 0) {
             if (fabs(B) < EPS) {
                 t = 0.0;
             }
@@ -240,13 +248,28 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
                 psi = MPI;
             }
         }
+        else {
+            t1 = (-B + sqrt(Delta)) / (2*A);
+            t2 = (-B - sqrt(Delta)) / (2*A);
+
+            t = t1;            
+            if (fabs(v3Dot(hRef_B, a2_B)-1) > EPS) {
+                y1 = (E*t1*t1 + F*t1 + G) / (1 + t1*t1);
+                y2 = (E*t2*t2 + F*t2 + G) / (1 + t2*t2);
+                if (y2 > y1) {
+                    t = t2;
+                }
+            }
+
+            psi = 2*atan(t);
+        }
     }
 
     /*! compute second rotation R2R1 */
     double R2R1[3][3], PRV_psi[3];
     v3Scale(psi, e_psi, PRV_psi);
     PRV2C(PRV_psi, R2R1);
-
+    
     /*! compute second reference frame w.r.t inertial frame */
     double R1N[3][3], R2N[3][3];
     m33MultM33(R1B, BN, R1N);
@@ -266,7 +289,7 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
         }
     }
     else {
-        sTheta = v3Dot(rSun_R2, a_B);
+        sTheta = v3Dot(rSun_R2, a1_B);
         theta = asin( fmin( fmax( fabs(sTheta), -1 ), 1 ) );
         if (fabs(theta) < EPS) {
             // if Sun direction and solar array drive are already perpendicular, third rotation is null
@@ -275,19 +298,19 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
             }
         }
         else {
-            // if Sun direction and solar array drive are not perpendicular, project solar array drive a_B onto perpendicular plane (aP_B) and compute third rotation
+            // if Sun direction and solar array drive are not perpendicular, project solar array drive a1_B onto perpendicular plane (aP_B) and compute third rotation
             if (fabs(theta-MPI/2) > EPS) {
                 for (int i = 0; i < 3; i++) {
-                    aP_B[i] = (a_B[i] - sTheta * rSun_R2[i]) / (1 - sTheta * sTheta);
+                    aP_B[i] = (a1_B[i] - sTheta * rSun_R2[i]) / (1 - sTheta * sTheta);
                 }
-                v3Cross(a_B, aP_B, e_theta);
+                v3Cross(a1_B, aP_B, e_theta);
             }
             else {
                 v3Cross(rSun_R2, hRef_B, aP_B);
                 if (v3Norm(aP_B) < EPS) {
                     v3Perpendicular(rSun_R2, aP_B);
                 }
-                v3Cross(a_B, aP_B, e_theta);
+                v3Cross(a1_B, aP_B, e_theta);
             }
             v3Normalize(e_theta, e_theta);
             v3Scale(theta, e_theta, PRV_theta);

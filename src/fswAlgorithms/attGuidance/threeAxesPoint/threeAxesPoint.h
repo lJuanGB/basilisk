@@ -35,14 +35,19 @@
 /*! @brief Top level structure for the sub-module routines. */
 typedef struct {
 
-    /* declare these quantities that will eventually become input modules */
+    /* declare these quantities that always must be specified as flight software parameters */
+    double a1_B[3];                                //!< arrays axis direction in B frame
+    int priorityFlag;                              //!< flag to indicate which constraint must be prioritized
+
+    /* declare these optional quantities */
     double h_B[3];                                //!< main heading in B frame coordinates
     double h_N[3];                                //!< main heading in N frame coordinates
-    double a_B[3];                                //!< arrays axis direction in B frame
+    double a2_B[3];                               //!< body frame heading that should remain as close as possible to Sun heading
 
-    int flagB;
-    int flagN;
-    int priorityFlag;
+    /* declare these internal variables that are used by the module and should not be declared by the user */
+    int          flagB;
+    int          flagN;
+    AttRefMsgPayload  priorAttRefMsg;
 
     /* declare module IO interfaces */
     NavAttMsg_C          attNavInMsg;             //!< input msg measured attitude
