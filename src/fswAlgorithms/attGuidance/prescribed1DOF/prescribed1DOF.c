@@ -68,6 +68,9 @@ void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, i
 */
 void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, int64_t moduleID)
 {
+    double thetaDDotMax = 0.5;
+    int spinAxis = 0;
+
     /*! Create buffer messages */
     RefAngleMsgPayload refAngleIn;
     CurrAngleMsgPayload currAngleIn;
@@ -88,7 +91,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double thetaRef = refAngleIn.thetaRef; // [rad]
 
     /*! Define temporal information */
-    double tf = sqrt(((0.5 * abs(thetaRef - theta0)) * 8) / thetaDDotMax); // [s]
+    double tf = sqrt(((0.5 * thetaRef - theta0) * 8) / thetaDDotMax); // [s] ADD BACK abs(thetaRef-theta0) AFTER CODE COMPILES
     double ts = tf / 2; // switch time [s]
     double t = callTime*1e9; // current time [s]
     double thetaDDot;
@@ -130,7 +133,8 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     }
     else
     {
-        double prv_FF0_array[3] = theta*rotAxis_B;
+        double prv_FF0_array[3];
+        v3Scale(theta, rotAxis_B, prv_FF0_array)
         PRV2C(prv_FF0_array, dcm_FF0);
     }
 
@@ -142,13 +146,14 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     }
     else
     {
-        double prv_F0B_array[3] = theta0*rotAxis_B;
+        double prv_F0B_array[3];
+        v3Scale(theta0, rotAxis_B, prv_F0B_array)
         PRV2C(prv_F0B_array, dcm_F0B);
     }
 
     /*! Determine dcm_FB */
     double dcm_FB[3][3];
-    dcm_FB = dcm_FF0 * dcm_F0B;
+    m33MultM33(dcm_FF0, dcm_F0B, dcm_FB);
     C2MRP(dcm_FB, sigma_FB);
 
     /*! Copy local variables to output message */
