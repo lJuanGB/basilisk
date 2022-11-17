@@ -159,18 +159,34 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
     # NOTE: the total simulation time may be longer than this value. The
     # simulation is stopped at the next logging event on or after the
     # simulation end time.
-    unitTestSim.ConfigureStopTime(macros.sec2nano(1.0))        # seconds to stop simulation
+    unitTestSim.ConfigureStopTime(macros.sec2nano(30.0))        # seconds to stop simulation
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
     # Extract data for unit test
-    moduleOutput1 = dataLog.omega_FB_F
-    thetaDotFinal_sim = moduleOutput1[-1]
+    omega_FB_F = dataLog.omega_FB_F
+    thetaDot_Final_sim = omega_FB_F[-1, spinAxis]
 
-    moduleOutput2 = dataLog.sigma_FB
-    sigma_FB_sim = moduleOutput2[-1]
-    thetaFinal_sim = 4 * np.arctan(sigma_FB_sim[spinAxis])
+    sigma_FB = dataLog.sigma_FB
+    sigma_FB_Final_sim = sigma_FB[-1, :]
+
+    thetaFinal_sim = 4 * np.arctan(sigma_FB_Final_sim[spinAxis])
+    print(thetaFinal_sim)
+
+    timespan = dataLog.times()
+
+    plt.figure()
+    plt.clf()
+    plt.plot(timespan * 1e-9, omega_FB_F[:, 0],
+             timespan * 1e-9, omega_FB_F[:, 1],
+             timespan * 1e-9, omega_FB_F[:, 2])
+    plt.xlabel('Time (s)')
+    plt.ylabel('Prescribed omega_FB_F')
+
+    if show_plots:
+        plt.show()
+    plt.close("all")
 
     # set the filtered output truth states
     if not unitTestSupport.isDoubleEqual(thetaDotFinal_sim, thetaDotRef, accuracy):
@@ -190,7 +206,7 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
 #
 if __name__ == "__main__":
     Prescribed1DOFTestFunction(
-                 False,
+                 True,
                  np.pi/3,     # thetaRef
                  0,           # thetaDotRef
                  1e-12        # accuracy
