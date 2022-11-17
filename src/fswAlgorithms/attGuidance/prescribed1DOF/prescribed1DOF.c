@@ -127,29 +127,16 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double dcm_FF0[3][3];
 
     /*! Determine dcm_FF0 */
-    if (t == t0)
-    {
-        dcm_FF0 = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
-    }
-    else
-    {
-        double prv_FF0_array[3];
-        v3Scale(theta, rotAxis_B, prv_FF0_array)
-        PRV2C(prv_FF0_array, dcm_FF0);
-    }
+    double prv_FF0_array[3];
+    v3Scale(theta, rotAxis_B, prv_FF0_array);
+    PRV2C(prv_FF0_array, dcm_FF0);
 
     /*! Determine dcm_F0B */
     double dcm_F0B[3][3];
-    if (theta0 == 0.0)
-    {
-        dcm_F0B = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
-    }
-    else
-    {
-        double prv_F0B_array[3];
-        v3Scale(theta0, rotAxis_B, prv_F0B_array)
-        PRV2C(prv_F0B_array, dcm_F0B);
-    }
+    double prv_F0B_array[3];
+    v3Scale(theta0, rotAxis_B, prv_F0B_array);
+    PRV2C(prv_F0B_array, dcm_F0B);
+
 
     /*! Determine dcm_FB */
     double dcm_FB[3][3];
