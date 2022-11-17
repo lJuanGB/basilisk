@@ -197,7 +197,6 @@ def solarArrayRotationTestFunction(show_plots, rS_N, sigma_BN, sigma_RN, bodyFra
         thetaR -= np.pi
     elif thetaR-thetaC < -np.pi/2:
         thetaR += np.pi
-    print(thetaR, dataLog.theta[0])
     # compare the module results to the truth values
     if not unitTestSupport.isDoubleEqual(dataLog.theta[0], thetaR, accuracy):
         testFailCount += 1
