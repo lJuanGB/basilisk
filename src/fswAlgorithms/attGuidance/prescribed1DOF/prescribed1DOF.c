@@ -26,6 +26,8 @@
 #include "architecture/utilities/linearAlgebra.h"
 #include "architecture/utilities/rigidBodyKinematics.h"
 #include "architecture/utilities/avsEigenSupport.h"
+#include "architecture/utilities/avsEigenMRP.h"
+#include "architecture/utilities/macroDefinitions.h"
 
 /*! This method initializes the output messages for this module.
  @return void
