@@ -32,10 +32,10 @@ typedef struct {
 
     /* User sets these quantities from Python */
     double thetaDDotMax;                                //!< Maximum angular acceleration [rad/s^2]
-    int spinAxis;                                       //!< F-frame spin axis of prescribed body *GENERALIZE
+    int spinAxis;                                       //!< body-frame spin axis of prescribed body *GENERALIZE
 
     /* Parameters used in module */
-    double t0;                                          //!< Initial time when module is called [s]
+    double t0;                                          //!< Initial time when module reset is called [s]
 
     /* Declare module IO interfaces */
     RefAngleMsg_C    refAngleInMsg;                     //!< Input msg for reference angle

@@ -25,9 +25,6 @@
 /* Support files.  Be sure to use the absolute path relative to Basilisk directory. */
 #include "architecture/utilities/linearAlgebra.h"
 #include "architecture/utilities/rigidBodyKinematics.h"
-#include "architecture/utilities/avsEigenSupport.h"
-#include "architecture/utilities/avsEigenMRP.h"
-#include "architecture/utilities/macroDefinitions.h"
 
 /*! This method initializes the output messages for this module.
  @return void
@@ -124,35 +121,35 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     /*! Determine sigma_FB, mrp from F frame to B frame */
     double rotAxis_B[3] = {0.0, 0.0, 0.0};
     rotAxis_B[spinAxis] = 1;
-    double dcm_F0F[3][3];
+    double dcm_FF0[3][3];
 
-    /*! Determine dcm_F0F */
+    /*! Determine dcm_FF0 */
     if (t == t0)
     {
-        dcm_F0F = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+        dcm_FF0 = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
     }
     else
     {
-        double prv_F0F_array[3] = -theta*rotAxis_B;
-        PRV2C(prv_F0F_array, dcm_F0F);
+        double prv_FF0_array[3] = theta*rotAxis_B;
+        PRV2C(prv_FF0_array, dcm_FF0);
     }
 
     /*! Determine dcm_F0B */
-    Eigen::Matrix3d dcm_F0B;
+    double dcm_F0B[3][3];
     if (theta0 == 0.0)
     {
         dcm_F0B = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
     }
     else
     {
-        double prv_F0B_array[3] = -theta0*rotAxis_B;
+        double prv_F0B_array[3] = theta0*rotAxis_B;
         PRV2C(prv_F0B_array, dcm_F0B);
     }
 
-    /*! Determine dcm_BF */
-    Eigen::Matrix3d dcm_BF;
-    dcm_BF = dcm_F0B.transpose() * c2DArray2EigenMatrix3d(dcm_F0F);
-    sigma_FB = eigenMRPd2Vector3d(eigenC2MRP(dcm_BF.transpose()));
+    /*! Determine dcm_FB */
+    double dcm_FB[3][3];
+    dcm_FB = dcm_FF0 * dcm_F0B;
+    C2MRP(dcm_FB, sigma_FB);
 
     /*! Copy local variables to output message */
     v3Copy(omega_FB_F, prescribedMotionOut.omega_FB_F);
