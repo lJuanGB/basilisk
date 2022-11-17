@@ -127,8 +127,9 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double dcm_F0F[3][3];
     double prv_F0F_array[3] = -theta*rotAxis_B;
     PRV2C(prv_F0F_array, dcm_F0F);
-    double dcm_BF[3][3];
-    double dcm_F0B[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    Eigen::Matrix3d dcm_BF;
+    Eigen::Matrix3d dcm_F0B;
+    dcm_F0B.Identity();
     dcm_BF = dcm_F0B.transpose() * c2DArray2EigenMatrix3d(dcm_F0F);
     sigma_FB = eigenMRPd2Vector3d(eigenC2MRP(dcm_BF.transpose()));
 
