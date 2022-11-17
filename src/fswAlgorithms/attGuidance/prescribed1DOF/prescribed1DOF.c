@@ -81,10 +81,6 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     refAngleIn = RefAngleMsg_C_read(&configData->refAngleInMsg); // [rad]
     currAngleIn = CurrAngleMsg_C_read(&configData->currAngleInMsg); // [rad]
 
-    /*! Define max angular acceleration */
-    double thetaDDotMax = 0.5; // [rad/s^2]
-    int spinAxis = 0;
-
     /*! Define initial values */
     double theta0 = currAngleIn.thetaCurr; // [rad]
     double thetaDot0 = currAngleIn.thetaDotCurr; // [rad/s]

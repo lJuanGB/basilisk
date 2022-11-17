@@ -126,9 +126,8 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
     # Initialize the test module configuration data
     # These will eventually become input messages
     spinAxis = 0
-    Prescribed1DOFConfig.thetaDDotMax = 0.5 # [rad/s^2]
+    Prescribed1DOFConfig.thetaDDotMax = 0.5  # [rad/s^2]
     Prescribed1DOFConfig.spinAxis = spinAxis
-    Prescribed1DOFConfig.stepSize = 0.0001 # [s]
 
     # Create input message
     thetaRef = np.pi/3
