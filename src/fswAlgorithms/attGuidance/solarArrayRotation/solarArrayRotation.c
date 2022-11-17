@@ -142,7 +142,7 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
             spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC + MPI;
         }
         else {
-            spinningBodyRefOut.theta = thetaR;
+            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC;
         }
     }
 
