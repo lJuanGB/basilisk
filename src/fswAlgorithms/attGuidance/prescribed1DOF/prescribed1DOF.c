@@ -124,8 +124,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     /*! Determine sigma_FB, mrp from F frame to B frame */
     double rotAxis_B[3] = {0.0, 0.0, 0.0};
     rotAxis_B[spinAxis] = 1;
-    double dcm_F0F[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
-    double prv_F0F_array[3] = -theta*rotAxis_B;
+    double dcm_F0F[3][3];
 
     /*! Determine dcm_F0F */
     if (t == t0)
@@ -134,6 +133,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     }
     else
     {
+        double prv_F0F_array[3] = -theta*rotAxis_B;
         PRV2C(prv_F0F_array, dcm_F0F);
     }
 
