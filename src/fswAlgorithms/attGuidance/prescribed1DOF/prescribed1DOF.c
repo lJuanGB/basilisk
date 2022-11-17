@@ -127,6 +127,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double dcm_F0F[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
     double prv_F0F_array[3] = -theta*rotAxis_B;
 
+    /*! Determine dcm_F0F */
     if (t == t0)
     {
         dcm_F0F = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
@@ -136,9 +137,20 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
         PRV2C(prv_F0F_array, dcm_F0F);
     }
 
-    Eigen::Matrix3d dcm_BF;
+    /*! Determine dcm_F0B */
     Eigen::Matrix3d dcm_F0B;
-    dcm_F0B.Identity();
+    if (theta0 == 0.0)
+    {
+        dcm_F0B = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    }
+    else
+    {
+        double prv_F0B_array[3] = -theta0*rotAxis_B;
+        PRV2C(prv_F0B_array, dcm_F0B);
+    }
+
+    /*! Determine dcm_BF */
+    Eigen::Matrix3d dcm_BF;
     dcm_BF = dcm_F0B.transpose() * c2DArray2EigenMatrix3d(dcm_F0F);
     sigma_FB = eigenMRPd2Vector3d(eigenC2MRP(dcm_BF.transpose()));
 
