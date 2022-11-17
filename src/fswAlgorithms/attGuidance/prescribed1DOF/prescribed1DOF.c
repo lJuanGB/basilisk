@@ -126,7 +126,16 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     rotAxis_B[spinAxis] = 1;
     double dcm_F0F[3][3];
     double prv_F0F_array[3] = -theta*rotAxis_B;
-    PRV2C(prv_F0F_array, dcm_F0F);
+    // std::cout<< t << std::endl;
+    if (t == 0 || t == 0.0 || theta == 0 || theta = 0.0)
+    {
+        dcm_F0F = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    }
+    else
+    {
+        PRV2C(prv_F0F_array, dcm_F0F);
+    }
+
     Eigen::Matrix3d dcm_BF;
     Eigen::Matrix3d dcm_F0B;
     dcm_F0B.Identity();
