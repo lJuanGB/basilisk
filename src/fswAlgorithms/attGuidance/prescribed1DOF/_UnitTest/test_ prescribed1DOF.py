@@ -46,53 +46,7 @@ from Basilisk.architecture import bskLogging
 
 # update "module" in this function name to reflect the module name
 def test_Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
-    r"""
-    **Validation Test Description**
 
-    Compose a general description of what is being tested in this unit test script.  Add enough information so the
-    reader understands the purpose and limitations of the test.  As this test script is not parameterized, only one
-    version of this script will run.  Note that the ``pytest`` HTML report will list each parameterized test case
-    individually.  This way it is clear what set of parameters passed.  But, this also means that this doc-string
-    content will be copied into each report so each test description is individually complete.  If there is a
-    discussion you want to include that is specific to the a parameterized test case, then include this at the
-    end of the file with a conditional print() statement that only executes for that particular parameterized test.
-
-    **Test Parameters**
-
-    As this is a parameterized unit test, note that the test case parameters values are shown automatically in the
-    pytest HTML report.  This sample script has the parameters param1 and param 2.  Provide a description of what
-    each parameter controls.  This is a convenient location to include the accuracy variable used in the
-    validation test.
-
-    Args:
-        param1 (int): Dummy test parameter for this parameterized unit test
-        param2 (int): Dummy test parameter for this parameterized unit test
-        accuracy (float): absolute accuracy value used in the validation tests
-
-    **Description of Variables Being Tested**
-
-    Here discuss what parameters are being checked.  For example, in this file we are checking the values of the
-    variables
-
-    - ``dummy``
-    - ``dataVector[3]``
-
-    **Figure Discussion**
-
-    If the test script produces figures you might include a brief discussion on what the simulation results show.
-    Discuss why these results validate the operation of the BSK module.
-
-    **General Documentation Comments**
-
-    If the script generates figures, these figures will be automatically pulled from ``matplotlib`` and included below.
-    Make sure that the figures have appropriate axes labels and a figure title if needed.  The figures content
-    should be understood by just looking at the figure.
-
-    At the end of the script where a print statement says that the script passes.
-
-    Don't use any of the AutoTeX methods we used to use as the goal is to have all the validation reporting
-    contained within this HTML ``pytest`` report.
-    """
     # each test method requires a single assert method to be called
     [testResults, testMessage] = Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy)
 
@@ -126,7 +80,7 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
     # Initialize the test module configuration data
     # These will eventually become input messages
     spinAxis = 0
-    Prescribed1DOFConfig.thetaDDotMax = 0.5  # [rad/s^2]
+    Prescribed1DOFConfig.thetaDDotMax = 0.0087  # [rad/s^2]
     Prescribed1DOFConfig.spinAxis = spinAxis
 
     # Create input message
@@ -159,20 +113,23 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
     # NOTE: the total simulation time may be longer than this value. The
     # simulation is stopped at the next logging event on or after the
     # simulation end time.
-    unitTestSim.ConfigureStopTime(macros.sec2nano(30.0))        # seconds to stop simulation
+    unitTestSim.ConfigureStopTime(macros.sec2nano(60.0))        # seconds to stop simulation
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
     # Extract data for unit test
     omega_FB_F = dataLog.omega_FB_F
-    thetaDot_Final_sim = omega_FB_F[-1, spinAxis]
+    thetaDotFinal_sim = omega_FB_F[-1, spinAxis]
 
     sigma_FB = dataLog.sigma_FB
-    sigma_FB_Final_sim = sigma_FB[-1, :]
+    sigma_FBFinal_sim = sigma_FB[-1, :]
 
-    thetaFinal_sim = 4 * np.arctan(sigma_FB_Final_sim[spinAxis])
+    thetaFinal_sim = 4 * np.arctan(sigma_FBFinal_sim[spinAxis])
     print(thetaFinal_sim)
+
+    # Determine thetaSim
+    theta_FB_sim = 4 * np.arctan(sigma_FB[:, spinAxis])
 
     timespan = dataLog.times()
 
@@ -183,6 +140,18 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
              timespan * 1e-9, omega_FB_F[:, 2])
     plt.xlabel('Time (s)')
     plt.ylabel('Prescribed omega_FB_F')
+
+    # Plot simulated theta_FB
+    thetaRef_plotting = np.ones(len(timespan)) * thetaRef
+    thetaInit_plotting = np.ones(len(timespan)) * thetaInit
+
+    plt.figure()
+    plt.clf()
+    plt.plot(timespan * 1e-9, theta_FB_sim,
+             timespan * 1e-9, thetaRef_plotting, '--',
+             timespan * 1e-9, thetaInit_plotting, '--')
+    plt.xlabel('Time (s)')
+    plt.ylabel('theta_FB_sim')
 
     if show_plots:
         plt.show()
