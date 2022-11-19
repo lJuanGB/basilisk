@@ -126,7 +126,6 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
     sigma_FBFinal_sim = sigma_FB[-1, :]
 
     thetaFinal_sim = 4 * np.arctan(sigma_FBFinal_sim[spinAxis])
-    print(thetaFinal_sim)
 
     # Determine thetaSim
     theta_FB_sim = 4 * np.arctan(sigma_FB[:, spinAxis])

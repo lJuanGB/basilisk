@@ -30,14 +30,14 @@
 /*! @brief Top level structure for the sub-module routines. */
 typedef struct {
 
-    /* User sets these quantities from Python */
+    /* User configurable variables */
     double thetaDDotMax;                                //!< Maximum angular acceleration [rad/s^2]
     int spinAxis;                                       //!< body-frame spin axis of prescribed body *GENERALIZE
 
-    /* Parameters used in module */
+    /* Private variables */
     double t0;                                          //!< Initial time when module reset is called [s]
 
-    /* Declare module IO interfaces */
+    /* Declare module input-output interfaces */
     RefAngleMsg_C    refAngleInMsg;                     //!< Input msg for reference angle
     CurrAngleMsg_C    currAngleInMsg;                   //!< Input msg for current angle
     PrescribedMotionMsg_C prescribedMotionOutMsg;       //!< Prescribed output attitude reference message
@@ -49,14 +49,11 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
-
     void SelfInit_prescribed1DOF(Prescribed1DOFConfig *configData, int64_t moduleID);
     void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, int64_t moduleID);
     void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, int64_t moduleID);
-
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif

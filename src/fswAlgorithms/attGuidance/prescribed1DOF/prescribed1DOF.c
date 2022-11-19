@@ -56,8 +56,7 @@ void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, i
     }
 
     /*! Store initial time */
-    double t0 = callTime*1e-9; // [s]
-
+    configData->t0 = callTime*1e-9; // [s]
 }
 
 /*! Add a description of what this main Update() routine does for this module
@@ -68,9 +67,6 @@ void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, i
 */
 void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, int64_t moduleID)
 {
-    double thetaDDotMax = 0.0087;
-    int spinAxis = 0;
-
     /*! Create buffer messages */
     RefAngleMsgPayload refAngleIn;
     CurrAngleMsgPayload currAngleIn;
@@ -83,29 +79,34 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     refAngleIn = RefAngleMsg_C_read(&configData->refAngleInMsg); // [rad]
     currAngleIn = CurrAngleMsg_C_read(&configData->currAngleInMsg); // [rad]
 
-    /*! Define initial values */
+    /*! Define initial variables */
     double theta0 = currAngleIn.thetaCurr; // [rad]
     double thetaDot0 = currAngleIn.thetaDotCurr; // [rad/s]
 
-    // theta0 = 0.0;
-    // thetaDot0 = 0.0;
-
-    /*! Grab other fixed quantities */
+    /*! Grab reference variables */
     double thetaRef = refAngleIn.thetaRef; // [rad]
     double thetaDotRef = refAngleIn.thetaDotRef; // [rad/s]
 
+    /*! Grab other module variables */
+    double thetaDDotMax = configData->thetaDDotMax;
+    int spinAxis = configData->spinAxis;
+
     /*! Define temporal information */
-    double t0 = 0;
+    double t0 = configData->t0;
     double tf = sqrt(((0.5 * thetaRef - theta0) * 8) / thetaDDotMax); // [s] ADD BACK abs(thetaRef-theta0) AFTER CODE COMPILES
     double ts = tf / 2; // switch time [s]
     double t = callTime*1e-9; // current time [s]
+
+    /*! Define scalar module states */
     double thetaDDot;
     double thetaDot;
     double theta;
 
-    double a = (0.5 * thetaRef - theta0) / ((ts - t0) * (ts - t0));
-    double b = -0.5 * thetaRef / ((ts - tf) * (ts - tf));
+    // Define constants for analytic parabolas
+    double a = (0.5 * thetaRef - theta0) / ((ts - t0) * (ts - t0)); // Constant for first parabola
+    double b = -0.5 * thetaRef / ((ts - tf) * (ts - tf)); // Constant for second parabola
 
+    /*! Compute analytic scalar states: thetaDDot, thetaDot, and theta */
     if (t < ts || t == ts)
     {
         thetaDDot = thetaDDotMax;
