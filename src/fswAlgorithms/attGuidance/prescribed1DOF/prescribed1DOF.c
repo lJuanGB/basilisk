@@ -56,7 +56,7 @@ void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, i
     }
 
     /*! Store initial time */
-    double t0 = callTime*1e9; // [s]
+    double t0 = callTime*1e-9; // [s]
 
 }
 
@@ -68,7 +68,7 @@ void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, i
 */
 void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, int64_t moduleID)
 {
-    double thetaDDotMax = 0.5;
+    double thetaDDotMax = 0.0087;
     int spinAxis = 0;
 
     /*! Create buffer messages */
@@ -87,30 +87,43 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double theta0 = currAngleIn.thetaCurr; // [rad]
     double thetaDot0 = currAngleIn.thetaDotCurr; // [rad/s]
 
+    // theta0 = 0.0;
+    // thetaDot0 = 0.0;
+
     /*! Grab other fixed quantities */
     double thetaRef = refAngleIn.thetaRef; // [rad]
+    double thetaDotRef = refAngleIn.thetaDotRef; // [rad/s]
 
     /*! Define temporal information */
+    double t0 = 0;
     double tf = sqrt(((0.5 * thetaRef - theta0) * 8) / thetaDDotMax); // [s] ADD BACK abs(thetaRef-theta0) AFTER CODE COMPILES
     double ts = tf / 2; // switch time [s]
-    double t = callTime*1e9; // current time [s]
+    double t = callTime*1e-9; // current time [s]
     double thetaDDot;
+    double thetaDot;
+    double theta;
 
-    if (t < ts)
+    double a = (0.5 * thetaRef - theta0) / ((ts - t0) * (ts - t0));
+    double b = -0.5 * thetaRef / ((ts - tf) * (ts - tf));
+
+    if (t < ts || t == ts)
     {
         thetaDDot = thetaDDotMax;
+        thetaDot = thetaDDot * (t - t0) + thetaDot0;
+        theta = a * (t - t0) * (t - t0) + theta0;
     }
-    else if (t > ts && t < tf)
+    else if ( t > ts && (t < tf || t == tf) )
     {
         thetaDDot = -thetaDDotMax;
+        thetaDot = thetaDDot * (t - t0) + thetaDot0 - thetaDDot * (tf - t0);
+        theta = b * (t - tf) * (t - tf) + thetaRef;
     }
     else
     {
         thetaDDot = 0.0;
+        thetaDot = thetaDotRef;
+        theta = thetaRef;
     }
-
-    double thetaDot = thetaDDot * t + thetaDot0;
-    double theta = 0.5 * thetaDDot * t * t + thetaDot0 * t + theta0;
 
     /*! Initialize prescribed parameters */
     double omega_FB_F[3] = {0.0, 0.0, 0.0}; // [rad/s]
@@ -136,7 +149,6 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double prv_F0B_array[3];
     v3Scale(theta0, rotAxis_B, prv_F0B_array);
     PRV2C(prv_F0B_array, dcm_F0B);
-
 
     /*! Determine dcm_FB */
     double dcm_FB[3][3];
