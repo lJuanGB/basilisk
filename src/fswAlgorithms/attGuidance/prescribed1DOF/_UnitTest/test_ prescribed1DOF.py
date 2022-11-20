@@ -44,16 +44,26 @@ from Basilisk.utilities import macros
 from Basilisk.architecture import messaging                      # import the message definitions
 from Basilisk.architecture import bskLogging
 
+ang = np.linspace(0, np.pi, 5)  # [rad]
+ang = list(ang)
+maxAngAccel = np.linspace(0.008, 0.015, 3)  # [rad/s^2]
+maxAngAccel = list(maxAngAccel)
+
+@pytest.mark.parametrize("thetaInit", ang)
+@pytest.mark.parametrize("thetaRef", ang)
+@pytest.mark.parametrize("thetaDDotMax", maxAngAccel)
+@pytest.mark.parametrize("accuracy", [1e-12])
+
 # update "module" in this function name to reflect the module name
-def test_Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
+def test_Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, accuracy):
 
     # each test method requires a single assert method to be called
-    [testResults, testMessage] = Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy)
+    [testResults, testMessage] = Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, accuracy)
 
     assert testResults < 1, testMessage
 
 
-def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
+def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, accuracy):
 
     testFailCount = 0                                        # zero unit test result counter
     testMessages = []                                        # create empty array to store test log messages
@@ -78,16 +88,13 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
     unitTestSim.AddModelToTask(unitTaskName, PrescribedWrap, Prescribed1DOFConfig)
 
     # Initialize the test module configuration data
-    # These will eventually become input messages
-    spinAxis = 0
-    Prescribed1DOFConfig.thetaDDotMax = 0.0087  # [rad/s^2]
+    spinAxis = 0  # (0, 1, 2) principal body axis for pure spin
+    Prescribed1DOFConfig.thetaDDotMax = thetaDDotMax  # [rad/s^2]
     Prescribed1DOFConfig.spinAxis = spinAxis
 
     # Create input message
-    thetaRef = np.pi/3
-    thetaDotRef = 0.0
-    thetaInit = 0.0
-    thetaDotInit = 0.0
+    thetaDotRef = 0.0  # [rad/s]
+    thetaDotInit = 0.0  # [rad/s]
 
     RefAngleMessageData = messaging.RefAngleMsgPayload()
     RefAngleMessageData.thetaRef = thetaRef
@@ -110,60 +117,56 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
     unitTestSim.InitializeSimulation()
 
     # Set the simulation time.
-    # NOTE: the total simulation time may be longer than this value. The
-    # simulation is stopped at the next logging event on or after the
-    # simulation end time.
-    unitTestSim.ConfigureStopTime(macros.sec2nano(60.0))        # seconds to stop simulation
+    unitTestSim.ConfigureStopTime(macros.sec2nano(600.0))        # seconds to stop simulation
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
-    # Extract data for unit test
+    # Extract logged data
     omega_FB_F = dataLog.omega_FB_F
-    thetaDotFinal_sim = omega_FB_F[-1, spinAxis]
-
     sigma_FB = dataLog.sigma_FB
-    sigma_FBFinal_sim = sigma_FB[-1, :]
-
-    thetaFinal_sim = 4 * np.arctan(sigma_FBFinal_sim[spinAxis])
-
-    # Determine thetaSim
-    theta_FB_sim = 4 * np.arctan(sigma_FB[:, spinAxis])
-
     timespan = dataLog.times()
 
+    thetaDot_Final = omega_FB_F[-1, spinAxis]
+    sigma_FB_Final = sigma_FB[-1, :]
+
+    # Convert MRPs to theta_FB
+    theta_FB = 4 * np.arctan(sigma_FB[:, spinAxis])
+    theta_FB_Final = 4 * np.arctan(sigma_FB_Final[spinAxis])
+
+    # Plot omega_FB_F
     plt.figure()
     plt.clf()
     plt.plot(timespan * 1e-9, omega_FB_F[:, 0],
              timespan * 1e-9, omega_FB_F[:, 1],
              timespan * 1e-9, omega_FB_F[:, 2])
     plt.xlabel('Time (s)')
-    plt.ylabel('Prescribed omega_FB_F')
+    plt.ylabel('omega_FB_F (rad/s)')
 
     # Plot simulated theta_FB
     thetaRef_plotting = np.ones(len(timespan)) * thetaRef
     thetaInit_plotting = np.ones(len(timespan)) * thetaInit
-
     plt.figure()
     plt.clf()
-    plt.plot(timespan * 1e-9, theta_FB_sim,
-             timespan * 1e-9, thetaRef_plotting, '--',
-             timespan * 1e-9, thetaInit_plotting, '--')
+    plt.plot(timespan * 1e-9, theta_FB, label='theta_FB')
+    plt.plot(timespan * 1e-9, thetaRef_plotting, '--', label='thetaRef')
+    plt.plot(timespan * 1e-9, thetaInit_plotting, '--', label='thetaInit')
     plt.xlabel('Time (s)')
-    plt.ylabel('theta_FB_sim')
+    plt.ylabel('Theta_FB (rad)')
+    plt.legend()
 
     if show_plots:
         plt.show()
     plt.close("all")
 
     # set the filtered output truth states
-    if not unitTestSupport.isDoubleEqual(thetaDotFinal_sim, thetaDotRef, accuracy):
+    if not unitTestSupport.isDoubleEqual(thetaDot_Final, thetaDotRef, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + PrescribedWrap.ModelTag + "thetaDotFinal_sim and thetaDotRef do not match")
+        testMessages.append("FAILED: " + PrescribedWrap.ModelTag + "thetaDot_Final and thetaDotRef do not match")
 
-    if not unitTestSupport.isDoubleEqual(thetaFinal_sim, thetaRef, accuracy):
+    if not unitTestSupport.isDoubleEqual(theta_FB_Final, thetaRef, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + PrescribedWrap.ModelTag + "thetaFinal_sim and thetaRef do not match")
+        testMessages.append("FAILED: " + PrescribedWrap.ModelTag + "theta_FB_Final and thetaRef do not match")
 
     return [testFailCount, ''.join(testMessages)]
 
@@ -175,7 +178,8 @@ def Prescribed1DOFTestFunction(show_plots, thetaRef, thetaDotRef, accuracy):
 if __name__ == "__main__":
     Prescribed1DOFTestFunction(
                  True,
+                 0.0,         # thetaInit
                  np.pi/3,     # thetaRef
-                 0,           # thetaDotRef
+                 0.008,       # thetaDDotMax
                  1e-12        # accuracy
                )
