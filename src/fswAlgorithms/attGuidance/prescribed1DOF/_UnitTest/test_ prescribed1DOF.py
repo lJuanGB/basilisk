@@ -117,7 +117,7 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     unitTestSim.InitializeSimulation()
 
     # Set the simulation time.
-    unitTestSim.ConfigureStopTime(macros.sec2nano(600.0))        # seconds to stop simulation
+    unitTestSim.ConfigureStopTime(macros.sec2nano(45.0))        # seconds to stop simulation
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
