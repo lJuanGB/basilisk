@@ -75,7 +75,7 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     unitTestSim = SimulationBaseClass.SimBaseClass()
 
     # Create test thread
-    testProcessRate = macros.sec2nano(1.1)     # update process rate update time
+    testProcessRate = macros.sec2nano(0.5)     # update process rate update time
     testProc = unitTestSim.CreateNewProcess(unitProcessName)
     testProc.addTask(unitTestSim.CreateNewTask(unitTaskName, testProcessRate))
 
@@ -116,8 +116,9 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     # Need to call the self-init and cross-init methods
     unitTestSim.InitializeSimulation()
 
-    # Set the simulation time.
-    unitTestSim.ConfigureStopTime(macros.sec2nano(45.0))        # seconds to stop simulation
+    # Set the simulation time
+    simTime = np.sqrt(((0.5 * np.abs(thetaRef - thetaInit)) * 8) / thetaDDotMax)
+    unitTestSim.ConfigureStopTime(macros.sec2nano(simTime))        # seconds to stop simulation
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()

@@ -21,6 +21,7 @@
 #include "prescribed1DOF.h"
 #include "string.h"
 #include <math.h>
+#include <stdlib.h>
 
 /* Support files.  Be sure to use the absolute path relative to Basilisk directory. */
 #include "architecture/utilities/linearAlgebra.h"
@@ -93,7 +94,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
 
     /*! Define temporal information */
     double t0 = configData->t0;
-    double tf = sqrt(((0.5 * thetaRef - theta0) * 8) / thetaDDotMax); // [s] ADD BACK abs(thetaRef-theta0) AFTER CODE COMPILES
+    double tf = sqrt(((0.5 * abs(thetaRef - theta0)) * 8) / thetaDDotMax); // [s] ADD BACK abs(thetaRef-theta0) AFTER CODE COMPILES
     double ts = tf / 2; // switch time [s]
     double t = callTime*1e-9; // current time [s]
 
