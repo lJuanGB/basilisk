@@ -17,11 +17,11 @@
 
 #
 #   Unit Test Script
-#   Module Name:        prescribedMotion
+#   Module Name:        prescribedMotion and prescribed1DOF integrated unit test
 #   Author:             Leah Kiner
 #   Creation Date:      Nov 20, 2022
 #
-
+import pytest
 import inspect
 import os
 
@@ -37,7 +37,8 @@ import matplotlib.pyplot as plt
 from Basilisk.fswAlgorithms import prescribed1DOF
 from Basilisk.simulation import spacecraft, prescribedMotionStateEffector, gravityEffector
 from Basilisk.utilities import macros
-
+from Basilisk.architecture import messaging                      # import the message definitions
+from Basilisk.architecture import bskLogging
 
 ang = np.linspace(0, np.pi, 5)  # [rad]
 ang = list(ang)
@@ -107,7 +108,7 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
 
     # Create input message
     thetaDotRef = 0.0  # [rad/s]
-    thetaDotInit = 0.0  # [rad/s]
+    thetaDotInit = 0.0  # [rad/s^2]
 
     RefAngleMessageData = messaging.RefAngleMsgPayload()
     RefAngleMessageData.thetaRef = thetaRef
@@ -138,9 +139,6 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     platform.IPntFc_F = [[50.0, 0.0, 0.0], [0.0, 50.0, 0.0], [0.0, 0.0, 50.0]]
     platform.r_MB_B = [[1.0], [0.0], [0.0]]
     platform.r_FcF_F = [[0.0], [0.0], [0.0]]
-    platform.r_FM_MInit = [[1.0], [0.0], [0.0]]
-    platform.rPrime_FM_MInit = [[0.0], [0.0], [0.0]]
-    platform.rPrimePrime_FM_MInit = [[0.0], [0.0], [0.0]]
     platform.theta_FBInit = 0.0
     platform.thetaDot_FBInit = 0.0
     platform.omega_BN_BInit = [[0.0], [0.0], [0.0]]
@@ -172,7 +170,7 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     unitTestSim.InitializeSimulation()
 
     # Set the simulation time
-    simTime = np.sqrt(((0.5 * np.abs(thetaRef - thetaInit)) * 8) / thetaDDotMax)
+    simTime = np.sqrt(((0.5 * np.abs(thetaRef - thetaInit)) * 8) / thetaDDotMax) + 30
     unitTestSim.ConfigureStopTime(macros.sec2nano(simTime))  # seconds to stop simulation
 
     # Begin the simulation time run set above
@@ -183,12 +181,12 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     sigma_FB = dataLog.sigma_FB
     timespan = dataLog.times()
 
-    thetaDot_Final = omega_FB_F[-1, spinAxis]
+    thetaDot_Final = omega_FB_F[-1, rotAxisNum]
     sigma_FB_Final = sigma_FB[-1, :]
 
     # Convert MRPs to theta_FB
-    theta_FB = 4 * np.arctan(sigma_FB[:, spinAxis])
-    theta_FB_Final = 4 * np.arctan(sigma_FB_Final[spinAxis])
+    theta_FB = 4 * np.arctan(sigma_FB[:, rotAxisNum])
+    theta_FB_Final = 4 * np.arctan(sigma_FB_Final[rotAxisNum])
 
     # Plot omega_FB_F
     plt.figure()
