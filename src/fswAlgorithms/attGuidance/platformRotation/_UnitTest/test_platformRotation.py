@@ -120,8 +120,10 @@ def platformRotationTestFunction(show_plots, CM_offset, seed, accuracy):
     platformConfig.vehConfigInMsg.subscribeTo(inputMsg)
 
     # Setup logging on the test module output messages so that we get all the writes to it
-    anglesLog = platformConfig.platformAnglesOutMsg.recorder()
-    unitTestSim.AddModelToTask(unitTaskName, anglesLog)
+    ref1Log = platformConfig.SpinningBodyRef1OutMsg.recorder()
+    unitTestSim.AddModelToTask(unitTaskName, ref1Log)
+    ref2Log = platformConfig.SpinningBodyRef2OutMsg.recorder()
+    unitTestSim.AddModelToTask(unitTaskName, ref2Log)
     bodyHeadingLog = platformConfig.bodyHeadingOutMsg.recorder()
     unitTestSim.AddModelToTask(unitTaskName, bodyHeadingLog)
 
@@ -137,12 +139,12 @@ def platformRotationTestFunction(show_plots, CM_offset, seed, accuracy):
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
-    alpha = anglesLog.alpha[0]
-    beta = anglesLog.beta[0]
+    theta1 = ref1Log.theta[0]
+    theta2 = ref2Log.theta[0]
 
-    FM = [[np.cos(beta),  np.sin(alpha)*np.sin(beta), -np.cos(alpha)*np.sin(beta)],
-                   [      0     ,        np.cos(alpha)       ,        np.sin(alpha)       ],
-                   [np.sin(beta), -np.sin(alpha)*np.cos(beta),  np.cos(alpha)*np.cos(beta)]]
+    FM = [[np.cos(theta2),  np.sin(theta1)*np.sin(theta2), -np.cos(theta1)*np.sin(theta2)],
+          [       0      ,          np.cos(theta1)       ,         np.sin(theta1)        ],
+          [np.sin(theta2), -np.sin(theta1)*np.cos(theta2),  np.cos(theta1)*np.cos(theta2)]]
 
     MB = rbk.MRP2C(sigma_MB)
 
