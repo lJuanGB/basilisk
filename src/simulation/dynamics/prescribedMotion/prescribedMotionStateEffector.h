@@ -48,6 +48,8 @@ public:
     int rotAxisNum;                                     //!< [0,1,2] number corresponding to the principal body axis the prescribed body is spinning about
     double u;                                           //!< [N-m] internal torque applied by the prescribed body
 
+
+    ReadFunctor<prescribedMotionMsgPayload> prescribedMotionInMsg; //!< -- (optional) motor torque input message name
     Message<PrescribedMotionMsgPayload> prescribedMotionOutMsg;     //!< state output message
     Message<SCStatesMsgPayload> prescribedMotionConfigLogOutMsg;    //!< state config log message
     BSKLogger bskLogger;                                            //!< -- BSK Logging
@@ -125,7 +127,6 @@ public:
     void prependSpacecraftNameToStates();                   //!< Method used for multiple spacecraft
     void computePrescribedMotionInertialStates();           //!< Method for computing the effector's states
     void computePrescribedParameters(double integTime);     //!< Method for computing prescribed parameters
-
 };
 
 #endif /* PRESCRIBED_MOTION_STATE_EFFECTOR_H */

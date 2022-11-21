@@ -240,61 +240,21 @@ void PrescribedMotionStateEffector::computePrescribedMotionInertialStates()
 /*! This method is used so that the simulation will ask the effector to update messages */ // called at dynamic freq
 void PrescribedMotionStateEffector::UpdateState(uint64_t CurrentSimNanos)
 {
+    if (this->prescribedMotionInMsg.isLinked() && this->prescribedMotionInMsg.isWritten()) {
+        PrescribedMotionMsgPayload incomingPrescribedStates;
+        incomingPrescribedStates = this->prescribedMotionInMsg();
+        this->r_FM_M = incomingPrescribedStates.r_FM_M;
+        this->rPrime_FM_M = incomingPrescribedStates.rPrime_FM_M;
+        this->rPrimePrime_FM_M = incomingPrescribedStates.rPrimePrime_FM_M;
+        this->omega_FB_F = incomingPrescribedStates.omega_FB_F;
+        this->omegaPrime_FB_F = incomingPrescribedStates.omegaPrime_FB_F;
+        this->sigma_FB = incomingPrescribedStates.sigma_FB;
+
+
     /* Compute prescribed body inertial states */
     this->computePrescribedMotionInertialStates();
 
     this->writeOutputStateMessages(CurrentSimNanos);
-
-    return;
-}
-
-void PrescribedMotionStateEffector::computePrescribedParameters(double integTime)
-{
-    this->r_FM_M = this->r_FM_MInit;
-    this->rPrime_FM_M = this->rPrime_FM_MInit;
-    this->rPrimePrime_FM_M = this->rPrimePrime_FM_MInit;
-
-    double rotAxis_B[3] = {0.0, 0.0, 0.0};
-    rotAxis_B[this->rotAxisNum] = 1;
-
-    // Define scalar local variables
-    if (integTime == 0)
-    {
-        this->IPntFc_B = this->IPntFc_F;
-    }
-    else
-    {
-        this->IPntFc_B = this->dcm_BF * this->IPntFc_F * this->dcm_BF.transpose();
-    }
-    
-    double a = this->IHubBc_B(this->rotAxisNum,this->rotAxisNum);
-    double b = this->IPntFc_B(this->rotAxisNum,this->rotAxisNum);
-    double thetaDDot_FB = (1 / (1 - ((1 / (a + b)) * b)))*(1 / b) * this->u;
-    double thetaDot_FB =  thetaDDot_FB * integTime + this->thetaDot_FBInit;
-    double theta_FB = 0.5 * thetaDDot_FB * integTime * integTime + this->thetaDot_FBInit * integTime + this->theta_FBInit;
-
-    // Convert scalar local variables to prescribed parameters
-    // Grab current omega_BN_B
-    this->omega_BN_B = (Eigen::Vector3d)this->hubOmega->getState();
-
-    // Define omega_FB_B
-    Eigen::Vector3d omega_FB_F = {0.0, 0.0, 0.0};
-    omega_FB_F[this->rotAxisNum] = thetaDot_FB;
-    this->omega_FB_B = this->dcm_BF * omega_FB_F;
-
-    // Define omegaPrime_FB_B
-    this->omegaPrime_FB_B.setZero();
-    this->omegaPrime_FB_B[this->rotAxisNum]= thetaDDot_FB;
-    this->omegaTilde_BN_B = eigenTilde(this->omega_BN_B);
-    
-    // Compute the DCM from F frame to B frame, dcm_BF
-    double dcm_F0F[3][3];
-    double prv_F0F_array[3] = {-theta_FB * rotAxis_B[0], -theta_FB * rotAxis_B[1], -theta_FB * rotAxis_B[2]};
-    PRV2C(prv_F0F_array, dcm_F0F);
-    this->dcm_BF = this->dcm_F0B.transpose() * c2DArray2EigenMatrix3d(dcm_F0F);
-
-    // Compute mrp from F frame to B frame, sigma_BF
-    this->sigma_FB = eigenMRPd2Vector3d(eigenC2MRP(this->dcm_BF.transpose()));
 
     return;
 }
