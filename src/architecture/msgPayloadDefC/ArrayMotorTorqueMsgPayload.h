@@ -28,6 +28,7 @@
 /*! @brief Structure used to define the output definition for vehicle effectors*/
 typedef struct {
     double motorTorque[MAX_EFF_CNT];     //!< [Nm]  motor torque array
+    int motorLockFlag[MAX_EFF_CNT];      //!< 0 to use the torque, 1 to lock the effector in place
 }ArrayMotorTorqueMsgPayload;
 
 
