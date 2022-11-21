@@ -42,15 +42,15 @@ typedef struct {
 
     BSKLogger *bskLogger;                          //!< BSK Logging
 
-}PIDController1DConfig;
+}torqueSchedulerConfig;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-    void SelfInit_torqueScheduler(PIDController1DConfig *configData, int64_t moduleID);
-    void Reset_torqueScheduler(PIDController1DConfig *configData, uint64_t callTime, int64_t moduleID);
-    void Update_torqueScheduler(PIDController1DConfig *configData, uint64_t callTime, int64_t moduleID);
+    void SelfInit_torqueScheduler(torqueSchedulerConfig *configData, int64_t moduleID);
+    void Reset_torqueScheduler(torqueSchedulerConfig *configData, uint64_t callTime, int64_t moduleID);
+    void Update_torqueScheduler(torqueSchedulerConfig *configData, uint64_t callTime, int64_t moduleID);
 
 #ifdef __cplusplus
 }

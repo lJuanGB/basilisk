@@ -22,6 +22,7 @@
 #include "torqueScheduler.h"
 #include "string.h"
 #include <math.h>
+#include <stdio.h>
 
 
 /*!
@@ -30,7 +31,7 @@
  @param configData The configuration data associated with this module
  @param moduleID The module identifier
  */
-void SelfInit_torqueScheduler(PIDController1DConfig *configData, int64_t moduleID)
+void SelfInit_torqueScheduler(torqueSchedulerConfig *configData, int64_t moduleID)
 {
     ArrayMotorTorqueMsg_C_init(&configData->motorTorqueOutMsg);
 }
@@ -43,7 +44,7 @@ void SelfInit_torqueScheduler(PIDController1DConfig *configData, int64_t moduleI
  @param callTime [ns] time the method is called
  @param moduleID The module identifier
 */
-void Reset_torqueScheduler(PIDController1DConfig *configData, uint64_t callTime, int64_t moduleID)
+void Reset_torqueScheduler(torqueSchedulerConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     // check if the required input message is included
     if (!ArrayMotorTorqueMsg_C_isLinked(&configData->motorTorque1InMsg)) {
@@ -63,7 +64,7 @@ void Reset_torqueScheduler(PIDController1DConfig *configData, uint64_t callTime,
  @param callTime The clock time at which the function was called (nanoseconds)
  @param moduleID The module identifier
 */
-void Update_torqueScheduler(PIDController1DConfig *configData, uint64_t callTime, int64_t moduleID)
+void Update_torqueScheduler(torqueSchedulerConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! - Create buffer messages */
     ArrayMotorTorqueMsgPayload  motorTorque1In;
@@ -81,7 +82,7 @@ void Update_torqueScheduler(PIDController1DConfig *configData, uint64_t callTime
 
     /*! compute current time from Reset call */
     double t;
-    t = (callTime - configData->t0) / 1e9;
+    t = (double) ((callTime - configData->t0) / 1e9);
 
     /*! populate output msg */
     motorTorqueOut.motorTorque[0] = motorTorque1In.motorTorque[0];
