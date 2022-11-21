@@ -37,7 +37,8 @@
  */
 void SelfInit_platformRotation(platformRotationConfig *configData, int64_t moduleID)
 {
-    PlatformAnglesMsg_C_init(&configData->platformAnglesOutMsg);
+    SpinningBodyMsg_C_init(&configData->SpinningBodyRef1OutMsg);
+    SpinningBodyMsg_C_init(&configData->SpinningBodyRef2OutMsg);
     BodyHeadingMsg_C_init(&configData->bodyHeadingOutMsg);
 }
 
@@ -66,12 +67,14 @@ void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTim
 void Update_platformRotation(platformRotationConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! - Create message buffers */
-    VehicleConfigMsgPayload   vehConfigMsgIn;
-    PlatformAnglesMsgPayload  platformAnglesOut;
-    BodyHeadingMsgPayload     bodyHeadingOut;
+    VehicleConfigMsgPayload  vehConfigMsgIn;
+    SpinningBodyMsgPayload   spinningBodyRef1Out;
+    SpinningBodyMsgPayload   spinningBodyRef2Out;
+    BodyHeadingMsgPayload    bodyHeadingOut;
 
     /*! - zero the output messages */
-    platformAnglesOut = PlatformAnglesMsg_C_zeroMsgPayload();
+    spinningBodyRef1Out = SpinningBodyMsg_C_zeroMsgPayload();
+    spinningBodyRef2Out = SpinningBodyMsg_C_zeroMsgPayload();
     bodyHeadingOut = BodyHeadingMsg_C_zeroMsgPayload();
 
     /*! read the attitude navigation message */
@@ -157,12 +160,15 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     PRV2C(PRV_theta, F3F2);
     m33MultM33(F3F2, F2M, F3M);
 
-    /*! extract alpha and beta angles */
-    platformAnglesOut.alpha = atan2(F3M[1][2], F3M[1][1]);
-    platformAnglesOut.beta  = atan2(F3M[2][0], F3M[0][0]);
+    /*! extract theta1 and theta2 angles */
+    spinningBodyRef1Out.theta = atan2(F3M[1][2], F3M[1][1]);
+    spinningBodyRef1Out.thetaDot = 0;
+    spinningBodyRef2Out.theta = atan2(F3M[2][0], F3M[0][0]);
+    spinningBodyRef2Out.thetaDot = 0;
 
-    /* write output message */
-    PlatformAnglesMsg_C_write(&platformAnglesOut, &configData->platformAnglesOutMsg, moduleID, callTime);
+    /* write output spinning body messages */
+    SpinningBodyMsg_C_write(&spinningBodyRef1Out, &configData->SpinningBodyRef1OutMsg, moduleID, callTime);
+    SpinningBodyMsg_C_write(&spinningBodyRef2Out, &configData->SpinningBodyRef2OutMsg, moduleID, callTime);
 
     /*! define mapping between final platform frame and body frame F3B */
     double F3B[3][3];

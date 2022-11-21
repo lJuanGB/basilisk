@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include "architecture/utilities/bskLogging.h"
 #include "cMsgCInterface/VehicleConfigMsg_C.h"
-#include "cMsgCInterface/PlatformAnglesMsg_C.h"
+#include "cMsgCInterface/SpinningBodyMsg_C.h"
 #include "cMsgCInterface/BodyHeadingMsg_C.h"
 
 #define EPS 1e-6
@@ -32,18 +32,19 @@
 typedef struct {
 
     /* declare these quantities that will eventually become input modules */
-    double sigma_MB[3];                      //!< orientation of the M frame w.r.t. the B frame
-    double r_BM_M[3];                        //!< position of B frame origin w.r.t. M frame origin, in M frame coordinates
-    double r_FM_F[3];                        //!< position of F frame origin w.r.t. M frame origin, in F frame coordinates
-    double r_TF_F[3];                        //!< position of the thrust application point w.r.t. F frame origin, in F frame coordinates
-    double T_F[3];                           //!< thrust vector in F frame coordinates
+    double sigma_MB[3];                          //!< orientation of the M frame w.r.t. the B frame
+    double r_BM_M[3];                            //!< position of B frame origin w.r.t. M frame origin, in M frame coordinates
+    double r_FM_F[3];                            //!< position of F frame origin w.r.t. M frame origin, in F frame coordinates
+    double r_TF_F[3];                            //!< position of the thrust application point w.r.t. F frame origin, in F frame coordinates
+    double T_F[3];                               //!< thrust vector in F frame coordinates
 
     /* declare module IO interfaces */
-    VehicleConfigMsg_C  vehConfigInMsg;           //!< input msg vehicle configuration msg (needed for CM location)
-    PlatformAnglesMsg_C platformAnglesOutMsg;     //!< output msg containing platform tip and tilt angles
-    BodyHeadingMsg_C    bodyHeadingOutMsg;        //!< output msg containing the thrust heading in body frame coordinates
+    VehicleConfigMsg_C  vehConfigInMsg;          //!< input msg vehicle configuration msg (needed for CM location)
+    SpinningBodyMsg_C   SpinningBodyRef1OutMsg;  //!< output msg containing theta1 reference and thetaDot1 reference
+    SpinningBodyMsg_C   SpinningBodyRef2OutMsg;  //!< output msg containing theta2 reference and thetaDot2 reference
+    BodyHeadingMsg_C    bodyHeadingOutMsg;       //!< output msg containing the thrust heading in body frame coordinates
 
-    BSKLogger *bskLogger;                         //!< BSK Logging
+    BSKLogger *bskLogger;                        //!< BSK Logging
 
 }platformRotationConfig;
 
