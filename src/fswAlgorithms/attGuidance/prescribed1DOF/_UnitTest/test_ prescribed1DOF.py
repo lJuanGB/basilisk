@@ -89,12 +89,15 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
 
     # Initialize the test module configuration data
     spinAxis = 0  # (0, 1, 2) principal body axis for pure spin
-    Prescribed1DOFConfig.thetaDDotMax = thetaDDotMax  # [rad/s^2]
     Prescribed1DOFConfig.spinAxis = spinAxis
+    Prescribed1DOFConfig.thetaDDotMax = thetaDDotMax  # [rad/s^2]
+    Prescribed1DOFConfig.r_FM_M = [[1.0], [0.0], [0.0]]
+    Prescribed1DOFConfig.rPrime_FM_M = [[0.0], [0.0], [0.0]]
+    Prescribed1DOFConfig.rPrimePrime_FM_M = [[0.0], [0.0], [0.0]]
 
     # Create input message
     thetaDotRef = 0.0  # [rad/s]
-    thetaDotInit = 0.0  # [rad/s]
+    thetaDotInit = 0.0  # [rad/s^2]
 
     RefAngleMessageData = messaging.RefAngleMsgPayload()
     RefAngleMessageData.thetaRef = thetaRef
