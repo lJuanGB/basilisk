@@ -38,9 +38,6 @@ public:
     Eigen::Matrix3d IPntFc_F;                           //!< [kg-m^2] Inertia of prescribed body about point Fc in F frame components
     Eigen::Vector3d r_MB_B;                             //!< [m] position vector of point M relative to point B in B frame components
     Eigen::Vector3d r_FcF_F;                            //!< [m] position vector of point Fc relative to point F in F frame components
-    Eigen::Vector3d r_FM_MInit;                         //!< [m] initial position vector of point F relative to point M in M frame components
-    Eigen::Vector3d rPrime_FM_MInit;                    //!< [m/s] B frame time derivative of initial position vector r_FM_M in M frame components
-    Eigen::Vector3d rPrimePrime_FM_MInit;               //!< [m/s^2] B frame time derivative of initial vector rPrime_FM_M in M frame components
     Eigen::Vector3d omega_BN_BInit;                     //!< [rad/s] initial angular velocity vector of B frame relative to the inertial frame in B frame components
     double theta_FBInit;                                //!< [rad] initial rotation angle of the F frame relative to the B frame
     double thetaDot_FBInit;                             //!< [rad/s] initial time derivative of theta_FB
@@ -49,7 +46,7 @@ public:
     double u;                                           //!< [N-m] internal torque applied by the prescribed body
 
 
-    ReadFunctor<prescribedMotionMsgPayload> prescribedMotionInMsg; //!< -- (optional) motor torque input message name
+    ReadFunctor<PrescribedMotionMsgPayload> prescribedMotionInMsg; //!< -- (optional) motor torque input message name
     Message<PrescribedMotionMsgPayload> prescribedMotionOutMsg;     //!< state output message
     Message<SCStatesMsgPayload> prescribedMotionConfigLogOutMsg;    //!< state config log message
     BSKLogger bskLogger;                                            //!< -- BSK Logging
@@ -126,7 +123,6 @@ public:
     void updateEnergyMomContributions(double integTime, Eigen::Vector3d & rotAngMomPntCContr_B, double & rotEnergyContr, Eigen::Vector3d omega_BN_B);       //!< -- Method for computing energy and momentum for effectors
     void prependSpacecraftNameToStates();                   //!< Method used for multiple spacecraft
     void computePrescribedMotionInertialStates();           //!< Method for computing the effector's states
-    void computePrescribedParameters(double integTime);     //!< Method for computing prescribed parameters
 };
 
 #endif /* PRESCRIBED_MOTION_STATE_EFFECTOR_H */
