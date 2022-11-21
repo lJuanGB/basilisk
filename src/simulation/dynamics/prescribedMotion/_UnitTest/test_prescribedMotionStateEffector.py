@@ -40,9 +40,9 @@ from Basilisk.utilities import macros
 from Basilisk.architecture import messaging                      # import the message definitions
 from Basilisk.architecture import bskLogging
 
-ang = np.linspace(0, np.pi, 5)  # [rad]
+ang = np.linspace(np.pi/2, np.pi, 2)  # [rad]
 ang = list(ang)
-maxAngAccel = np.linspace(0.008, 0.015, 3)  # [rad/s^2]
+maxAngAccel = np.linspace(0.008, 0.015, 2)  # [rad/s^2]
 maxAngAccel = list(maxAngAccel)
 
 @pytest.mark.parametrize("thetaInit", ang)
@@ -73,7 +73,7 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     unitTestSim = SimulationBaseClass.SimBaseClass()
 
     # Create test thread
-    testIncrement = 0.001
+    testIncrement = 0.5
     testProcessRate = macros.sec2nano(testIncrement)  # update process rate update time
     testProc = unitTestSim.CreateNewProcess(unitProcessName)
     testProc.addTask(unitTestSim.CreateNewTask(unitTaskName, testProcessRate))
@@ -96,13 +96,39 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     # Add test modules to runtime call list
     unitTestSim.AddModelToTask(unitTaskName, scObject)
 
+    # ** ** ** ** ** Add prescribedMotion module to test file ** ** ** ** **
+    platform = prescribedMotionStateEffector.PrescribedMotionStateEffector()
+
+    # Define properties of state effector
+    platform.mass = 100.0
+    platform.IHubBc_B = [[900.0, 0.0, 0.0], [0.0, 800.0, 0.0], [0.0, 0.0, 600.0]]
+    platform.IPntFc_F = [[50.0, 0.0, 0.0], [0.0, 50.0, 0.0], [0.0, 0.0, 50.0]]
+    platform.r_MB_B = [[1.0], [0.0], [0.0]]
+    platform.r_FcF_F = [[0.0], [0.0], [0.0]]
+    platform.r_FM_M = [[1.0], [0.0], [0.0]]
+    platform.rPrime_FM_M = [[0.0], [0.0], [0.0]]
+    platform.rPrimePrime_FM_M = [[0.0], [0.0], [0.0]]
+    platform.omega_FB_F = [[0.0], [0.0], [0.0]]
+    platform.omegaPrime_FB_F = [[0.0], [0.0], [0.0]]
+    platform.sigma_FB = [[0.0], [0.0], [0.0]]
+    platform.omega_BN_BInit = [[0.0], [0.0], [0.0]]
+    platform.dcm_F0B = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    rotAxisNum = 0  # (0, 1, 2) principal body axis for pure spin
+    platform.rotAxisNum = rotAxisNum
+    platform.ModelTag = "Platform"
+
+    # Add platform to spacecraft
+    scObject.addStateEffector(platform)
+
+    # Add test modules to runtime call list
+    unitTestSim.AddModelToTask(unitTaskName, platform)
+
     # ** ** ** ** ** Add prescribed1DOF module to test file ** ** ** ** **
     Prescribed1DOFConfig = prescribed1DOF.Prescribed1DOFConfig()
     PrescribedWrap = unitTestSim.setModelDataWrap(Prescribed1DOFConfig)
     PrescribedWrap.ModelTag = "Prescribed1DOF"  # update python name of test module
 
     # Initialize the test module configuration data
-    rotAxisNum = 0  # (0, 1, 2) principal body axis for pure spin
     Prescribed1DOFConfig.thetaDDotMax = thetaDDotMax  # [rad/s^2]
     Prescribed1DOFConfig.spinAxis = rotAxisNum
 
@@ -113,15 +139,12 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     RefAngleMessageData = messaging.RefAngleMsgPayload()
     RefAngleMessageData.thetaRef = thetaRef
     RefAngleMessageData.thetaDotRef = thetaDotRef
-    CurrAngleMessageData = messaging.CurrAngleMsgPayload()
-    CurrAngleMessageData.thetaInit = thetaInit
-    CurrAngleMessageData.thetaDotInit = thetaDotInit
-
     RefAngleMessage = messaging.RefAngleMsg().write(RefAngleMessageData)
-    CurrAngleMessage = messaging.CurrAngleMsg().write(CurrAngleMessageData)
-
     Prescribed1DOFConfig.refAngleInMsg.subscribeTo(RefAngleMessage)
-    Prescribed1DOFConfig.currAngleInMsg.subscribeTo(CurrAngleMessage)
+
+    # connect prescribedMotionStateEffector input message to the prescribed1DOF module output message
+    platform.prescribedMotionInMsg.subscribeTo(Prescribed1DOFConfig.prescribedMotionOutMsg)
+    Prescribed1DOFConfig.prescribedMotionInMsg.subscribeTo(platform.prescribedMotionOutMsg)
 
     # Setup logging on the test module output message so that we get all the writes to it
     dataLog = Prescribed1DOFConfig.prescribedMotionOutMsg.recorder()
@@ -129,28 +152,6 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     # Add test modules to runtime call list
     unitTestSim.AddModelToTask(unitTaskName, PrescribedWrap, Prescribed1DOFConfig)
     unitTestSim.AddModelToTask(unitTaskName, dataLog)
-
-    # ** ** ** ** ** Add prescribedMotion module to test file ** ** ** ** **
-    platform = prescribedMotionStateEffector.PrescribedMotionStateEffector()
-
-    # Define properties of state effector
-    platform.mass = 100.0
-    platform.IHubBc_B = [[900.0, 0.0, 0.0], [0.0, 800.0, 0.0], [0.0, 0.0, 600.0]]
-    platform.IPntFc_F = [[50.0, 0.0, 0.0], [0.0, 50.0, 0.0], [0.0, 0.0, 50.0]]
-    platform.r_MB_B = [[1.0], [0.0], [0.0]]
-    platform.r_FcF_F = [[0.0], [0.0], [0.0]]
-    platform.theta_FBInit = 0.0
-    platform.thetaDot_FBInit = 0.0
-    platform.omega_BN_BInit = [[0.0], [0.0], [0.0]]
-    platform.dcm_F0B = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-    platform.rotAxisNum = rotAxisNum
-    platform.ModelTag = "Platform"
-
-    # Add platform to spacecraft
-    scObject.addStateEffector(platform)
-
-    # Add test modules to runtime call list
-    unitTestSim.AddModelToTask(unitTaskName, platform)
 
     # Add Earth gravity to the simulation
     earthGravBody = gravityEffector.GravBodyData()
@@ -170,7 +171,7 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     unitTestSim.InitializeSimulation()
 
     # Set the simulation time
-    simTime = np.sqrt(((0.5 * np.abs(thetaRef - thetaInit)) * 8) / thetaDDotMax) + 30
+    simTime = np.sqrt(((0.5 * np.abs(thetaRef - thetaInit)) * 8) / thetaDDotMax) + 45
     unitTestSim.ConfigureStopTime(macros.sec2nano(simTime))  # seconds to stop simulation
 
     # Begin the simulation time run set above

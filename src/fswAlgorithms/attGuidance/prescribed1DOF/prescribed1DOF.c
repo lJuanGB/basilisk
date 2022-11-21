@@ -52,12 +52,12 @@ void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, i
         _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed1DOF.refAngleInMsg wasn't connected.");
     }
 
-    if (!CurrAngleMsg_C_isLinked(&configData->currAngleInMsg)) {
-        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed1DOF.currAngleInMsg wasn't connected.");
+    if (!PrescribedMotionMsg_C_isLinked(&configData->prescribedMotionInMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed1DOF.prescribedMotionInMsg wasn't connected.");
     }
 
     /*! Store initial time */
-    configData->t0 = callTime*1e-9; // [s]
+    configData->tInit = callTime*1e-9; // [s]
 }
 
 /*! Add a description of what this main Update() routine does for this module
@@ -70,7 +70,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
 {
     /*! Create buffer messages */
     RefAngleMsgPayload refAngleIn;
-    CurrAngleMsgPayload currAngleIn;
+    PrescribedMotionMsgPayload prescribedMotionIn;
     PrescribedMotionMsgPayload prescribedMotionOut;
 
     /*! Zero the output message */
@@ -78,23 +78,32 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
 
     /*! Read the input messages */
     refAngleIn = RefAngleMsg_C_read(&configData->refAngleInMsg); // [rad]
-    currAngleIn = CurrAngleMsg_C_read(&configData->currAngleInMsg); // [rad]
+    prescribedMotionIn = PrescribedMotionMsg_C_read(&configData->prescribedMotionInMsg);
+    v3Copy(prescribedMotionIn.r_FM_M, configData->r_FM_M);
+    v3Copy(prescribedMotionIn.rPrime_FM_M, configData->rPrime_FM_M);
+    v3Copy(prescribedMotionIn.rPrimePrime_FM_M, configData->rPrimePrime_FM_M);
+    v3Copy(prescribedMotionIn.omega_FB_F, configData->omega_FB_F);
+    v3Copy(prescribedMotionIn.omegaPrime_FB_F, configData->omegaPrime_FB_F);
+    v3Copy(prescribedMotionIn.sigma_FB, configData->sigma_FB);
 
     /*! Define initial variables */
-    double theta0 = currAngleIn.thetaCurr; // [rad]
-    double thetaDot0 = currAngleIn.thetaDotCurr; // [rad/s]
+    if (RefAngleMsg_C_timeWritten(&configData->refAngleInMsg) == callTime)
+    {
+        configData->thetaInit = 4 * atan(configData->sigma_FB[configData->spinAxis]); // [rad]
+        configData->thetaDotInit = configData->omega_FB_F[configData->spinAxis]; // [rad/s]
+    }
+    else
+    {
+        // configData->thetaInit = configData->thetaInit; // [rad]
+        // configData->thetaDotInit = configData->thetaDotInit; // [rad/s]
+    }
 
     /*! Grab reference variables */
     double thetaRef = refAngleIn.thetaRef; // [rad]
     double thetaDotRef = refAngleIn.thetaDotRef; // [rad/s]
 
-    /*! Grab other module variables */
-    double thetaDDotMax = configData->thetaDDotMax;
-    int spinAxis = configData->spinAxis;
-
     /*! Define temporal information */
-    double t0 = configData->t0;
-    double tf = sqrt(((0.5 * abs(thetaRef - theta0)) * 8) / thetaDDotMax); // [s] ADD BACK abs(thetaRef-theta0) AFTER CODE COMPILES
+    double tf = sqrt(((0.5 * abs(thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax); // [s]
     double ts = tf / 2; // switch time [s]
     double t = callTime*1e-9; // current time [s]
 
@@ -104,20 +113,20 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double theta;
 
     // Define constants for analytic parabolas
-    double a = (0.5 * thetaRef - theta0) / ((ts - t0) * (ts - t0)); // Constant for first parabola
+    double a = (0.5 * thetaRef - configData->thetaInit) / ((ts - configData->tInit) * (ts - configData->tInit)); // Constant for first parabola
     double b = -0.5 * thetaRef / ((ts - tf) * (ts - tf)); // Constant for second parabola
 
     /*! Compute analytic scalar states: thetaDDot, thetaDot, and theta */
     if (t < ts || t == ts)
     {
-        thetaDDot = thetaDDotMax;
-        thetaDot = thetaDDot * (t - t0) + thetaDot0;
-        theta = a * (t - t0) * (t - t0) + theta0;
+        thetaDDot = configData->thetaDDotMax;
+        thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit;
+        theta = a * (t - configData->tInit) * (t - configData->tInit) + configData->thetaInit;
     }
     else if ( t > ts && (t < tf || t == tf) )
     {
-        thetaDDot = -thetaDDotMax;
-        thetaDot = thetaDDot * (t - t0) + thetaDot0 - thetaDDot * (tf - t0);
+        thetaDDot = -1 * configData->thetaDDotMax;
+        thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit - thetaDDot * (tf - configData->tInit);
         theta = b * (t - tf) * (t - tf) + thetaRef;
     }
     else
@@ -128,17 +137,17 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     }
 
     /*! Initialize prescribed parameters */
-    double omega_FB_F[3] = {0.0, 0.0, 0.0}; // [rad/s]
-    double omegaPrime_FB_F[3] = {0.0, 0.0, 0.0}; // [rad/s^2]
-    double sigma_FB[3] = {0.0, 0.0, 0.0};
+    v3SetZero(configData->omega_FB_F); // [rad/s]
+    v3SetZero(configData->omegaPrime_FB_F); // [rad/s^2]
+    v3SetZero(configData->sigma_FB);
 
     /*! Determine omega_FB_F and omegaPrime_FB_F parameters */
-    omega_FB_F[spinAxis] = thetaDot;
-    omegaPrime_FB_F[spinAxis] = thetaDDot;
+    configData->omega_FB_F[configData->spinAxis] = thetaDot;
+    configData->omegaPrime_FB_F[configData->spinAxis] = thetaDDot;
 
     /*! Determine sigma_FB, mrp from F frame to B frame */
     double rotAxis_B[3] = {0.0, 0.0, 0.0};
-    rotAxis_B[spinAxis] = 1;
+    rotAxis_B[configData->spinAxis] = 1;
     double dcm_FF0[3][3];
 
     /*! Determine dcm_FF0 */
@@ -149,21 +158,21 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     /*! Determine dcm_F0B */
     double dcm_F0B[3][3];
     double prv_F0B_array[3];
-    v3Scale(theta0, rotAxis_B, prv_F0B_array);
+    v3Scale(configData->thetaInit, rotAxis_B, prv_F0B_array);
     PRV2C(prv_F0B_array, dcm_F0B);
 
     /*! Determine dcm_FB */
     double dcm_FB[3][3];
     m33MultM33(dcm_FF0, dcm_F0B, dcm_FB);
-    C2MRP(dcm_FB, sigma_FB);
+    C2MRP(dcm_FB, configData->sigma_FB);
 
     /*! Copy local variables to output message */
     v3Copy(configData->r_FM_M, prescribedMotionOut.r_FM_M);
     v3Copy(configData->rPrime_FM_M, prescribedMotionOut.rPrime_FM_M);
     v3Copy(configData->rPrimePrime_FM_M, prescribedMotionOut.rPrimePrime_FM_M);
-    v3Copy(omega_FB_F, prescribedMotionOut.omega_FB_F);
-    v3Copy(omegaPrime_FB_F, prescribedMotionOut.omegaPrime_FB_F);
-    v3Copy(sigma_FB, prescribedMotionOut.sigma_FB);
+    v3Copy(configData->omega_FB_F, prescribedMotionOut.omega_FB_F);
+    v3Copy(configData->omegaPrime_FB_F, prescribedMotionOut.omegaPrime_FB_F);
+    v3Copy(configData->sigma_FB, prescribedMotionOut.sigma_FB);
 
     /*! write output message */
     PrescribedMotionMsg_C_write(&prescribedMotionOut, &configData->prescribedMotionOutMsg, moduleID, callTime);

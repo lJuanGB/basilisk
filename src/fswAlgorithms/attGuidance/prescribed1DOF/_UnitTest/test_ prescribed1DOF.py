@@ -94,6 +94,9 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     Prescribed1DOFConfig.r_FM_M = [[1.0], [0.0], [0.0]]
     Prescribed1DOFConfig.rPrime_FM_M = [[0.0], [0.0], [0.0]]
     Prescribed1DOFConfig.rPrimePrime_FM_M = [[0.0], [0.0], [0.0]]
+    Prescribed1DOFConfig.omega_FB_F = [[0.0], [0.0], [0.0]]
+    Prescribed1DOFConfig.omegaPrime_FB_F = [[0.0], [0.0], [0.0]]
+    Prescribed1DOFConfig.sigma_FB = [[0.0], [0.0], [0.0]]
 
     # Create input message
     thetaDotRef = 0.0  # [rad/s]
@@ -102,15 +105,10 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     RefAngleMessageData = messaging.RefAngleMsgPayload()
     RefAngleMessageData.thetaRef = thetaRef
     RefAngleMessageData.thetaDotRef = thetaDotRef
-    CurrAngleMessageData = messaging.CurrAngleMsgPayload()
-    CurrAngleMessageData.thetaInit = thetaInit
-    CurrAngleMessageData.thetaDotInit = thetaDotInit
 
     RefAngleMessage = messaging.RefAngleMsg().write(RefAngleMessageData)
-    CurrAngleMessage = messaging.CurrAngleMsg().write(CurrAngleMessageData)
 
     Prescribed1DOFConfig.refAngleInMsg.subscribeTo(RefAngleMessage)
-    Prescribed1DOFConfig.currAngleInMsg.subscribeTo(CurrAngleMessage)
 
     # Setup logging on the test module output message so that we get all the writes to it
     dataLog = Prescribed1DOFConfig.prescribedMotionOutMsg.recorder()

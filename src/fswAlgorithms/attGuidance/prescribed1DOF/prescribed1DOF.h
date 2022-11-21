@@ -22,7 +22,6 @@
 #include <stdint.h>
 #include "architecture/utilities/bskLogging.h"
 #include "cMsgCInterface/RefAngleMsg_C.h"
-#include "cMsgCInterface/CurrAngleMsg_C.h"
 #include "cMsgCInterface/PrescribedMotionMsg_C.h"
 
 #define PI 3.1415926536
@@ -36,13 +35,18 @@ typedef struct {
     double r_FM_M[3];
     double rPrime_FM_M[3];
     double rPrimePrime_FM_M[3];
+    double omega_FB_F[3];
+    double omegaPrime_FB_F[3];
+    double sigma_FB[3];
 
     /* Private variables */
-    double t0;                                          //!< Initial time when module reset is called [s]
+    double tInit;                                          //!< Initial time when module reset is called [s]
+    double thetaInit;
+    double thetaDotInit;
 
     /* Declare module input-output interfaces */
     RefAngleMsg_C    refAngleInMsg;                     //!< Input msg for reference angle
-    CurrAngleMsg_C    currAngleInMsg;                   //!< Input msg for current angle
+    PrescribedMotionMsg_C prescribedMotionInMsg;        //!< Prescribed input attitude reference message
     PrescribedMotionMsg_C prescribedMotionOutMsg;       //!< Prescribed output attitude reference message
 
     BSKLogger *bskLogger;                               //!< BSK Logging

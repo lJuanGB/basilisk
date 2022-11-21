@@ -39,12 +39,17 @@ public:
     Eigen::Vector3d r_MB_B;                             //!< [m] position vector of point M relative to point B in B frame components
     Eigen::Vector3d r_FcF_F;                            //!< [m] position vector of point Fc relative to point F in F frame components
     Eigen::Vector3d omega_BN_BInit;                     //!< [rad/s] initial angular velocity vector of B frame relative to the inertial frame in B frame components
-    double theta_FBInit;                                //!< [rad] initial rotation angle of the F frame relative to the B frame
-    double thetaDot_FBInit;                             //!< [rad/s] initial time derivative of theta_FB
     Eigen::Matrix3d dcm_F0B;                            //!< DCM from the body frame to the F0 frame (F frame for theta=0)
     int rotAxisNum;                                     //!< [0,1,2] number corresponding to the principal body axis the prescribed body is spinning about
     double u;                                           //!< [N-m] internal torque applied by the prescribed body
 
+    // Prescribed parameters
+    Eigen::Vector3d r_FM_M;                             //!< [m] position vector of point F relative to point M in M frame components
+    Eigen::Vector3d rPrime_FM_M;                        //!< [m/s] B frame time derivative of position vector r_FM_M in M frame components
+    Eigen::Vector3d rPrimePrime_FM_M;                   //!< [m/s^2] B frame time derivative of vector rPrime_FM_M in M frame components
+    Eigen::Vector3d omega_FB_F;                         //!< [rad/s] angular velocity vector of F frame relative to the B frame in F frame components
+    Eigen::Vector3d omegaPrime_FB_F;                    //!< [rad/s^2] B frame time derivative of omega_FB_F in F frame components
+    Eigen::Vector3d sigma_FB;                           //!< MRP attitude of frame F relative to the B frame
 
     ReadFunctor<PrescribedMotionMsgPayload> prescribedMotionInMsg; //!< -- (optional) motor torque input message name
     Message<PrescribedMotionMsgPayload> prescribedMotionOutMsg;     //!< state output message
@@ -58,13 +63,6 @@ private:
     Eigen::Matrix3d IPntFc_B;                           //!< [kg-m^2] Inertia of prescribed body about point Fc in B frame components
     Eigen::Vector3d r_FB_B;                             //!< [m] position vector of point F relative to point B in B frame components
     Eigen::Vector3d r_FcF_B;                            //!< [m] position vector of point Fc relative to point F in B frame components
-
-    // Prescribed parameters
-    Eigen::Vector3d r_FM_M;                             //!< [m] position vector of point F relative to point M in M frame components
-    Eigen::Vector3d rPrime_FM_M;                        //!< [m/s] B frame time derivative of position vector r_FM_M in M frame components
-    Eigen::Vector3d rPrimePrime_FM_M;                   //!< [m/s^2] B frame time derivative of vector rPrime_FM_M in M frame components
-    Eigen::Vector3d omega_FB_F;                         //!< [rad/s] angular velocity vector of F frame relative to the B frame in F frame components
-    Eigen::Vector3d omegaPrime_FB_F;                    //!< [rad/s^2] B frame time derivative of omega_FB_F in F frame components
 
     // Prescribed parameters in body frame components
     Eigen::Vector3d r_FM_B;                             //!< [m] position vector of point F relative to point M in B frame components
@@ -83,7 +81,6 @@ private:
     Eigen::Vector3d omega_FN_B;                         //!< [rad/s] angular velocity vector of F frame relative to the inertial frame in B frame components
     Eigen::Vector3d rDot_FcB_B;                         //!< [m/s] inertial time derivative of position vector r_FcB_B in B frame components
     Eigen::MRPd sigma_BN;                               //!< MRP attitude of B frame relative to the inertial frame
-    Eigen::Vector3d sigma_FB;                           //!< MRP attitude of frame F relative to the B frame
 
     // DCMs
     Eigen::Matrix3d dcm_BN;                             //!< DCM from inertial frame to B frame

@@ -63,7 +63,7 @@ void PrescribedMotionStateEffector::Reset(uint64_t CurrentClock)
 }
 
 
-/*! This method takes the computed theta states and outputs them to the messaging system. */
+/*! This method takes the computed states and outputs them to the messaging system. */
 void PrescribedMotionStateEffector::writeOutputStateMessages(uint64_t CurrentClock)
 {
     // Write out the state effector output messages
@@ -257,7 +257,6 @@ void PrescribedMotionStateEffector::UpdateState(uint64_t CurrentSimNanos)
         this->omegaPrime_FB_F = omegaPrime_FB_F_loc;
         this->sigma_FB = sigma_FB_loc;
     }
-
 
     /* Compute prescribed body inertial states */
     this->computePrescribedMotionInertialStates();

@@ -33,8 +33,6 @@
 
 %include "architecture/msgPayloadDefC/RefAngleMsgPayload.h"
 struct RefAngleMsg_C;
-%include "architecture/msgPayloadDefC/CurrAngleMsgPayload.h"
-struct CurrAngleMsg_C;
 %include "architecture/msgPayloadDefC/prescribedMotionMsgPayload.h"
 struct PrescribedMotionMsg_C;
 
