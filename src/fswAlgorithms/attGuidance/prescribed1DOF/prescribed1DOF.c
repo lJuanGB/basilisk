@@ -158,6 +158,9 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     C2MRP(dcm_FB, sigma_FB);
 
     /*! Copy local variables to output message */
+    v3Copy(configData->r_FM_M, prescribedMotionOut.r_FM_M);
+    v3Copy(configData->rPrime_FM_M, prescribedMotionOut.rPrime_FM_M);
+    v3Copy(configData->rPrimePrime_FM_M, prescribedMotionOut.rPrimePrime_FM_M);
     v3Copy(omega_FB_F, prescribedMotionOut.omega_FB_F);
     v3Copy(omegaPrime_FB_F, prescribedMotionOut.omegaPrime_FB_F);
     v3Copy(sigma_FB, prescribedMotionOut.sigma_FB);

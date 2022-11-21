@@ -33,6 +33,9 @@ typedef struct {
     /* User configurable variables */
     double thetaDDotMax;                                //!< Maximum angular acceleration [rad/s^2]
     int spinAxis;                                       //!< body-frame spin axis of prescribed body *GENERALIZE
+    double r_FM_M[3];
+    double rPrime_FM_M[3];
+    double rPrimePrime_FM_M[3];
 
     /* Private variables */
     double t0;                                          //!< Initial time when module reset is called [s]
