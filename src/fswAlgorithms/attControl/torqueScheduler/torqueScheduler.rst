@@ -1,8 +1,9 @@
 Executive Summary
 -----------------
 
-This module implements a simple Proportional-Derivative (PD) control law to provide the commanded torque to the solar array drive motor. At this stage, the integral 
-part is not implemented in the controller.
+This module schedules two control torques such that only one is actually active at a time. This is useful in the case of a system
+with multiple coupled degrees of freedom, where the changes in one controlled variable can affect the other controlled variable and thus
+cause the system to not converge. 
 
 
 Message Connection Descriptions
@@ -20,41 +21,35 @@ provides information on what this message is used for.
       - Description
     * - motorTorqueOutMsg
       - :ref:`ArrayMotorTorqueMsgPayload`
-      - Output Spinning Body Reference Message.
-    * - spinningBodyInMsg
-      - :ref:`SpinningBodyMsgPayload`
-      - Input Spinning Body Message Message.
-    * - spinningBodyRefInMsg
-      - :ref:`SpinningBodyMsgPayload`
-      - Input Spinning Body Reference Message Message. 
+      - Output Array Motor Torque Message.
+    * - motorTorque1InMsg
+      - :ref:`ArrayMotorTorqueMsgPayload`
+      - #1 Input Array Motor Torque Message.
+    * - motorTorque2InMsg
+      - :ref:`ArrayMotorTorqueMsgPayload`
+      - #2 Input Array Motor Torque Message. 
 
 
 Module Assumptions and Limitations
 ----------------------------------
-This module is very simple and does not make any assumptions. The only limitations are those inherent to a PD type of control law, here implemented. The type of response (underdamped, 
-overdamped, or critically damped) depend on the choice of gains provided as inputs to the module.
+This module is very simple and does not make any assumptions.
 
 
 Detailed Module Description
 ---------------------------
-For this module to operate, the user needs to provide control gains ``K`` and ``P``. Let's define :math:`\theta_R` and :math:`\dot{\theta}_R` the reference angle and angle rate contained in the
-``spinningBodyRefInMsg``, and :math:`\theta` and :math:`\dot{\theta}` the current solar array angle and angle rate contained in the ``spinningBodyInMsg``, which is provided as an output of the
-:ref:`spinningBody`. The control torque is obtained as follows:
-
-.. math::
-    T = K (\theta_R - \theta) + P (\dot{\theta}_R - \dot{\theta}).
+This module receives a ``tSwitch`` parameter as an input from the user. This parameter determines the simulation time at which the first motor torque is disabled and the second is enabled. Both torques are stored at all times in ``motorTorqueOutMsg.motorTorque``. The logic in this module
+allocates the flag 0 or 1 in ``motorTorqueOutMsg.motorLockFlag`` to determine whether that torque is to be applied (``motorLockFlag = 0``) or neglected (``motorLockFlag = 1``). For ``t < tSwitch``, the first input torque is applied; for ``t > tSwitch``, the second input torque is applied.
 
 
 User Guide
 ----------
 The required module configuration is::
 
-    PIDControllerConfig = PIDController1D.PIDController1DConfig()
-    PIDControllerWrap = unitTestSim.setModelDataWrap(PIDControllerConfig)
-    PIDControllerWrap.ModelTag = "solarArrayPDController"  
-    PIDControllerConfig.K = K
-    PIDControllerConfig.P = P
-    unitTestSim.AddModelToTask(unitTaskName, PIDControllerWrap, PIDControllerConfig)
+    schedulerConfig = torqueScheduler.torqueSchedulerConfig()
+    schedulerWrap = unitTestSim.setModelDataWrap(schedulerConfig)
+    schedulerWrap.ModelTag = "torqueScheduler"
+    schedulerConfig.tSwitch = tSwitch
+    unitTestSim.AddModelToTask(unitTaskName, schedulerWrap, schedulerConfig)
 	
 The module is configurable with the following parameters:
 
@@ -64,7 +59,5 @@ The module is configurable with the following parameters:
 
    * - Parameter
      - Description
-   * - ``K``
-     - proportional gain; defaults to 0 if not provided
-   * - ``P``
-     - derivative gain; defaults to 0 if not provided
+   * - ``tSwitch``
+     - time at which the torque is switched from input 1 to input 2. If not provided it defaults to zero, therefore only input torque is passed.
