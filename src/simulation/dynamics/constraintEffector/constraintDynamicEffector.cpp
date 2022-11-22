@@ -76,7 +76,6 @@ void ConstraintDynamicEffector::Reset(uint64_t CurrentSimNanos)
     this->c = 2 * this->beta;
     this->scCounterFlag = 1;
     this->integratorCounter = 1;
-    std::cout<<"Reset has run";
 
     return;
 }
@@ -107,7 +106,7 @@ void ConstraintDynamicEffector::linkInStates(DynParamManager& states)
  */
 void ConstraintDynamicEffector::computeForceTorque(double integTime, double timeStep)
 {
-    std::cout<<"timestep"<<integTime<<"\n";
+    
     if (this->scInitCounter == 2)
     {
         // flag = 1 signifies being called by spacecraft 1
@@ -125,16 +124,6 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
             Eigen::MRPd sigma_B2N;
             sigma_B2N = (Eigen::Vector3d)this->hubOmega[1]->getState();
 
-            // printing for debugging
-            std::cout<<"sc1 position "<<r_B1N_N<<"\n";
-            std::cout<<"sc1 velocity "<<rDot_B1N_N<<"\n";
-            //std::cout<<"sc1 attitude "<<sigma_B1N<<"\n";
-            std::cout<<"sc1 angular velocity "<<omega_B1N_B1<<"\n";
-            std::cout<<"sc2 position "<<r_B2N_N<<"\n";
-            std::cout<<"sc2 velocity "<<rDot_B2N_N<<"\n";
-            //std::cout<<"sc2 attitude "<<this->sigma_B2N<<"\n";
-            std::cout<<"sc2 angular velocity "<<omega_B2N_B2<<"\n";
-
             // computing direction constraint psi in the N frame
             Eigen::Matrix3d dcm_B1N = (sigma_B1N.toRotationMatrix()).transpose();
             Eigen::Matrix3d dcm_B2N = (sigma_B2N.toRotationMatrix()).transpose();
@@ -149,7 +138,6 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
             Eigen::Vector3d rDot_P2N_N = dcm_B2N.transpose() * rDot_P2B2_B2 + rDot_B2N_N;
             Eigen::Vector3d rDot_P2P1_N = rDot_P2N_N - rDot_P1N_N;
             Eigen::Vector3d omega_B1N_N = dcm_B1N.transpose() * omega_B1N_B1;
-            
 
             // define the constraints
             this->psi_N = r_P2P1_N - dcm_B1N.transpose() * this->r_P2P1_B1Init;
@@ -184,9 +172,6 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
                 this->L_B2 += L_B2_att;
             }
 
-            std::cout<<"Fc_B1 "<<this->forceExternal_N<<"\n";
-            std::cout<<"L_B1 "<<this->torqueExternalPntB_B<<"\n";
-
         }
         // flag = -1 signifies being called by spacecraft 2
         else if (this->scCounterFlag == -1) {
@@ -202,16 +187,6 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
             Eigen::MRPd sigma_B2N;
             sigma_B2N = (Eigen::Vector3d)this->hubOmega[1]->getState();
 
-            // printing for debugging
-            std::cout<<"sc1 position "<<r_B1N_N<<"\n";
-            std::cout<<"sc1 velocity "<<rDot_B1N_N<<"\n";
-            //std::cout<<"sc1 attitude "<<sigma_B1N<<"\n";
-            std::cout<<"sc1 angular velocity "<<omega_B1N_B1<<"\n";
-            std::cout<<"sc2 position "<<r_B2N_N<<"\n";
-            std::cout<<"sc2 velocity "<<rDot_B2N_N<<"\n";
-            //std::cout<<"sc2 attitude "<<this->sigma_B2N<<"\n";
-            std::cout<<"sc2 angular velocity "<<omega_B2N_B2<<"\n";
-
             // computing direction constraint psi in the N frame
             Eigen::Matrix3d dcm_B1N = (sigma_B1N.toRotationMatrix()).transpose();
             Eigen::Matrix3d dcm_B2N = (sigma_B2N.toRotationMatrix()).transpose();
@@ -226,7 +201,6 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
             Eigen::Vector3d rDot_P2N_N = dcm_B2N.transpose() * rDot_P2B2_B2 + rDot_B2N_N;
             Eigen::Vector3d rDot_P2P1_N = rDot_P2N_N - rDot_P1N_N;
             Eigen::Vector3d omega_B1N_N = dcm_B1N.transpose() * omega_B1N_B1;
-            
 
             // define the constraints
             this->psi_N = r_P2P1_N - dcm_B1N.transpose() * this->r_P2P1_B1Init;
@@ -266,9 +240,6 @@ void ConstraintDynamicEffector::computeForceTorque(double integTime, double time
 
             // computing constraint torque
             this->torqueExternalPntB_B = this->L_B2;
-
-            std::cout<<"Fc_B2 "<<this->forceExternal_N<<"\n";
-            std::cout<<"L_B2 "<<this->torqueExternalPntB_B<<"\n";
             
         }
         this->integratorCounter += 1;
