@@ -101,7 +101,6 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
 
     # Define properties of state effector
     platform.mass = 100.0
-    platform.IHubBc_B = [[900.0, 0.0, 0.0], [0.0, 800.0, 0.0], [0.0, 0.0, 600.0]]
     platform.IPntFc_F = [[50.0, 0.0, 0.0], [0.0, 50.0, 0.0], [0.0, 0.0, 50.0]]
     platform.r_MB_B = [[1.0], [0.0], [0.0]]
     platform.r_FcF_F = [[0.0], [0.0], [0.0]]
@@ -111,10 +110,6 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     platform.omega_FB_F = [[0.0], [0.0], [0.0]]
     platform.omegaPrime_FB_F = [[0.0], [0.0], [0.0]]
     platform.sigma_FB = [[0.0], [0.0], [0.0]]
-    platform.omega_BN_BInit = [[0.0], [0.0], [0.0]]
-    platform.dcm_F0B = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-    rotAxisNum = 0  # (0, 1, 2) principal body axis for pure spin
-    platform.rotAxisNum = rotAxisNum
     platform.ModelTag = "Platform"
 
     # Add platform to spacecraft
@@ -129,18 +124,22 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     PrescribedWrap.ModelTag = "Prescribed1DOF"  # update python name of test module
 
     # Initialize the test module configuration data
+    rotAxisNum = 0  # (0, 1, 2) principal body axis for pure spin
     Prescribed1DOFConfig.thetaDDotMax = thetaDDotMax  # [rad/s^2]
-    Prescribed1DOFConfig.spinAxis = rotAxisNum
+    Prescribed1DOFConfig.rotAxis_B = np.array([1.0, 0.0, 0.0])
+
+    # Add test modules to runtime call list
+    unitTestSim.AddModelToTask(unitTaskName, PrescribedWrap, Prescribed1DOFConfig)
 
     # Create input message
     thetaDotRef = 0.0  # [rad/s]
     thetaDotInit = 0.0  # [rad/s^2]
 
-    RefAngleMessageData = messaging.RefAngleMsgPayload()
-    RefAngleMessageData.thetaRef = thetaRef
-    RefAngleMessageData.thetaDotRef = thetaDotRef
-    RefAngleMessage = messaging.RefAngleMsg().write(RefAngleMessageData)
-    Prescribed1DOFConfig.refAngleInMsg.subscribeTo(RefAngleMessage)
+    SpinningBodyMessageData = messaging.SpinningBodyMsgPayload()
+    SpinningBodyMessageData.theta = thetaRef
+    SpinningBodyMessageData.thetaDot = thetaDotRef
+    SpinningBodyMessage = messaging.SpinningBodyMsg().write(SpinningBodyMessageData)
+    Prescribed1DOFConfig.spinningBodyInMsg.subscribeTo(SpinningBodyMessage)
 
     # connect prescribedMotionStateEffector input message to the prescribed1DOF module output message
     platform.prescribedMotionInMsg.subscribeTo(Prescribed1DOFConfig.prescribedMotionOutMsg)
@@ -148,9 +147,6 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
 
     # Setup logging on the test module output message so that we get all the writes to it
     dataLog = Prescribed1DOFConfig.prescribedMotionOutMsg.recorder()
-
-    # Add test modules to runtime call list
-    unitTestSim.AddModelToTask(unitTaskName, PrescribedWrap, Prescribed1DOFConfig)
     unitTestSim.AddModelToTask(unitTaskName, dataLog)
 
     # Add Earth gravity to the simulation
