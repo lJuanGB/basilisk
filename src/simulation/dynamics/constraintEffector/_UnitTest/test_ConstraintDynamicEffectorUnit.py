@@ -31,7 +31,7 @@ filename = inspect.getframeinfo(inspect.currentframe()).filename
 path = os.path.dirname(os.path.abspath(filename))
 splitPath = path.split('simulation')
 
-from Basilisk.utilities import SimulationBaseClass, unitTestSupport, orbitalMotion, macros
+from Basilisk.utilities import SimulationBaseClass, unitTestSupport, orbitalMotion, macros, RigidBodyKinematics
 from Basilisk.simulation import spacecraft, constraintDynamicEffector, gravityEffector, svIntegrators
 import matplotlib.pyplot as plt
 import numpy as np
@@ -61,6 +61,7 @@ def test_constraintEffector(show_plots):
 
     #   Create a sim module as an empty container
     unitTestSim = SimulationBaseClass.SimBaseClass()
+    unitTestSim.SetProgressBar(True)
 
     # Create test thread
     unitTaskName = "unitTask"  # arbitrary name (don't change)
@@ -76,10 +77,10 @@ def test_constraintEffector(show_plots):
     scObject2.ModelTag = "spacecraftBody2"
 
     # Set the integrator to RKF45
-    # integratorObject1 = svIntegrators.svIntegratorRKF78(scObject1)
-    # scObject1.setIntegrator(integratorObject1)
-    # integratorObject2 = svIntegrators.svIntegratorRKF78(scObject2)
-    # scObject2.setIntegrator(integratorObject2)
+    integratorObject1 = svIntegrators.svIntegratorRK4(scObject1)
+    scObject1.setIntegrator(integratorObject1)
+    integratorObject2 = svIntegrators.svIntegratorRK4(scObject2)
+    scObject2.setIntegrator(integratorObject2)
 
     # Create the constraint effector module
     constraintEffector = constraintDynamicEffector.ConstraintDynamicEffector()
@@ -96,6 +97,8 @@ def test_constraintEffector(show_plots):
     constraintEffector.r_P2P1_B1Init = r_P2P1_B1Init
     constraintEffector.alpha = 1e1
     constraintEffector.beta = 1e1
+    constraintEffector.K = 3
+    constraintEffector.P = 30
     constraintEffector.ModelTag = "constraintEffector"
 
     # Add constraints to both spacecraft
@@ -122,6 +125,16 @@ def test_constraintEffector(show_plots):
     r_B1N_N, rDot_B1N_N = orbitalMotion.elem2rv(earthGravBody.mu, oe)
     r_B2N_N = r_B1N_N + r_P1B1_B1 + r_P2P1_B1Init - r_P2B2_B2
     rDot_B2N_N = rDot_B1N_N
+    
+    # rotate vectors to the N frame to solve for r_B2N_NInit
+    #dcm_B1NInit = RigidBodyKinematics.MRP2C(scObject1.hub.sigma_BNInit)
+    #dcm_NB1Init = dcm_B1NInit.transpose()
+    #r_P1B1_NInit = dcm_NB1Init*ConstraintEffector.r_P1B1_B1
+    #r_P2P1_NInit = dcm_NB1Init*constraintEffector.r_P2P1_B1Init
+    #dcm_B2NInit = RigidBodyKinematics.MRP2C(scObject2.hub.sigma_BNInit)
+    #dcm_NB2Init = dcm_B2NInit.transpose()
+    #r_P2B2_NInit = dcm_NB2Init*constraintEffector.r_P2B2_B2
+    #scObject2.hub.r_CN_NInit = scObject1.hub.r_CN_NInit + r_P1B1_NInit + r_P2P1_NInit - r_P2B2_N
 
     # Define mass properties of the rigid hub of both spacecraft
     scObject1.hub.mHub = 750.0
@@ -161,7 +174,7 @@ def test_constraintEffector(show_plots):
     unitTestSim.InitializeSimulation()
 
     # Setup and run the simulation
-    stopTime = 2.5
+    stopTime = 5
     unitTestSim.ConfigureStopTime(macros.sec2nano(stopTime))
     unitTestSim.ExecuteSimulation()
 

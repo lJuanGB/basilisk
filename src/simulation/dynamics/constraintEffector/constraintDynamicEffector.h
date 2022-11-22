@@ -75,6 +75,8 @@ private:
     int scCounterFlag;
     // Spacecraft initialization counter, to kill simulation if more than two different spacecraft are called
     double scInitCounter;
+    // Spacecraft integrator timestep counter
+    int integratorCounter;
 
     double k; // proportional gain
     double c; // derivative gain
