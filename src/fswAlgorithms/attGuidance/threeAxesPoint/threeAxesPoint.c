@@ -94,6 +94,9 @@ void Reset_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, i
             _bskLog(configData->bskLogger, BSK_ERROR, "Error: threeAxesPoint.inertialHeadingInMsg and threeAxesPoint.ephemerisInMsg weren't connected and no inertial heading h_N was specified.");
         }
     }
+
+    // set count to zerp
+    configData->count = 0;
 }
 
 /*! Add a description of what this main Update() routine does for this module
@@ -325,10 +328,61 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     m33MultM33(R3R2, R2N, R3N);
 
     /*! compute reference MRP */
-    double sigma_RN[3];
+    double sigma_RN[3], omega_RN_R[3], omegaDot_RN_R[3];
     C2MRP(R3N, sigma_RN);
 
     v3Copy(sigma_RN, attRefOut.sigma_RN);
+
+    /*! compute reference MRP derivatives via finite differences */
+    double T1, T2, sigma_RN_1[3], sigma_RN_2[3], sigmaDot_RN[3], sigmaDDot_RN[3];
+    v3Copy(configData->sigma_RN_1, sigma_RN_1);
+    v3Copy(configData->sigma_RN_2, sigma_RN_2);
+    // if first update call, derivatives are set to zero
+    if (configData->count == 0) {
+        for (int j = 0; j < 3; j++) {
+            sigmaDot_RN[j] = 0.0;
+            sigmaDDot_RN[j] = 0.0;
+        }
+        // store information for next time step
+        configData->T1 = callTime;
+        v3Copy(sigma_RN, configData->sigma_RN_1);
+    }
+    // if second update call, derivatives are computed with first order finite differences
+    else if (configData->count == 1) {
+        T1 = - (double) (callTime - configData->T1) / 1e9;
+        for (int j = 0; j < 3; j++) {
+            sigmaDot_RN[j] = (sigma_RN_1[j] - sigma_RN[j]) / T1;
+            sigmaDDot_RN[j] = 0.0;
+        }
+        // store information for next time step
+        configData->T2 = configData->T1;
+        configData->T1 = callTime;
+        v3Copy(configData->sigma_RN_1, configData->sigma_RN_2);
+        v3Copy(sigma_RN, configData->sigma_RN_1);
+    }
+    // if third update call or higher, derivatives are computed with second order finite differences
+    else {
+        T1 = - (double) (callTime - configData->T1) / 1e9;
+        T2 = - (double) (callTime - configData->T2) / 1e9;
+        for (int j = 0; j < 3; j++) {
+            sigmaDot_RN[j] = ((sigma_RN_1[j]*T2*T2 - sigma_RN_2[j]*T1*T1) / (T2 - T1) - sigma_RN[j] * (T2 + T1)) / T1 / T2;
+            sigmaDDot_RN[j] = 2 * ((sigma_RN_1[j]*T2 - sigma_RN_2[j]*T1) / (T1 - T2) + sigma_RN[j]) / T1 / T2;
+        }
+        // store information for next time step
+        configData->T2 = configData->T1;
+        configData->T1 = callTime;
+        v3Copy(configData->sigma_RN_1, configData->sigma_RN_2);
+        v3Copy(sigma_RN, configData->sigma_RN_1);
+    }
+    configData-> count += 1;
+
+    /*! compute angular rates and accelerations in R frame */
+    dMRP2Omega(sigma_RN, sigmaDot_RN, omega_RN_R);
+    ddMRP2dOmega(sigma_RN, sigmaDot_RN, sigmaDDot_RN, omegaDot_RN_R);
+
+    /*! compute angular rates and accelerations in N frame and store in buffer msg */
+    m33tMultV3(R3N, omega_RN_R, attRefOut.omega_RN_N);
+    m33tMultV3(R3N, omegaDot_RN_R, attRefOut.domega_RN_N);
 
     /*! write output message */
     AttRefMsg_C_write(&attRefOut, &configData->attRefOutMsg, moduleID, callTime);
