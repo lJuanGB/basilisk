@@ -45,8 +45,13 @@ typedef struct {
     double a2_B[3];                               //!< body frame heading that should remain as close as possible to Sun heading
 
     /* declare these internal variables that are used by the module and should not be declared by the user */
-    int          flagB;
-    int          flagN;
+    int      flagB;
+    int      flagN;
+    int      count;                              //!< count variable used in the finite difference logic
+    uint64_t T1;                                 //!< callTime one update step prior
+    uint64_t T2;                                 //!< callTime two update steps prior
+    double   sigma_RN_1[3];                      //!< reference attitude one update step prior
+    double   sigma_RN_2[3];                      //!< reference attitude two update steps prior
 
     /* declare module IO interfaces */
     NavAttMsg_C          attNavInMsg;             //!< input msg measured attitude
