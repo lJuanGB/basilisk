@@ -37,12 +37,10 @@ PrescribedMotionStateEffector::PrescribedMotionStateEffector()
 
     // Initialize variables to working values
     this->mass = 0.0;
-    this->IHubBc_B.Identity();
     this->IPntFc_F.Identity();
     this->dcm_BF.Identity();
     this->dcm_BM.Identity();
-    this->dcm_F0B.Identity();
-    this->effectorID++; 
+    this->effectorID++;
     return;
 }
 

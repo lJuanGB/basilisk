@@ -34,14 +34,9 @@
 class PrescribedMotionStateEffector: public StateEffector, public SysModel {
 public:
     double mass;
-    Eigen::Matrix3d IHubBc_B;                           //!< [kg-m^2] Inertia of hub about point Bc in B frame components
     Eigen::Matrix3d IPntFc_F;                           //!< [kg-m^2] Inertia of prescribed body about point Fc in F frame components
     Eigen::Vector3d r_MB_B;                             //!< [m] position vector of point M relative to point B in B frame components
     Eigen::Vector3d r_FcF_F;                            //!< [m] position vector of point Fc relative to point F in F frame components
-    Eigen::Vector3d omega_BN_BInit;                     //!< [rad/s] initial angular velocity vector of B frame relative to the inertial frame in B frame components
-    Eigen::Matrix3d dcm_F0B;                            //!< DCM from the body frame to the F0 frame (F frame for theta=0)
-    int rotAxisNum;                                     //!< [0,1,2] number corresponding to the principal body axis the prescribed body is spinning about
-    double u;                                           //!< [N-m] internal torque applied by the prescribed body
 
     // Prescribed parameters
     Eigen::Vector3d r_FM_M;                             //!< [m] position vector of point F relative to point M in M frame components

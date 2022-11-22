@@ -89,26 +89,35 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
 
     # Initialize the test module configuration data
     spinAxis = 0  # (0, 1, 2) principal body axis for pure spin
-    Prescribed1DOFConfig.spinAxis = spinAxis
+    Prescribed1DOFConfig.rotAxis_B = np.array([1.0, 0.0, 0.0])
     Prescribed1DOFConfig.thetaDDotMax = thetaDDotMax  # [rad/s^2]
-    Prescribed1DOFConfig.r_FM_M = [[1.0], [0.0], [0.0]]
-    Prescribed1DOFConfig.rPrime_FM_M = [[0.0], [0.0], [0.0]]
-    Prescribed1DOFConfig.rPrimePrime_FM_M = [[0.0], [0.0], [0.0]]
-    Prescribed1DOFConfig.omega_FB_F = [[0.0], [0.0], [0.0]]
-    Prescribed1DOFConfig.omegaPrime_FB_F = [[0.0], [0.0], [0.0]]
-    Prescribed1DOFConfig.sigma_FB = [[0.0], [0.0], [0.0]]
+    Prescribed1DOFConfig.r_FM_M = np.array([1.0, 0.0, 0.0])
+    Prescribed1DOFConfig.rPrime_FM_M = np.array([0.0, 0.0, 0.0])
+    Prescribed1DOFConfig.rPrimePrime_FM_M = np.array([0.0, 0.0, 0.0])
+    Prescribed1DOFConfig.omega_FB_F = np.array([0.0, 0.0, 0.0])
+    Prescribed1DOFConfig.omegaPrime_FB_F = np.array([0.0, 0.0, 0.0])
+    Prescribed1DOFConfig.sigma_FB = np.array([0.0, 0.0, 0.0])
 
     # Create input message
     thetaDotRef = 0.0  # [rad/s]
     thetaDotInit = 0.0  # [rad/s^2]
 
-    RefAngleMessageData = messaging.RefAngleMsgPayload()
-    RefAngleMessageData.thetaRef = thetaRef
-    RefAngleMessageData.thetaDotRef = thetaDotRef
+    SpinningBodyMessageData = messaging.SpinningBodyMsgPayload()
+    SpinningBodyMessageData.theta = thetaRef
+    SpinningBodyMessageData.thetaDot = thetaDotRef
+    SpinningBodyMessage = messaging.SpinningBodyMsg().write(SpinningBodyMessageData)
+    Prescribed1DOFConfig.spinningBodyInMsg.subscribeTo(SpinningBodyMessage)
 
-    RefAngleMessage = messaging.RefAngleMsg().write(RefAngleMessageData)
-
-    Prescribed1DOFConfig.refAngleInMsg.subscribeTo(RefAngleMessage)
+    # connect prescribedMotionStateEffector input message
+    PrescribedMotionMessageData = messaging.PrescribedMotionMsgPayload()
+    PrescribedMotionMessageData.r_FM_M = np.array([1.0, 0.0, 0.0])
+    PrescribedMotionMessageData.rPrime_FM_M = np.array([0.0, 0.0, 0.0])
+    PrescribedMotionMessageData.rPrimePrime_FM_M = np.array([0.0, 0.0, 0.0])
+    PrescribedMotionMessageData.omega_FB_F = np.array([0.0, 0.0, 0.0])
+    PrescribedMotionMessageData.omegaPrime_FB_F = np.array([0.0, 0.0, 0.0])
+    PrescribedMotionMessageData.sigma_FB = np.array([0.0, 0.0, 0.0])
+    PrescribedMotionMessage = messaging.PrescribedMotionMsg().write(PrescribedMotionMessageData)
+    Prescribed1DOFConfig.prescribedMotionInMsg.subscribeTo(PrescribedMotionMessage)
 
     # Setup logging on the test module output message so that we get all the writes to it
     dataLog = Prescribed1DOFConfig.prescribedMotionOutMsg.recorder()

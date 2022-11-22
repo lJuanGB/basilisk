@@ -35,6 +35,7 @@
 void SelfInit_prescribed1DOF(Prescribed1DOFConfig *configData, int64_t moduleID)
 {
     PrescribedMotionMsg_C_init(&configData->prescribedMotionOutMsg);
+    SpinningBodyMsg_C_init(&configData->spinningBodyOutMsg);
 }
 
 
@@ -48,8 +49,8 @@ void SelfInit_prescribed1DOF(Prescribed1DOFConfig *configData, int64_t moduleID)
 void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! Check if the required input messages are included */
-    if (!RefAngleMsg_C_isLinked(&configData->refAngleInMsg)) {
-        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed1DOF.refAngleInMsg wasn't connected.");
+    if (!SpinningBodyMsg_C_isLinked(&configData->spinningBodyInMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed1DOF.spinningBodyInMsg wasn't connected.");
     }
 
     if (!PrescribedMotionMsg_C_isLinked(&configData->prescribedMotionInMsg)) {
@@ -69,15 +70,17 @@ void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, i
 void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! Create buffer messages */
-    RefAngleMsgPayload refAngleIn;
+    SpinningBodyMsgPayload spinningBodyIn;
+    SpinningBodyMsgPayload spinningBodyOut;
     PrescribedMotionMsgPayload prescribedMotionIn;
     PrescribedMotionMsgPayload prescribedMotionOut;
 
     /*! Zero the output message */
+    spinningBodyOut = SpinningBodyMsg_C_zeroMsgPayload();
     prescribedMotionOut = PrescribedMotionMsg_C_zeroMsgPayload();
 
     /*! Read the input messages */
-    refAngleIn = RefAngleMsg_C_read(&configData->refAngleInMsg); // [rad]
+    spinningBodyIn = SpinningBodyMsg_C_read(&configData->spinningBodyInMsg); // [rad]
     prescribedMotionIn = PrescribedMotionMsg_C_read(&configData->prescribedMotionInMsg);
     v3Copy(prescribedMotionIn.r_FM_M, configData->r_FM_M);
     v3Copy(prescribedMotionIn.rPrime_FM_M, configData->rPrime_FM_M);
@@ -86,11 +89,25 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     v3Copy(prescribedMotionIn.omegaPrime_FB_F, configData->omegaPrime_FB_F);
     v3Copy(prescribedMotionIn.sigma_FB, configData->sigma_FB);
 
-    /*! Define initial variables */
-    if (RefAngleMsg_C_timeWritten(&configData->refAngleInMsg) == callTime)
+    int spinAxis;
+    if (configData->rotAxis_B[0] != 0)
     {
-        configData->thetaInit = 4 * atan(configData->sigma_FB[configData->spinAxis]); // [rad]
-        configData->thetaDotInit = configData->omega_FB_F[configData->spinAxis]; // [rad/s]
+        spinAxis = 0;
+    }
+    else if (configData->rotAxis_B[1] != 0)
+    {
+        spinAxis = 1;
+    }
+    else
+    {
+        spinAxis = 2;
+    }
+    
+    /*! Define initial variables */
+    if (SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg) == callTime)
+    {
+        configData->thetaInit = 4 * atan(configData->sigma_FB[spinAxis]); // [rad]
+        configData->thetaDotInit = configData->omega_FB_F[spinAxis]; // [rad/s]
     }
     else
     {
@@ -99,8 +116,8 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     }
 
     /*! Grab reference variables */
-    double thetaRef = refAngleIn.thetaRef; // [rad]
-    double thetaDotRef = refAngleIn.thetaDotRef; // [rad/s]
+    double thetaRef = spinningBodyIn.theta; // [rad]
+    double thetaDotRef = spinningBodyIn.thetaDot; // [rad/s]
 
     /*! Define temporal information */
     double tf = sqrt(((0.5 * abs(thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax); // [s]
@@ -136,29 +153,23 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
         theta = thetaRef;
     }
 
-    /*! Initialize prescribed parameters */
-    v3SetZero(configData->omega_FB_F); // [rad/s]
-    v3SetZero(configData->omegaPrime_FB_F); // [rad/s^2]
-    v3SetZero(configData->sigma_FB);
-
     /*! Determine omega_FB_F and omegaPrime_FB_F parameters */
-    configData->omega_FB_F[configData->spinAxis] = thetaDot;
-    configData->omegaPrime_FB_F[configData->spinAxis] = thetaDDot;
+    v3Normalize(configData->rotAxis_B, configData->rotAxis_B);
+    v3Scale(thetaDot, configData->rotAxis_B, configData->omega_FB_F);
+    v3Scale(thetaDDot, configData->rotAxis_B, configData->omegaPrime_FB_F);
 
     /*! Determine sigma_FB, mrp from F frame to B frame */
-    double rotAxis_B[3] = {0.0, 0.0, 0.0};
-    rotAxis_B[configData->spinAxis] = 1;
     double dcm_FF0[3][3];
 
     /*! Determine dcm_FF0 */
     double prv_FF0_array[3];
-    v3Scale(theta, rotAxis_B, prv_FF0_array);
+    v3Scale(theta, configData->rotAxis_B, prv_FF0_array);
     PRV2C(prv_FF0_array, dcm_FF0);
 
     /*! Determine dcm_F0B */
     double dcm_F0B[3][3];
     double prv_F0B_array[3];
-    v3Scale(configData->thetaInit, rotAxis_B, prv_F0B_array);
+    v3Scale(configData->thetaInit, configData->rotAxis_B, prv_F0B_array);
     PRV2C(prv_F0B_array, dcm_F0B);
 
     /*! Determine dcm_FB */
@@ -174,7 +185,11 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     v3Copy(configData->omegaPrime_FB_F, prescribedMotionOut.omegaPrime_FB_F);
     v3Copy(configData->sigma_FB, prescribedMotionOut.sigma_FB);
 
+    spinningBodyOut.theta = theta;
+    spinningBodyOut.thetaDot = thetaDot;
+
     /*! write output message */
+    SpinningBodyMsg_C_write(&spinningBodyOut, &configData->spinningBodyOutMsg, moduleID, callTime);
     PrescribedMotionMsg_C_write(&prescribedMotionOut, &configData->prescribedMotionOutMsg, moduleID, callTime);
 
     return;

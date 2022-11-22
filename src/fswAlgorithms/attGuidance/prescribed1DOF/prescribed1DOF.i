@@ -31,8 +31,8 @@
 
 %include "prescribed1DOF.h"
 
-%include "architecture/msgPayloadDefC/RefAngleMsgPayload.h"
-struct RefAngleMsg_C;
+%include "architecture/msgPayloadDefC/SpinningBodyMsgPayload.h"
+struct SpinningBodyMsg_C;
 %include "architecture/msgPayloadDefC/prescribedMotionMsgPayload.h"
 struct PrescribedMotionMsg_C;
 
