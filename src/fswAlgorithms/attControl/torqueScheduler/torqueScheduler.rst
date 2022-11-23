@@ -37,8 +37,12 @@ This module is very simple and does not make any assumptions.
 
 Detailed Module Description
 ---------------------------
-This module receives a ``tSwitch`` parameter as an input from the user. This parameter determines the simulation time at which the first motor torque is disabled and the second is enabled. Both torques are stored at all times in ``motorTorqueOutMsg.motorTorque``. The logic in this module
-allocates the flag 0 or 1 in ``motorTorqueOutMsg.motorLockFlag`` to determine whether that torque is to be applied (``motorLockFlag = 0``) or neglected (``motorLockFlag = 1``). For ``t < tSwitch``, the first input torque is applied; for ``t > tSwitch``, the second input torque is applied.
+This module receives a ``lockFlag`` and a a ``tSwitch`` parameter from the user. The first is used to decide how the input torques should be passed to the output torque message. If a torque is to be applied, its corresponding ``motorTorqueOutMsg.motorLockFlag`` is set to zero. If not, its corresponding ``motorTorqueOutMsg.motorLockFlag`` is set to 1. The following cases are possible:
+
+  - ``lockFlag = 0``: both motor torques are applied simultaneously;
+  - ``lockFlag = 1``: first motor torque is applied for ``t < tSwitch``, second motor torque is applied for ``t > tSwitch``;
+  - ``lockFlag = 2``: second motor torque is applied for ``t < tSwitch``, first motor torque is applied for ``t > tSwitch``;
+  - ``lockFlag = 3``: neither of the motor torques are applied. 
 
 
 User Guide
@@ -48,6 +52,7 @@ The required module configuration is::
     schedulerConfig = torqueScheduler.torqueSchedulerConfig()
     schedulerWrap = unitTestSim.setModelDataWrap(schedulerConfig)
     schedulerWrap.ModelTag = "torqueScheduler"
+    schedulerConfig.lockFlag = lockFlag
     schedulerConfig.tSwitch = tSwitch
     unitTestSim.AddModelToTask(unitTaskName, schedulerWrap, schedulerConfig)
 	
@@ -59,5 +64,7 @@ The module is configurable with the following parameters:
 
    * - Parameter
      - Description
+   * - ``lockFlag``
+     - flag to choose the logic according to which the motor torques are applied. If not provided, it defaults to zero.
    * - ``tSwitch``
      - time at which the torque is switched from input 1 to input 2. If not provided it defaults to zero, therefore only input torque is passed.

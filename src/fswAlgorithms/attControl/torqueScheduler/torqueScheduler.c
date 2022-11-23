@@ -87,13 +87,44 @@ void Update_torqueScheduler(torqueSchedulerConfig *configData, uint64_t callTime
     /*! populate output msg */
     motorTorqueOut.motorTorque[0] = motorTorque1In.motorTorque[0];
     motorTorqueOut.motorTorque[1] = motorTorque2In.motorTorque[0];
-    if (t > configData->tSwitch) {
-        motorTorqueOut.motorLockFlag[0] = 1;
-        motorTorqueOut.motorLockFlag[1] = 0;
-    }
-    else {
-        motorTorqueOut.motorLockFlag[0] = 0;
-        motorTorqueOut.motorLockFlag[1] = 1;
+    
+    switch (configData->lockFlag) {
+
+        case 0:
+            motorTorqueOut.motorLockFlag[0] = 0;
+            motorTorqueOut.motorLockFlag[1] = 0;
+            break;
+
+        case 1:
+            if (t > configData->tSwitch) {
+                motorTorqueOut.motorLockFlag[0] = 1;
+                motorTorqueOut.motorLockFlag[1] = 0;
+            }
+            else {
+                motorTorqueOut.motorLockFlag[0] = 0;
+                motorTorqueOut.motorLockFlag[1] = 1;
+            }
+            break;
+
+        case 2:
+            if (t > configData->tSwitch) {
+                motorTorqueOut.motorLockFlag[0] = 0;
+                motorTorqueOut.motorLockFlag[1] = 1;
+            }
+            else {
+                motorTorqueOut.motorLockFlag[0] = 1;
+                motorTorqueOut.motorLockFlag[1] = 0;
+            }
+            break;
+
+        case 3:
+            motorTorqueOut.motorLockFlag[0] = 1;
+            motorTorqueOut.motorLockFlag[1] = 1;
+            break;
+
+        default:
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: torqueScheduler.lockFlag has to be an integer between 0 and 3.");
+
     }
 
     /* write output message */

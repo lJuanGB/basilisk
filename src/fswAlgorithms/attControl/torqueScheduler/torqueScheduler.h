@@ -29,7 +29,8 @@
 /*! @brief Top level structure for the sub-module routines. */
 typedef struct {
 
-    /* declare this quantity that is input by the user */
+    /* declare these user-defined inputs */
+    int    lockFlag;                               //!< flag to control the scheduler logic
     double tSwitch;                                //!< [s] time at which controller switches to second angle
 
     /* declare this quantity that is a module internal variable */
