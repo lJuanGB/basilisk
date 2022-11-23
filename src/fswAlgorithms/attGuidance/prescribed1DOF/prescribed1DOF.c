@@ -80,8 +80,16 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     prescribedMotionOut = PrescribedMotionMsg_C_zeroMsgPayload();
 
     /*! Read the input messages */
-    spinningBodyIn = SpinningBodyMsg_C_read(&configData->spinningBodyInMsg); // [rad]
-    prescribedMotionIn = PrescribedMotionMsg_C_read(&configData->prescribedMotionInMsg);
+    spinningBodyIn = SpinningBodyMsg_C_zeroMsgPayload();
+    if (SpinningBodyMsg_C_isWritten(&configData->spinningBodyInMsg))
+    {
+        spinningBodyIn = SpinningBodyMsg_C_read(&configData->spinningBodyInMsg);
+    }
+    prescribedMotionIn = PrescribedMotionMsg_C_zeroMsgPayload();
+    if (PrescribedMotionMsg_C_isWritten(&configData->prescribedMotionInMsg))
+    {
+        prescribedMotionIn = PrescribedMotionMsg_C_read(&configData->prescribedMotionInMsg);
+    }
     v3Copy(prescribedMotionIn.r_FM_M, configData->r_FM_M);
     v3Copy(prescribedMotionIn.rPrime_FM_M, configData->rPrime_FM_M);
     v3Copy(prescribedMotionIn.rPrimePrime_FM_M, configData->rPrimePrime_FM_M);
