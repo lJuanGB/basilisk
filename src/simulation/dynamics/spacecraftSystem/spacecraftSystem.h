@@ -121,6 +121,7 @@ public:
     void initializeDynamicsSC(DynParamManager& statesIn); //!< class method
 
 private:
+    static uint64_t spacecraftID;       //!< [] ID number of this spacecraft
 
     Eigen::MatrixXd *m_SC;               //!< [kg] spacecrafts total mass
     Eigen::MatrixXd *mDot_SC;            //!< [kg/s] Time derivative of spacecrafts total mass
@@ -179,7 +180,7 @@ public:
     void determineAttachedSCStates();  //!< class method
 
 private:
-    Eigen::MatrixXd *sysTime;            //!< [s] System time
+    Eigen::MatrixXd *sysTime;           //!< [s] System time
     
 };
 

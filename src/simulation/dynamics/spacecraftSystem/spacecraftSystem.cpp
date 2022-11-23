@@ -33,12 +33,16 @@ SpacecraftUnit::SpacecraftUnit()
     // - Set values to either zero or default values
     this->dvAccum_CN_B.setZero();
     this->dvAccum_BN_B.setZero();
+    this->spacecraftID++;
 
     return;
 }
 
+uint64_t SpacecraftUnit::spacecraftID = 1;
+
 SpacecraftUnit::~SpacecraftUnit()
 {
+    this->spacecraftID = 1;
     return;
 }
 
@@ -208,7 +212,7 @@ void SpacecraftUnit::initializeDynamicsSC(DynParamManager& statesIn)
     std::vector<DynamicEffector*>::iterator dynIt;
     for(dynIt = this->dynEffectors.begin(); dynIt != this->dynEffectors.end(); dynIt++)
     {
-        (*dynIt)->linkInStates(statesIn);
+        (*dynIt)->linkInStates(statesIn, this->spacecraftID);
     }
 
     return;
@@ -675,7 +679,7 @@ void SpacecraftSystem::equationsOfMotionSC(double integTimeSeconds, double timeS
     for(dynIt = spacecraft.dynEffectors.begin(); dynIt != spacecraft.dynEffectors.end(); dynIt++)
     {
         // - Compute the force and torque contributions from the dynamicEffectors
-        (*dynIt)->computeForceTorque(integTimeSeconds, timeStep);
+        (*dynIt)->computeForceTorque(integTimeSeconds, timeStep, spacecraft.spacecraftID);
         spacecraft.sumForceExternal_N += (*dynIt)->forceExternal_N;
         spacecraft.sumForceExternal_B += (*dynIt)->forceExternal_B;
         spacecraft.sumTorquePntB_B += (*dynIt)->torqueExternalPntB_B;
@@ -788,7 +792,7 @@ void SpacecraftSystem::equationsOfMotionSystem(double integTimeSeconds, double t
     for(dynIt = this->primaryCentralSpacecraft.dynEffectors.begin(); dynIt != this->primaryCentralSpacecraft.dynEffectors.end(); dynIt++)
     {
         // - Compute the force and torque contributions from the dynamicEffectors
-        (*dynIt)->computeForceTorque(integTimeSeconds, timeStep);
+        (*dynIt)->computeForceTorque(integTimeSeconds, timeStep, this->primaryCentralSpacecraft.spacecraftID);
         this->primaryCentralSpacecraft.sumForceExternal_N += (*dynIt)->forceExternal_N;
         this->primaryCentralSpacecraft.sumForceExternal_B += (*dynIt)->forceExternal_B;
         this->primaryCentralSpacecraft.sumTorquePntB_B += (*dynIt)->torqueExternalPntB_B;
@@ -802,7 +806,7 @@ void SpacecraftSystem::equationsOfMotionSystem(double integTimeSeconds, double t
         for(dynIt = (*spacecraftConnectedIt)->dynEffectors.begin(); dynIt != (*spacecraftConnectedIt)->dynEffectors.end(); dynIt++)
         {
             // - Compute the force and torque contributions from the dynamicEffectors
-            (*dynIt)->computeForceTorque(integTimeSeconds, timeStep);
+            (*dynIt)->computeForceTorque(integTimeSeconds, timeStep, (*spacecraftConnectedIt)->spacecraftID);
             this->primaryCentralSpacecraft.sumForceExternal_N += (*dynIt)->forceExternal_N;
             this->primaryCentralSpacecraft.sumForceExternal_B += (*dynIt)->forceExternal_B;
             this->primaryCentralSpacecraft.sumTorquePntB_B += (*dynIt)->torqueExternalPntB_B;
