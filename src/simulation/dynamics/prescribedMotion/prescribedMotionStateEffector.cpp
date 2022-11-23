@@ -40,7 +40,15 @@ PrescribedMotionStateEffector::PrescribedMotionStateEffector()
     this->IPntFc_F.Identity();
     this->dcm_BF.Identity();
     this->dcm_BM.Identity();
+    this->r_FM_M.setZero();
+    this->rPrime_FM_M.setZero();
+    this->rPrimePrime_FM_M.setZero();
+    this->omega_FB_F.setZero();
+    this->omegaPrime_FB_F.setZero();
+    this->sigma_FM.setIdentity();
+
     this->effectorID++;
+
     return;
 }
 
@@ -134,7 +142,7 @@ void PrescribedMotionStateEffector::updateEffectorMassProps(double integTime)
     this->effProps.mEff = this->mass;
     
     // Compute dcm_BM
-    this->dcm_BM = (this->sigma_MB.toRotationMatrix()).transpose();
+    this->dcm_BM = this->sigma_MB.toRotationMatrix();
 
     // Compute dcm_FM
     this->dcm_FM = (this->sigma_FM.toRotationMatrix()).transpose();
@@ -142,8 +150,14 @@ void PrescribedMotionStateEffector::updateEffectorMassProps(double integTime)
     // Compute dcm_BF
     this->dcm_BF = this->dcm_BM * this->dcm_FM.transpose();
 
-    // Compute the effector's CoM with respect to point B
+    // Convert the prescribed variables to the B frame
     this->r_FM_B = this->dcm_BM * this->r_FM_M;
+    this->rPrime_FM_B = this->dcm_BM * this->rPrime_FM_M;
+    this->rPrimePrime_FM_B = this->dcm_BM * this->rPrimePrime_FM_M;
+    this->omega_FB_B = this->dcm_BF * this->omega_FB_F;
+    this->omegaPrime_FB_B = this->dcm_BF * this->omegaPrime_FB_F;
+
+    // Compute the effector's CoM with respect to point B
     this->r_FB_B = this->r_FM_B + this->r_MB_B;
     this->r_FcF_B = this->dcm_BF * this->r_FcF_F;
     this->r_FcB_B = this->r_FcF_B + this->r_FB_B;
@@ -156,7 +170,6 @@ void PrescribedMotionStateEffector::updateEffectorMassProps(double integTime)
 
     // Find rPrime_FcB_B
     this->omegaTilde_FB_B = eigenTilde(this->omega_FB_B);
-    this->rPrime_FM_B = this->dcm_BM * this->rPrime_FM_M;
     this->rPrime_FcB_B = this->omegaTilde_FB_B * this->r_FcF_B + this->rPrime_FM_B;
     this->effProps.rEffPrime_CB_B = this->rPrime_FcB_B;
 
@@ -184,7 +197,6 @@ void PrescribedMotionStateEffector::updateContributions(double integTime, BackSu
     Eigen::Matrix3d omegaPrimeTilde_FB_B = eigenTilde(this->omegaPrime_FB_B);
 
     // Define rPrimePrime_FcB_B
-    this->rPrimePrime_FM_B = this->dcm_BM * this->rPrimePrime_FM_M;
     this->rPrimePrime_FcB_B = (omegaPrimeTilde_FB_B + this->omegaTilde_FB_B * this->omegaTilde_FB_B) * this->r_FcF_B + this->rPrimePrime_FM_B;
 
     // Translation contributions
