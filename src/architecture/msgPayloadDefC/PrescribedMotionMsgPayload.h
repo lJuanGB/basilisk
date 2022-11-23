@@ -26,8 +26,8 @@ typedef struct {
     double r_FM_M[3];                          //!< [m],
     double rPrime_FM_M[3];                     //!< [m/s],
     double rPrimePrime_FM_M[3];                //!< [m/s^2]
-    double omega_FB_F[3];                      //!< [rad/s]
-    double omegaPrime_FB_F[3];                 //!< [rad/s^2]
+    double omega_FM_F[3];                      //!< [rad/s]
+    double omegaPrime_FM_F[3];                 //!< [rad/s^2]
     double sigma_FM[3];
 }PrescribedMotionMsgPayload;
 
