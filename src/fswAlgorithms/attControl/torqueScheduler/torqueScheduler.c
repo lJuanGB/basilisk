@@ -48,11 +48,11 @@ void Reset_torqueScheduler(torqueSchedulerConfig *configData, uint64_t callTime,
 {
     // check if the required input message is included
     if (!ArrayMotorTorqueMsg_C_isLinked(&configData->motorTorque1InMsg)) {
-        _bskLog(configData->bskLogger, BSK_ERROR, "Error: solarArrayAngle.motorTorque1InMsg wasn't connected.");
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: torqueScheduler.motorTorque1InMsg wasn't connected.");
     }
     // check if the required input message is included
     if (!ArrayMotorTorqueMsg_C_isLinked(&configData->motorTorque2InMsg)) {
-        _bskLog(configData->bskLogger, BSK_ERROR, "Error: solarArrayAngle.motorTorque2InMsg wasn't connected.");
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: torqueScheduler.motorTorque2InMsg wasn't connected.");
     }
     // set t0 to current time
     configData->t0 = callTime;
