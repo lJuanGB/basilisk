@@ -87,27 +87,15 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     v3Copy(prescribedMotionIn.rPrimePrime_FM_M, configData->rPrimePrime_FM_M);
     v3Copy(prescribedMotionIn.omega_FB_F, configData->omega_FB_F);
     v3Copy(prescribedMotionIn.omegaPrime_FB_F, configData->omegaPrime_FB_F);
-    v3Copy(prescribedMotionIn.sigma_FB, configData->sigma_FB);
-
-    int spinAxis;
-    if (configData->rotAxis_B[0] != 0)
-    {
-        spinAxis = 0;
-    }
-    else if (configData->rotAxis_B[1] != 0)
-    {
-        spinAxis = 1;
-    }
-    else
-    {
-        spinAxis = 2;
-    }
+    v3Copy(prescribedMotionIn.sigma_FM, configData->sigma_FM);
     
     /*! Define initial variables */
     if (SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg) == callTime)
     {
-        configData->thetaInit = 4 * atan(configData->sigma_FB[spinAxis]); // [rad]
-        configData->thetaDotInit = configData->omega_FB_F[spinAxis]; // [rad/s]
+        double prv_FM_array[3];
+        MRP2PRV(configData->sigma_FM, prv_FM_array);
+        configData->thetaInit = sqrt(prv_FM_array[0] * prv_FM_array[0] +  prv_FM_array[1] * prv_FM_array[1] + prv_FM_array[2] * prv_FM_array[2]); // [rad]
+        configData->thetaDotInit = sqrt(configData->omega_FB_F[0] * configData->omega_FB_F[0] +  configData->omega_FB_F[1] * configData->omega_FB_F[1] + configData->omega_FB_F[2] * configData->omega_FB_F[2]); // [rad/s]
     }
     else
     {
@@ -120,7 +108,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double thetaDotRef = spinningBodyIn.thetaDot; // [rad/s]
 
     /*! Define temporal information */
-    double tf = sqrt(((0.5 * abs(thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax); // [s]
+    double tf = sqrt(((0.5 * fabs(thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax); // [s]
     double ts = tf / 2; // switch time [s]
     double t = callTime*1e-9; // current time [s]
 
@@ -154,28 +142,29 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     }
 
     /*! Determine omega_FB_F and omegaPrime_FB_F parameters */
-    v3Normalize(configData->rotAxis_B, configData->rotAxis_B);
-    v3Scale(thetaDot, configData->rotAxis_B, configData->omega_FB_F);
-    v3Scale(thetaDDot, configData->rotAxis_B, configData->omegaPrime_FB_F);
+    v3Normalize(configData->rotAxis_M, configData->rotAxis_M);
+    v3Scale(thetaDot, configData->rotAxis_M, configData->omega_FB_F);
+    v3Scale(thetaDDot, configData->rotAxis_M, configData->omegaPrime_FB_F);
 
-    /*! Determine sigma_FB, mrp from F frame to B frame */
+    /*! Determine sigma_FM, mrp from F frame to M frame */
     double dcm_FF0[3][3];
 
     /*! Determine dcm_FF0 */
     double prv_FF0_array[3];
-    v3Scale(theta, configData->rotAxis_B, prv_FF0_array);
+    double theta_FF0 = theta - configData->thetaInit;
+    v3Scale(theta_FF0, configData->rotAxis_M, prv_FF0_array);
     PRV2C(prv_FF0_array, dcm_FF0);
 
-    /*! Determine dcm_F0B */
-    double dcm_F0B[3][3];
-    double prv_F0B_array[3];
-    v3Scale(configData->thetaInit, configData->rotAxis_B, prv_F0B_array);
-    PRV2C(prv_F0B_array, dcm_F0B);
+    /*! Determine dcm_F0M */
+    double dcm_F0M[3][3];
+    double prv_F0M_array[3];
+    v3Scale(configData->thetaInit, configData->rotAxis_M, prv_F0M_array);
+    PRV2C(prv_F0M_array, dcm_F0M);
 
-    /*! Determine dcm_FB */
-    double dcm_FB[3][3];
-    m33MultM33(dcm_FF0, dcm_F0B, dcm_FB);
-    C2MRP(dcm_FB, configData->sigma_FB);
+    /*! Determine dcm_FM */
+    double dcm_FM[3][3];
+    m33MultM33(dcm_FF0, dcm_F0M, dcm_FM);
+    C2MRP(dcm_FM, configData->sigma_FM);
 
     /*! Copy local variables to output message */
     v3Copy(configData->r_FM_M, prescribedMotionOut.r_FM_M);
@@ -183,7 +172,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     v3Copy(configData->rPrimePrime_FM_M, prescribedMotionOut.rPrimePrime_FM_M);
     v3Copy(configData->omega_FB_F, prescribedMotionOut.omega_FB_F);
     v3Copy(configData->omegaPrime_FB_F, prescribedMotionOut.omegaPrime_FB_F);
-    v3Copy(configData->sigma_FB, prescribedMotionOut.sigma_FB);
+    v3Copy(configData->sigma_FM, prescribedMotionOut.sigma_FM);
 
     spinningBodyOut.theta = theta;
     spinningBodyOut.thetaDot = thetaDot;

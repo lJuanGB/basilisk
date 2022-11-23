@@ -44,7 +44,8 @@ public:
     Eigen::Vector3d rPrimePrime_FM_M;                   //!< [m/s^2] B frame time derivative of vector rPrime_FM_M in M frame components
     Eigen::Vector3d omega_FB_F;                         //!< [rad/s] angular velocity vector of F frame relative to the B frame in F frame components
     Eigen::Vector3d omegaPrime_FB_F;                    //!< [rad/s^2] B frame time derivative of omega_FB_F in F frame components
-    Eigen::Vector3d sigma_FB;                           //!< MRP attitude of frame F relative to the B frame
+    Eigen::MRPd sigma_FM;                           //!< Initial MRP attitude of frame F relative to the M frame
+    Eigen::MRPd sigma_MB;                           //!< MRP attitude of frame M relative to the B frame
 
     ReadFunctor<PrescribedMotionMsgPayload> prescribedMotionInMsg; //!< -- (optional) motor torque input message name
     Message<PrescribedMotionMsgPayload> prescribedMotionOutMsg;     //!< state output message
@@ -79,8 +80,9 @@ private:
 
     // DCMs
     Eigen::Matrix3d dcm_BN;                             //!< DCM from inertial frame to B frame
-    Eigen::Matrix3d dcm_BF;                             //!< DCM from F frame to B frame
     Eigen::Matrix3d dcm_BM;                             //!< DCM from M frame to B frame
+    Eigen::Matrix3d dcm_FM;                             //!< DCM from M frame to F frame
+    Eigen::Matrix3d dcm_BF;                             //!< DCM from F frame to B frame
 
     // Other matrix quantities
     Eigen::Matrix3d rTilde_FcB_B;                       //!< [m] tilde matrix of r_FcB_B in B frame components

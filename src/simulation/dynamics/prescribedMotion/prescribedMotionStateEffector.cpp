@@ -74,7 +74,9 @@ void PrescribedMotionStateEffector::writeOutputStateMessages(uint64_t CurrentClo
         eigenVector3d2CArray(this->rPrimePrime_FM_M, prescribedMotionBuffer.rPrimePrime_FM_M);
         eigenVector3d2CArray(this->omega_FB_F, prescribedMotionBuffer.omega_FB_F);
         eigenVector3d2CArray(this->omegaPrime_FB_F, prescribedMotionBuffer.omegaPrime_FB_F);
-        eigenVector3d2CArray(this->sigma_FB, prescribedMotionBuffer.sigma_FB);
+        Eigen::Vector3d sigma_FM_loc;
+        sigma_FM_loc = eigenMRPd2Vector3d(this->sigma_FM);
+        eigenVector3d2CArray(sigma_FM_loc, prescribedMotionBuffer.sigma_FM);
         this->prescribedMotionOutMsg.write(&prescribedMotionBuffer, this->moduleID, CurrentClock);
     }
 
@@ -130,6 +132,15 @@ void PrescribedMotionStateEffector::updateEffectorMassProps(double integTime)
 {
     // Give the mass of the prescribed body to the effProps mass
     this->effProps.mEff = this->mass;
+    
+    // Compute dcm_BM
+    this->dcm_BM = (this->sigma_MB.toRotationMatrix()).transpose();
+
+    // Compute dcm_FM
+    this->dcm_FM = (this->sigma_FM.toRotationMatrix()).transpose();
+
+    // Compute dcm_BF
+    this->dcm_BF = this->dcm_BM * this->dcm_FM.transpose();
 
     // Compute the effector's CoM with respect to point B
     this->r_FM_B = this->dcm_BM * this->r_FM_M;
@@ -232,28 +243,15 @@ void PrescribedMotionStateEffector::computePrescribedMotionInertialStates()
 /*! This method is used so that the simulation will ask the effector to update messages */ // called at dynamic freq
 void PrescribedMotionStateEffector::UpdateState(uint64_t CurrentSimNanos)
 {
-    Eigen::Vector3d r_FM_M_loc;
-    Eigen::Vector3d rPrime_FM_M_loc;
-    Eigen::Vector3d rPrimePrime_FM_M_loc;
-    Eigen::Vector3d omega_FB_F_loc;
-    Eigen::Vector3d omegaPrime_FB_F_loc;
-    Eigen::Vector3d sigma_FB_loc;
-
     if (this->prescribedMotionInMsg.isLinked() && this->prescribedMotionInMsg.isWritten()) {
         PrescribedMotionMsgPayload incomingPrescribedStates;
         incomingPrescribedStates = this->prescribedMotionInMsg();
-        r_FM_M_loc = cArray2EigenVector3d(incomingPrescribedStates.r_FM_M);
-        rPrime_FM_M_loc = cArray2EigenVector3d(incomingPrescribedStates.rPrime_FM_M);
-        rPrimePrime_FM_M_loc = cArray2EigenVector3d(incomingPrescribedStates.rPrimePrime_FM_M);
-        omega_FB_F_loc = cArray2EigenVector3d(incomingPrescribedStates.omega_FB_F);
-        omegaPrime_FB_F_loc = cArray2EigenVector3d(incomingPrescribedStates.omegaPrime_FB_F);
-        sigma_FB_loc = cArray2EigenVector3d(incomingPrescribedStates.sigma_FB);
-        this->r_FM_M = r_FM_M_loc;
-        this->rPrime_FM_M =rPrime_FM_M_loc;
-        this->rPrimePrime_FM_M = rPrimePrime_FM_M_loc;
-        this->omega_FB_F = omega_FB_F_loc;
-        this->omegaPrime_FB_F = omegaPrime_FB_F_loc;
-        this->sigma_FB = sigma_FB_loc;
+        this->r_FM_M = cArray2EigenVector3d(incomingPrescribedStates.r_FM_M);
+        this->rPrime_FM_M = cArray2EigenVector3d(incomingPrescribedStates.rPrime_FM_M);
+        this->rPrimePrime_FM_M = cArray2EigenVector3d(incomingPrescribedStates.rPrimePrime_FM_M);
+        this->omega_FB_F = cArray2EigenVector3d(incomingPrescribedStates.omega_FB_F);
+        this->omegaPrime_FB_F = cArray2EigenVector3d(incomingPrescribedStates.omegaPrime_FB_F);
+        this->sigma_FM = cArray2EigenVector3d(incomingPrescribedStates.sigma_FM);
     }
 
     /* Compute prescribed body inertial states */

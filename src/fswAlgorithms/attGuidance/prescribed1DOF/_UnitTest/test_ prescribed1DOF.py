@@ -88,15 +88,14 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     unitTestSim.AddModelToTask(unitTaskName, PrescribedWrap, Prescribed1DOFConfig)
 
     # Initialize the test module configuration data
-    spinAxis = 0  # (0, 1, 2) principal body axis for pure spin
-    Prescribed1DOFConfig.rotAxis_B = np.array([1.0, 0.0, 0.0])
+    Prescribed1DOFConfig.rotAxis_M = np.array([1.0, 0.0, 0.0])
     Prescribed1DOFConfig.thetaDDotMax = thetaDDotMax  # [rad/s^2]
     Prescribed1DOFConfig.r_FM_M = np.array([1.0, 0.0, 0.0])
     Prescribed1DOFConfig.rPrime_FM_M = np.array([0.0, 0.0, 0.0])
     Prescribed1DOFConfig.rPrimePrime_FM_M = np.array([0.0, 0.0, 0.0])
     Prescribed1DOFConfig.omega_FB_F = np.array([0.0, 0.0, 0.0])
     Prescribed1DOFConfig.omegaPrime_FB_F = np.array([0.0, 0.0, 0.0])
-    Prescribed1DOFConfig.sigma_FB = np.array([0.0, 0.0, 0.0])
+    Prescribed1DOFConfig.sigma_FM = np.array([0.0, 0.0, 0.0])
 
     # Create input message
     thetaDotRef = 0.0  # [rad/s]
@@ -115,7 +114,7 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     PrescribedMotionMessageData.rPrimePrime_FM_M = np.array([0.0, 0.0, 0.0])
     PrescribedMotionMessageData.omega_FB_F = np.array([0.0, 0.0, 0.0])
     PrescribedMotionMessageData.omegaPrime_FB_F = np.array([0.0, 0.0, 0.0])
-    PrescribedMotionMessageData.sigma_FB = np.array([0.0, 0.0, 0.0])
+    PrescribedMotionMessageData.sigma_FM = np.array([0.0, 0.0, 0.0])
     PrescribedMotionMessage = messaging.PrescribedMotionMsg().write(PrescribedMotionMessageData)
     Prescribed1DOFConfig.prescribedMotionInMsg.subscribeTo(PrescribedMotionMessage)
 
@@ -135,15 +134,15 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
 
     # Extract logged data
     omega_FB_F = dataLog.omega_FB_F
-    sigma_FB = dataLog.sigma_FB
+    sigma_FM = dataLog.sigma_FM
     timespan = dataLog.times()
 
-    thetaDot_Final = omega_FB_F[-1, spinAxis]
-    sigma_FB_Final = sigma_FB[-1, :]
+    thetaDot_Final = np.linalg.norm(omega_FB_F[-1, :])
+    sigma_FM_Final = sigma_FM[-1, :]
 
-    # Convert MRPs to theta_FB
-    theta_FB = 4 * np.arctan(sigma_FB[:, spinAxis])
-    theta_FB_Final = 4 * np.arctan(sigma_FB_Final[spinAxis])
+    # Convert MRPs to theta_FM
+    theta_FM = 4 * np.arctan(np.linalg.norm(sigma_FM))
+    theta_FM_Final = 4 * np.arctan(np.linalg.norm(sigma_FM_Final))
 
     # Plot omega_FB_F
     plt.figure()
@@ -154,16 +153,16 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     plt.xlabel('Time (s)')
     plt.ylabel('omega_FB_F (rad/s)')
 
-    # Plot simulated theta_FB
+    # Plot simulated theta_FM
     thetaRef_plotting = np.ones(len(timespan)) * thetaRef
     thetaInit_plotting = np.ones(len(timespan)) * thetaInit
     plt.figure()
     plt.clf()
-    plt.plot(timespan * 1e-9, theta_FB, label='theta_FB')
+    plt.plot(timespan * 1e-9, theta_FM, label='theta_FM')
     plt.plot(timespan * 1e-9, thetaRef_plotting, '--', label='thetaRef')
     plt.plot(timespan * 1e-9, thetaInit_plotting, '--', label='thetaInit')
     plt.xlabel('Time (s)')
-    plt.ylabel('Theta_FB (rad)')
+    plt.ylabel('Theta_FM (rad)')
     plt.legend()
 
     if show_plots:
@@ -175,9 +174,9 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
         testFailCount += 1
         testMessages.append("FAILED: " + PrescribedWrap.ModelTag + "thetaDot_Final and thetaDotRef do not match")
 
-    if not unitTestSupport.isDoubleEqual(theta_FB_Final, thetaRef, accuracy):
+    if not unitTestSupport.isDoubleEqual(theta_FM_Final, thetaRef, accuracy):
         testFailCount += 1
-        testMessages.append("FAILED: " + PrescribedWrap.ModelTag + "theta_FB_Final and thetaRef do not match")
+        testMessages.append("FAILED: " + PrescribedWrap.ModelTag + "theta_FM_Final and thetaRef do not match")
 
     return [testFailCount, ''.join(testMessages)]
 
