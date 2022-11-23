@@ -180,7 +180,8 @@ void ThrusterDynamicEffector::ConfigureThrustRequests(double currentTime)
  @return void
  @param states The states to link
  */
-void ThrusterDynamicEffector::linkInStates(DynParamManager& states){
+void ThrusterDynamicEffector::linkInStates(DynParamManager& states, uint64_t spacecraftID)
+{
     this->hubSigma = states.getStateObject("hubSigma");
 	this->hubOmega = states.getStateObject("hubOmega");
 }
@@ -190,7 +191,8 @@ void ThrusterDynamicEffector::linkInStates(DynParamManager& states){
  @param integTime Integration time
  @param timeStep Current integration time step used
  */
-void ThrusterDynamicEffector::computeForceTorque(double integTime, double timeStep){
+void ThrusterDynamicEffector::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID)
+{
     
     std::vector<THRSimConfig>::iterator it;
     THROperation *ops;

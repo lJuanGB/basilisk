@@ -82,7 +82,8 @@ bool DragDynamicEffector::ReadInputs()
     @return void
     @param states simulation states
  */
-void DragDynamicEffector::linkInStates(DynParamManager& states){
+void DragDynamicEffector::linkInStates(DynParamManager& states, uint64_t spacecraftID)
+{
     this->hubSigma = states.getStateObject("hubSigma");
 	this->hubVelocity = states.getStateObject("hubVelocity");
 }
@@ -117,7 +118,7 @@ void DragDynamicEffector::cannonballDrag(){
 /*! This method computes the body forces and torques for the dragEffector in a simulation loop,
 selecting the model type based on the settable attribute "modelType."
 */
-void DragDynamicEffector::computeForceTorque(double integTime, double timeStep){
+void DragDynamicEffector::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID){
 	updateDragDir();
 	if(this->modelType == "cannonball"){
 		cannonballDrag();

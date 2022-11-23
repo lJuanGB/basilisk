@@ -80,7 +80,8 @@ bool FacetDragDynamicEffector::ReadInputs()
     @param B_normal_hat
     @param B_location
  */
-void FacetDragDynamicEffector::addFacet(double area, double dragCoeff, Eigen::Vector3d B_normal_hat, Eigen::Vector3d B_location){
+void FacetDragDynamicEffector::addFacet(double area, double dragCoeff, Eigen::Vector3d B_normal_hat, Eigen::Vector3d B_location)
+{
 	this->scGeometry.facetAreas.push_back(area);
 	this->scGeometry.facetCoeffs.push_back(dragCoeff);
 	this->scGeometry.facetNormals_B.push_back(B_normal_hat);
@@ -94,7 +95,8 @@ which are required for calculating drag forces and torques.
  @param states dynamic parameter states
  */
 
-void FacetDragDynamicEffector::linkInStates(DynParamManager& states){
+void FacetDragDynamicEffector::linkInStates(DynParamManager& states, uint64_t spacecraftID)
+{
 	this->hubSigma = states.getStateObject("hubSigma");
 	this->hubVelocity = states.getStateObject("hubVelocity");
 }
@@ -147,7 +149,8 @@ void FacetDragDynamicEffector::plateDrag(){
 /*! This method computes the body forces and torques for the dragEffector in a simulation loop,
 selecting the model type based on the settable attribute "modelType."
 */
-void FacetDragDynamicEffector::computeForceTorque(double integTime, double timeStep){
+void FacetDragDynamicEffector::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID)
+{
 	updateDragDir();
 	plateDrag();
   return;

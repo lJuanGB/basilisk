@@ -53,7 +53,7 @@ void ExtForceTorque::Reset(uint64_t CurrentSimNanos)
 }
 
 
-void ExtForceTorque::linkInStates(DynParamManager& statesIn)
+void ExtForceTorque::linkInStates(DynParamManager& statesIn, uint64_t spacecraftID)
 {
 
 }
@@ -91,7 +91,7 @@ void ExtForceTorque::readInputMessages()
             matrix representations in the body (B) and inerial (N) frame components are treated as 2
             separate vectors.  Only set both if you mean to, as both vectors will be included.
  */
-void ExtForceTorque::computeForceTorque(double integTime, double timeStep)
+void ExtForceTorque::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID)
 {
 	Eigen::Vector3d cmdVec;
 

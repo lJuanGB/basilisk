@@ -50,8 +50,8 @@ class DragDynamicEffector: public SysModel, public DynamicEffector {
 public:
     DragDynamicEffector();
     ~DragDynamicEffector();
-    void linkInStates(DynParamManager& states);             //!< class method
-    void computeForceTorque(double integTime, double timeStep);
+    void linkInStates(DynParamManager& states, uint64_t spacecraftID);             //!< class method
+    void computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID);
     void Reset(uint64_t CurrentSimNanos);
     void UpdateState(uint64_t CurrentSimNanos);
     void WriteOutputMessages(uint64_t CurrentClock);

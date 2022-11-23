@@ -42,8 +42,8 @@ public:
     ~MtbEffector();
     void Reset(uint64_t CurrentSimNanos);
     void UpdateState(uint64_t CurrentSimNanos);
-    void linkInStates(DynParamManager& states);
-    void computeForceTorque(double integTime, double timeStep);
+    void linkInStates(DynParamManager& states, uint64_t spacecraftID);
+    void computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID);
     void WriteOutputMessages(uint64_t CurrentClock);
     
 public:

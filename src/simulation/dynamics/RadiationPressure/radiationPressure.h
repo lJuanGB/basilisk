@@ -52,9 +52,9 @@ public:
 
     void Reset(uint64_t CurrentSimNanos);
     void UpdateState(uint64_t CurrentSimNanos);
-    void linkInStates(DynParamManager& statesIn);
+    void linkInStates(DynParamManager& statesIn, uint64_t spacecraftID);
     void readInputMessages();
-    void computeForceTorque(double integTime, double timeStep);
+    void computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID);
     void setUseCannonballModel();
     void setUseFacetedCPUModel();
     void addForceLookupBEntry(Eigen::Vector3d vec);

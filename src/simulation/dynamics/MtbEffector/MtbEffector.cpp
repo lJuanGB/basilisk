@@ -80,7 +80,7 @@ void MtbEffector::UpdateState(uint64_t CurrentSimNanos)
 /*! This method is used to link the magnetic torque bar effector to the hub attitude.
  @return void
  */
-void MtbEffector::linkInStates(DynParamManager& states)
+void MtbEffector::linkInStates(DynParamManager& states, uint64_t spacecraftID)
 {
     /*
      * Link the Body relative to Inertial frame modified modriguez parameter.
@@ -93,7 +93,7 @@ void MtbEffector::linkInStates(DynParamManager& states)
 /*! This method computes the body torque contribution from all magnetic torque bars.
  @return void
 */
-void MtbEffector::computeForceTorque(double integTime, double timeStep)
+void MtbEffector::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID)
 {
     /*
      * Create local variables.

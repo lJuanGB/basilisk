@@ -65,7 +65,7 @@ void RadiationPressure::Reset(uint64_t CurrenSimNanos)
  @return void
  @param states Dynamic parameter manager
  */
-void RadiationPressure::linkInStates(DynParamManager& states)
+void RadiationPressure::linkInStates(DynParamManager& states, uint64_t spacecraftID)
 {
     this->hubSigma = states.getStateObject("hubSigma");
     this->hubR_N = states.getStateObject("hubPosition");
@@ -95,7 +95,7 @@ void RadiationPressure::readInputMessages()
  @param integTime Current simulation integration time
  @param timeStep Current integration time step used
  */
-void RadiationPressure::computeForceTorque(double integTime, double timeStep)
+void RadiationPressure::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID)
 {
     this->forceExternal_N.setZero();
     this->forceExternal_B.setZero();

@@ -83,7 +83,8 @@ void GravityGradientEffector::WriteOutputMessages(uint64_t CurrentClock)
  @return void
  */
 
-void GravityGradientEffector::linkInStates(DynParamManager& states){
+void GravityGradientEffector::linkInStates(DynParamManager& states, uint64_t spacecraftID)
+{
     this->hubSigma = states.getStateObject("hubSigma");
     this->r_BN_N = states.getStateObject("hubPosition");
 	this->ISCPntB_B = states.getPropertyReference("inertiaSC");
@@ -99,7 +100,8 @@ void GravityGradientEffector::linkInStates(DynParamManager& states){
 
 /*! This method computes the body forces and torques for the gravity gradient effector.
 */
-void GravityGradientEffector::computeForceTorque(double integTime, double timeStep){
+void GravityGradientEffector::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID)
+{
 	// Zero out the force/torque values to begin with
     this->torqueExternalPntB_B.setZero();
 

@@ -40,10 +40,10 @@ public:
 
     void Reset(uint64_t CurrentSimNanos);
     void UpdateState(uint64_t CurrentSimNanos);         //!< class method
-    void linkInStates(DynParamManager& statesIn);       //!< class method
+    void linkInStates(DynParamManager& statesIn, uint64_t spacecraftID);       //!< class method
     void writeOutputMessages(uint64_t currentClock);    //!< class method
     void readInputMessages();
-    void computeForceTorque(double integTime, double timeStep);
+    void computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID);
 
 private:
     CmdTorqueBodyMsgPayload incomingCmdTorqueBuffer;            //!< -- One-time allocation for savings

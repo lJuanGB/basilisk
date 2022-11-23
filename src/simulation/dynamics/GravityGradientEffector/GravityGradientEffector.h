@@ -40,8 +40,8 @@ class GravityGradientEffector: public SysModel, public DynamicEffector {
 public:
     GravityGradientEffector();
     ~GravityGradientEffector();
-    void linkInStates(DynParamManager& states);
-    void computeForceTorque(double integTime, double timeStep);
+    void linkInStates(DynParamManager& states, uint64_t spacecraftID);
+    void computeForceTorque(double integTime, double, uint64_t spacecraftID);
     void Reset(uint64_t CurrentSimNanos);
     void UpdateState(uint64_t CurrentSimNanos);
     void WriteOutputMessages(uint64_t CurrentClock);

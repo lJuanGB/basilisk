@@ -32,10 +32,10 @@ public:
     ~ExtPulsedTorque();
 
     void UpdateState(uint64_t CurrentSimNanos);
-    void linkInStates(DynParamManager& statesIn);
+    void linkInStates(DynParamManager& statesIn, uint64_t spacecraftID);
     void writeOutputMessages(uint64_t currentClock);
     void readInputMessages();
-    void computeForceTorque(double integTime, double timeStep);
+    void computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID);
 
 private:
     int    c;                                   //!< numer of time steps for pulse

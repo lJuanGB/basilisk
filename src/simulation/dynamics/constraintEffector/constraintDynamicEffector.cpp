@@ -84,7 +84,7 @@ void ConstraintDynamicEffector::Reset(uint64_t CurrentSimNanos)
  @return void
  @param states The states to link
  */
-void ConstraintDynamicEffector::linkInStates(DynParamManager& states)
+void ConstraintDynamicEffector::linkInStates(DynParamManager& states, uint64_t spacecraftID)
 {
     if (this->scInitCounter > 1) {
         bskLogger.bskLog(BSK_ERROR, "constraintDynamicEffector: tried to attach more than 2 spacecraft");
@@ -104,7 +104,7 @@ void ConstraintDynamicEffector::linkInStates(DynParamManager& states)
  @param integTime Integration time
  @param timeStep Current integration time step used
  */
-void ConstraintDynamicEffector::computeForceTorque(double integTime, double timeStep)
+void ConstraintDynamicEffector::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID)
 {
     
     if (this->scInitCounter == 2)

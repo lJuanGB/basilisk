@@ -44,8 +44,8 @@ class ThrusterDynamicEffector: public SysModel, public DynamicEffector {
 public:
     ThrusterDynamicEffector();
     ~ThrusterDynamicEffector();
-    void linkInStates(DynParamManager& states);
-    void computeForceTorque(double integTime, double timeStep);
+    void linkInStates(DynParamManager& states, uint64_t spacecraftID);
+    void computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID);
     void computeStateContribution(double integTime);
     void Reset(uint64_t CurrentSimNanos);
     //! Add a new thruster to the thruster set

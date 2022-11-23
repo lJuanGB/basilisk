@@ -39,7 +39,7 @@ ExtPulsedTorque::~ExtPulsedTorque()
 
 
 /*! link the states */
-void ExtPulsedTorque::linkInStates(DynParamManager& statesIn)
+void ExtPulsedTorque::linkInStates(DynParamManager& statesIn, uint64_t spacecraftID)
 {
     return;
 }
@@ -68,7 +68,7 @@ void ExtPulsedTorque::readInputMessages()
             matrix represnetations in the body (B) and inerial (N) frame components are treated as 2 
             separate vectors.  Only set both if you mean to, as both vectors will be included.
  */
-void ExtPulsedTorque::computeForceTorque(double integTime, double timeStep)
+void ExtPulsedTorque::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID)
 {
     /* zero the output vector */
     this->torqueExternalPntB_B.fill(0.0);
