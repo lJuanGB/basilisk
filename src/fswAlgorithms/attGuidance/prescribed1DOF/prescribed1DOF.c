@@ -94,13 +94,8 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     {
         double prv_FM_array[3];
         MRP2PRV(configData->sigma_FM, prv_FM_array);
-        configData->thetaInit = sqrt(prv_FM_array[0] * prv_FM_array[0] +  prv_FM_array[1] * prv_FM_array[1] + prv_FM_array[2] * prv_FM_array[2]); // [rad]
-        configData->thetaDotInit = sqrt(configData->omega_FB_F[0] * configData->omega_FB_F[0] +  configData->omega_FB_F[1] * configData->omega_FB_F[1] + configData->omega_FB_F[2] * configData->omega_FB_F[2]); // [rad/s]
-    }
-    else
-    {
-        // configData->thetaInit = configData->thetaInit; // [rad]
-        // configData->thetaDotInit = configData->thetaDotInit; // [rad/s]
+        configData->thetaInit = v3Norm(prv_FM_array); // [rad]
+        configData->thetaDotInit = v3Norm(configData->omega_FB_F); // [rad/s]
     }
 
     /*! Grab reference variables */
@@ -122,13 +117,13 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double b = -0.5 * thetaRef / ((ts - tf) * (ts - tf)); // Constant for second parabola
 
     /*! Compute analytic scalar states: thetaDDot, thetaDot, and theta */
-    if (t < ts || t == ts)
+    if ((t < ts || t == ts) && tf != 0)
     {
         thetaDDot = configData->thetaDDotMax;
         thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit;
         theta = a * (t - configData->tInit) * (t - configData->tInit) + configData->thetaInit;
     }
-    else if ( t > ts && (t < tf || t == tf) )
+    else if ( t > ts && (t < tf || t == tf) && tf != 0)
     {
         thetaDDot = -1 * configData->thetaDDotMax;
         thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit - thetaDDot * (tf - configData->tInit);
