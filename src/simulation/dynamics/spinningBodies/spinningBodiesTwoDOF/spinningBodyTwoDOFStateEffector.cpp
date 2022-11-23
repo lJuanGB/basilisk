@@ -61,10 +61,12 @@ SpinningBodyTwoDOFStateEffector::SpinningBodyTwoDOFStateEffector()
     Message<SCStatesMsgPayload>* statesMsg;
     statesMsg = new Message<SCStatesMsgPayload>;
     this->spinningBodyConfigLogOutMsgs.push_back(statesMsg);
+    statesMsg = new Message<SCStatesMsgPayload>;
     this->spinningBodyConfigLogOutMsgs.push_back(statesMsg);
     Message<SpinningBodyMsgPayload>* spinnerMsg;
     spinnerMsg = new Message<SpinningBodyMsgPayload>;
     this->spinningBodyOutMsgs.push_back(spinnerMsg);
+    spinnerMsg = new Message<SpinningBodyMsgPayload>;
     this->spinningBodyOutMsgs.push_back(spinnerMsg);
     
     this->nameOfTheta1State = "spinningBodyTheta1" + std::to_string(this->effectorID);
@@ -112,7 +114,7 @@ void SpinningBodyTwoDOFStateEffector::Reset(uint64_t CurrentClock)
         bskLogger.bskLog(BSK_ERROR, "Norm of s2Hat must be greater than 0. s1Hat may not have been set by the user.");
     }
 
-    // check dcm roerties
+    // check dcm properties
 
     return;
 }
@@ -122,16 +124,15 @@ void SpinningBodyTwoDOFStateEffector::Reset(uint64_t CurrentClock)
 void SpinningBodyTwoDOFStateEffector::writeOutputStateMessages(uint64_t CurrentClock)
 {
     // Write out the spinning body output messages
+    SpinningBodyMsgPayload spinningBodyBuffer;
     if (this->spinningBodyOutMsgs[0]->isLinked()) {
-        SpinningBodyMsgPayload spinningBodyBuffer;
         spinningBodyBuffer = this->spinningBodyOutMsgs[0]->zeroMsgPayload;
         spinningBodyBuffer.theta = this->theta1;
         spinningBodyBuffer.thetaDot = this->theta1Dot;
         this->spinningBodyOutMsgs[0]->write(&spinningBodyBuffer, this->moduleID, CurrentClock);
     }
     if (this->spinningBodyOutMsgs[1]->isLinked()) {
-        SpinningBodyMsgPayload spinningBodyBuffer;
-        spinningBodyBuffer = this->spinningBodyOutMsgs[0]->zeroMsgPayload;
+        spinningBodyBuffer = this->spinningBodyOutMsgs[1]->zeroMsgPayload;
         spinningBodyBuffer.theta = this->theta2;
         spinningBodyBuffer.thetaDot = this->theta2Dot;
         this->spinningBodyOutMsgs[1]->write(&spinningBodyBuffer, this->moduleID, CurrentClock);
@@ -217,6 +218,17 @@ void SpinningBodyTwoDOFStateEffector::updateEffectorMassProps(double integTime)
     // Give the mass of the spinning body to the effProps mass
     this->mass = this->mass1 + this->mass2;
     this->effProps.mEff = this->mass;
+
+    // Lock the axis if the flag is set to 1
+    Eigen::MatrixXd zeroMatrix = Eigen::MatrixXd::Constant(1, 1, 0.0);
+    if (this->lockFlag1 == 1)
+    {
+        this->theta1DotState->setState(zeroMatrix);
+    }
+    if (this->lockFlag2 == 1)
+    {
+        this->theta2DotState->setState(zeroMatrix);
+    }
 
     // Grab current states
     this->theta1 = this->theta1State->getState()(0, 0);
@@ -370,10 +382,24 @@ void SpinningBodyTwoDOFStateEffector::updateContributions(double integTime, Back
         + IS2PntS2_B * this->omegaTilde_S1B_B * this->omega_S2S1_B + this->mass2 * rTilde_Sc2S2_B * omegaTilde_S1N_B * this->rPrime_S2S1_B 
         + this->mass2 * rTilde_Sc2S2_B * this->omegaTilde_BN_B * (rDot_S2S1_B + rDot_S1B_B));
 
-    // Definethe ATheta, BTheta and CTheta matrices
+    // Define the ATheta, BTheta and CTheta matrices
     this->ATheta = MTheta.inverse() * AThetaStar;
     this->BTheta = MTheta.inverse() * BThetaStar;
     this->CTheta = MTheta.inverse() * CThetaStar;
+
+    // Check if any of the axis are locked and change dynamics accordingly
+    if (this->lockFlag1 == 1)
+    {
+        this->ATheta.row(0) = Eigen::MatrixXd::Constant(1, 3, 0.0);
+        this->BTheta.row(0) = Eigen::MatrixXd::Constant(1, 3, 0.0);
+        this->CTheta.row(0) = Eigen::MatrixXd::Constant(1, 1, 0.0);
+    }
+    if (this->lockFlag2 == 1)
+    {
+        this->ATheta.row(1) = Eigen::MatrixXd::Constant(1, 3, 0.0);
+        this->BTheta.row(1) = Eigen::MatrixXd::Constant(1, 3, 0.0);
+        this->CTheta.row(1) = Eigen::MatrixXd::Constant(1, 1, 0.0);
+    }
 
     // For documentation on contributions see Vaz Carneiro, Allard, Schaub spinning body paper
     // Translation contributions
@@ -401,6 +427,9 @@ void SpinningBodyTwoDOFStateEffector::updateContributions(double integTime, Back
 /*! This method is used to find the derivatives for the SB stateEffector: thetaDDot and the kinematic derivative */
 void SpinningBodyTwoDOFStateEffector::computeDerivatives(double integTime, Eigen::Vector3d rDDot_BN_N, Eigen::Vector3d omegaDot_BN_B, Eigen::Vector3d sigma_BN)
 {
+    //  Define a zero matrix in case an axis is locked
+    Eigen::MatrixXd zeroMatrix = Eigen::MatrixXd::Constant(1, 1, 0.0);
+    
     // Grab omegaDot_BN_B 
     Eigen::Vector3d omegaDotLocal_BN_B;
     omegaDotLocal_BN_B = omegaDot_BN_B;
@@ -409,15 +438,29 @@ void SpinningBodyTwoDOFStateEffector::computeDerivatives(double integTime, Eigen
     Eigen::Vector3d rDDotLocal_BN_N = rDDot_BN_N;
     Eigen::Vector3d rDDotLocal_BN_B = this->dcm_BN * rDDotLocal_BN_N;
 
-    // Compute theta derivatives
-    this->theta1State->setDerivative(this->theta1DotState->getState());
-    this->theta2State->setDerivative(this->theta2DotState->getState());
-
-    // Compute thetaDot derivatives
+    // Compute theta and thetaDot derivatives
     Eigen::Vector2d thetaDDot;
     thetaDDot = this->ATheta * rDDotLocal_BN_B + this->BTheta * omegaDotLocal_BN_B + this->CTheta;
-    this->theta1DotState->setDerivative(thetaDDot.row(0));
-    this->theta2DotState->setDerivative(thetaDDot.row(1));
+    if (this->lockFlag1 == 1)
+    {
+        this->theta1State->setDerivative(zeroMatrix);
+        this->theta1DotState->setDerivative(zeroMatrix);
+    }
+    else
+    {
+        this->theta1State->setDerivative(this->theta1DotState->getState());
+        this->theta1DotState->setDerivative(thetaDDot.row(0));
+    }
+    if (this->lockFlag2 == 1)
+    {
+        this->theta2State->setDerivative(zeroMatrix);
+        this->theta2DotState->setDerivative(zeroMatrix);
+    }
+    else
+    {
+        this->theta2State->setDerivative(this->theta2DotState->getState());
+        this->theta2DotState->setDerivative(thetaDDot.row(1));
+    }
     
     return;
 }
@@ -477,6 +520,8 @@ void SpinningBodyTwoDOFStateEffector::UpdateState(uint64_t CurrentSimNanos)
         incomingCmdBuffer = this->motorTorqueInMsg();
         this->u1 = incomingCmdBuffer.motorTorque[0];
         this->u2 = incomingCmdBuffer.motorTorque[1];
+        this->lockFlag1 = incomingCmdBuffer.motorLockFlag[0];
+        this->lockFlag2 = incomingCmdBuffer.motorLockFlag[1];
     }
 
     /* Compute spinning body inertial states */
