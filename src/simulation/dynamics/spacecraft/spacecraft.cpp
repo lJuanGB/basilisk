@@ -285,7 +285,7 @@ void Spacecraft::initializeDynamics()
     std::vector<DynamicEffector*>::iterator dynIt;
     for(dynIt = this->dynEffectors.begin(); dynIt != this->dynEffectors.end(); dynIt++)
     {
-        (*dynIt)->linkInStates(this->dynManager);
+        (*dynIt)->linkInStates(this->dynManager, this->spacecraftID);
     }
 
     // If set, read in and prescribe attitude reference motion as initial states
@@ -383,7 +383,7 @@ void Spacecraft::equationsOfMotion(double integTimeSeconds, double timeStep)
     for(dynIt = this->dynEffectors.begin(); dynIt != this->dynEffectors.end(); dynIt++)
     {
         // - Compute the force and torque contributions from the dynamicEffectors
-        (*dynIt)->computeForceTorque(integTimeSeconds, timeStep);
+        (*dynIt)->computeForceTorque(integTimeSeconds, timeStep, this->spacecraftID);
         this->sumForceExternal_N += (*dynIt)->forceExternal_N;
         this->sumForceExternal_B += (*dynIt)->forceExternal_B;
         this->sumTorquePntB_B += (*dynIt)->torqueExternalPntB_B;

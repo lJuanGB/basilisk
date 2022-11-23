@@ -30,8 +30,8 @@ public:
     DynamicEffector();                      //!< -- Constructor
     virtual ~DynamicEffector();             //!< -- Destructor
     virtual void computeStateContribution(double integTime);
-    virtual void linkInStates(DynParamManager& states) = 0;  //!< -- Method to get access to other states/stateEffectors
-    virtual void computeForceTorque(double integTime, double timeStep) = 0;  //!< -- Method to computeForce and torque on the body
+    virtual void linkInStates(DynParamManager& states, uint64_t spacecraftID) = 0;  //!< -- Method to get access to other states/stateEffectors
+    virtual void computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID) = 0;  //!< -- Method to computeForce and torque on the body
     
 public:
     Eigen::VectorXd stateDerivContribution; //!< -- DynamicEffectors contribution to a stateEffector
