@@ -39,6 +39,7 @@ public:
     Eigen::Vector3d r_FcF_F;                            //!< [m] position vector of point Fc relative to point F in F frame components
     Eigen::Vector3d omega_MB_B;
     Eigen::Vector3d omegaPrime_MB_B;
+    Eigen::MRPd sigma_MB;                               //!< MRP attitude of frame M relative to the B frame
 
     // Prescribed parameters
     Eigen::Vector3d r_FM_M;                             //!< [m] position vector of point F relative to point M in M frame components
@@ -47,7 +48,6 @@ public:
     Eigen::Vector3d omega_FM_F;                         //!< [rad/s] angular velocity vector of F frame relative to the B frame in F frame components
     Eigen::Vector3d omegaPrime_FM_F;                    //!< [rad/s^2] B frame time derivative of omega_FB_F in F frame components
     Eigen::MRPd sigma_FM;                           //!< Initial MRP attitude of frame F relative to the M frame
-    Eigen::MRPd sigma_MB;                           //!< MRP attitude of frame M relative to the B frame
 
     ReadFunctor<PrescribedMotionMsgPayload> prescribedMotionInMsg; //!< -- (optional) motor torque input message name
     Message<PrescribedMotionMsgPayload> prescribedMotionOutMsg;     //!< state output message

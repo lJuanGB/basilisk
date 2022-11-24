@@ -35,12 +35,17 @@ PrescribedMotionStateEffector::PrescribedMotionStateEffector()
     this->effProps.rEffPrime_CB_B.fill(0.0);
     this->effProps.IEffPrimePntB_B.fill(0.0);
 
-    // Initialize variables to working values
+    // Initialize module variables
     this->mass = 0.0;
     this->IPntFc_F.Identity();
-    this->dcm_BF.Identity();
-    this->dcm_BM.Identity();
-    this->r_FM_M.setZero();
+    this->r_MB_B.setZero();
+    this->r_FcF_F.setZero();
+    this->omega_MB_B.setZero();
+    this->omegaPrime_MB_B.setZero();
+    this->sigma_MB.setIdentity();
+
+    // Initialize prescribed variables
+    this->r_FM_M.setZero();   
     this->rPrime_FM_M.setZero();
     this->rPrimePrime_FM_M.setZero();
     this->omega_FM_F.setZero();
@@ -156,6 +161,7 @@ void PrescribedMotionStateEffector::updateEffectorMassProps(double integTime)
 
     // Compute omegaPrime_FB_B given the user inputs
     this->omegaTilde_FB_B = eigenTilde(this->omega_FB_B);
+    this->omegaPrime_FM_B = this->dcm_BF * this->omegaPrime_FM_F;
     this->omegaPrime_FB_B = this->omegaPrime_FM_B + this->omegaTilde_FB_B * this->omega_FM_B;
 
     // Convert the prescribed variables to the B frame
