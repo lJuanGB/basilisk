@@ -93,8 +93,8 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     Prescribed1DOFConfig.r_FM_M = np.array([1.0, 0.0, 0.0])
     Prescribed1DOFConfig.rPrime_FM_M = np.array([0.0, 0.0, 0.0])
     Prescribed1DOFConfig.rPrimePrime_FM_M = np.array([0.0, 0.0, 0.0])
-    Prescribed1DOFConfig.omega_FB_F = np.array([0.0, 0.0, 0.0])
-    Prescribed1DOFConfig.omegaPrime_FB_F = np.array([0.0, 0.0, 0.0])
+    Prescribed1DOFConfig.omega_FM_F = np.array([0.0, 0.0, 0.0])
+    Prescribed1DOFConfig.omegaPrime_FM_F = np.array([0.0, 0.0, 0.0])
     Prescribed1DOFConfig.sigma_FM = np.array([0.0, 0.0, 0.0])
 
     # Create input message
@@ -112,8 +112,8 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     PrescribedMotionMessageData.r_FM_M = np.array([1.0, 0.0, 0.0])
     PrescribedMotionMessageData.rPrime_FM_M = np.array([0.0, 0.0, 0.0])
     PrescribedMotionMessageData.rPrimePrime_FM_M = np.array([0.0, 0.0, 0.0])
-    PrescribedMotionMessageData.omega_FB_F = np.array([0.0, 0.0, 0.0])
-    PrescribedMotionMessageData.omegaPrime_FB_F = np.array([0.0, 0.0, 0.0])
+    PrescribedMotionMessageData.omega_FM_F = np.array([0.0, 0.0, 0.0])
+    PrescribedMotionMessageData.omegaPrime_FM_F = np.array([0.0, 0.0, 0.0])
     PrescribedMotionMessageData.sigma_FM = np.array([0.0, 0.0, 0.0])
     PrescribedMotionMessage = messaging.PrescribedMotionMsg().write(PrescribedMotionMessageData)
     Prescribed1DOFConfig.prescribedMotionInMsg.subscribeTo(PrescribedMotionMessage)
@@ -133,11 +133,11 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     unitTestSim.ExecuteSimulation()
 
     # Extract logged data
-    omega_FB_F = dataLog.omega_FB_F
+    omega_FM_F = dataLog.omega_FM_F
     sigma_FM = dataLog.sigma_FM
     timespan = dataLog.times()
 
-    thetaDot_Final = np.linalg.norm(omega_FB_F[-1, :])
+    thetaDot_Final = np.linalg.norm(omega_FM_F[-1, :])
     sigma_FM_Final = sigma_FM[-1, :]
 
     # Convert MRPs to theta_FM
@@ -147,9 +147,9 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     # Plot omega_FB_F
     plt.figure()
     plt.clf()
-    plt.plot(timespan * 1e-9, omega_FB_F[:, 0],
-             timespan * 1e-9, omega_FB_F[:, 1],
-             timespan * 1e-9, omega_FB_F[:, 2])
+    plt.plot(timespan * 1e-9, omega_FM_F[:, 0],
+             timespan * 1e-9, omega_FM_F[:, 1],
+             timespan * 1e-9, omega_FM_F[:, 2])
     plt.xlabel('Time (s)')
     plt.ylabel('omega_FB_F (rad/s)')
 

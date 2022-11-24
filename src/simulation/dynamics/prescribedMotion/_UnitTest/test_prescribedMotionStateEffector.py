@@ -102,14 +102,16 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     # Define properties of state effector
     platform.mass = 100.0
     platform.IPntFc_F = [[50.0, 0.0, 0.0], [0.0, 50.0, 0.0], [0.0, 0.0, 50.0]]
-    platform.r_MB_B = [[1.0], [0.0], [0.0]]
-    platform.r_FcF_F = [[0.0], [0.0], [0.0]]
-    platform.r_FM_M = [[1.0], [0.0], [0.0]]
-    platform.rPrime_FM_M = [[0.0], [0.0], [0.0]]
-    platform.rPrimePrime_FM_M = [[0.0], [0.0], [0.0]]
-    platform.omega_FB_F = [[0.0], [0.0], [0.0]]
-    platform.omegaPrime_FB_F = [[0.0], [0.0], [0.0]]
+    platform.r_MB_B = [1.0, 0.0, 0.0]
+    platform.r_FcF_F = [0.0, 0.0, 0.0]
+    platform.r_FM_M = [1.0, 0.0, 0.0]
+    platform.rPrime_FM_M = [0.0, 0.0, 0.0]
+    platform.rPrimePrime_FM_M = [0.0, 0.0, 0.0]
+    platform.omega_FM_F = [0.0, 0.0, 0.0]
+    platform.omegaPrime_FM_F = [0.0, 0.0, 0.0]
     platform.sigma_FM = [0.0, 0.0, 0.0]
+    platform.omega_MB_B = [0.0, 0.0, 0.0]
+    platform.omegaPrime_MB_B = [0.0, 0.0, 0.0]
     platform.sigma_MB = [0.0, 0.0, 1.0]
     platform.ModelTag = "Platform"
 
@@ -174,11 +176,11 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     unitTestSim.ExecuteSimulation()
 
     # Extract logged data
-    omega_FB_F = dataLog.omega_FB_F
+    omega_FM_F = dataLog.omega_FM_F
     sigma_FM = dataLog.sigma_FM
     timespan = dataLog.times()
 
-    thetaDot_Final = np.linalg.norm(omega_FB_F[-1, :])
+    thetaDot_Final = np.linalg.norm(omega_FM_F[-1, :])
     sigma_FM_Final = sigma_FM[-1, :]
 
     # Convert MRPs to theta_FM
@@ -192,9 +194,9 @@ def PrescribedMotionTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, 
     # Plot omega_FB_F
     plt.figure()
     plt.clf()
-    plt.plot(timespan * 1e-9, omega_FB_F[:, 0],
-             timespan * 1e-9, omega_FB_F[:, 1],
-             timespan * 1e-9, omega_FB_F[:, 2])
+    plt.plot(timespan * 1e-9, omega_FM_F[:, 0],
+             timespan * 1e-9, omega_FM_F[:, 1],
+             timespan * 1e-9, omega_FM_F[:, 2])
     plt.xlabel('Time (s)')
     plt.ylabel('omega_FB_F (rad/s)')
 

@@ -43,8 +43,8 @@ PrescribedMotionStateEffector::PrescribedMotionStateEffector()
     this->r_FM_M.setZero();
     this->rPrime_FM_M.setZero();
     this->rPrimePrime_FM_M.setZero();
-    this->omega_FB_F.setZero();
-    this->omegaPrime_FB_F.setZero();
+    this->omega_FM_F.setZero();
+    this->omegaPrime_FM_F.setZero();
     this->sigma_FM.setIdentity();
 
     this->effectorID++;
@@ -80,8 +80,8 @@ void PrescribedMotionStateEffector::writeOutputStateMessages(uint64_t CurrentClo
         eigenVector3d2CArray(this->r_FM_M, prescribedMotionBuffer.r_FM_M);
         eigenVector3d2CArray(this->rPrime_FM_M, prescribedMotionBuffer.rPrime_FM_M);
         eigenVector3d2CArray(this->rPrimePrime_FM_M, prescribedMotionBuffer.rPrimePrime_FM_M);
-        eigenVector3d2CArray(this->omega_FB_F, prescribedMotionBuffer.omega_FB_F);
-        eigenVector3d2CArray(this->omegaPrime_FB_F, prescribedMotionBuffer.omegaPrime_FB_F);
+        eigenVector3d2CArray(this->omega_FM_F, prescribedMotionBuffer.omega_FM_F);
+        eigenVector3d2CArray(this->omegaPrime_FM_F, prescribedMotionBuffer.omegaPrime_FM_F);
         Eigen::Vector3d sigma_FM_loc;
         sigma_FM_loc = eigenMRPd2Vector3d(this->sigma_FM);
         eigenVector3d2CArray(sigma_FM_loc, prescribedMotionBuffer.sigma_FM);
@@ -150,12 +150,18 @@ void PrescribedMotionStateEffector::updateEffectorMassProps(double integTime)
     // Compute dcm_BF
     this->dcm_BF = this->dcm_BM * this->dcm_FM.transpose();
 
+    // Compute omega_FB_B given the user inputs omega_MB_M and omega_FM_F
+    this->omega_FM_B = this->dcm_BF * this->omega_FM_F;
+    this->omega_FB_B = this->omega_FM_B + this->omega_MB_B;
+
+    // Compute omegaPrime_FB_B given the user inputs
+    this->omegaTilde_FB_B = eigenTilde(this->omega_FB_B);
+    this->omegaPrime_FB_B = this->omegaPrime_FM_B + this->omegaTilde_FB_B * this->omega_FM_B;
+
     // Convert the prescribed variables to the B frame
     this->r_FM_B = this->dcm_BM * this->r_FM_M;
     this->rPrime_FM_B = this->dcm_BM * this->rPrime_FM_M;
     this->rPrimePrime_FM_B = this->dcm_BM * this->rPrimePrime_FM_M;
-    this->omega_FB_B = this->dcm_BF * this->omega_FB_F;
-    this->omegaPrime_FB_B = this->dcm_BF * this->omegaPrime_FB_F;
 
     // Compute the effector's CoM with respect to point B
     this->r_FB_B = this->r_FM_B + this->r_MB_B;
@@ -261,8 +267,8 @@ void PrescribedMotionStateEffector::UpdateState(uint64_t CurrentSimNanos)
         this->r_FM_M = cArray2EigenVector3d(incomingPrescribedStates.r_FM_M);
         this->rPrime_FM_M = cArray2EigenVector3d(incomingPrescribedStates.rPrime_FM_M);
         this->rPrimePrime_FM_M = cArray2EigenVector3d(incomingPrescribedStates.rPrimePrime_FM_M);
-        this->omega_FB_F = cArray2EigenVector3d(incomingPrescribedStates.omega_FB_F);
-        this->omegaPrime_FB_F = cArray2EigenVector3d(incomingPrescribedStates.omegaPrime_FB_F);
+        this->omega_FM_F = cArray2EigenVector3d(incomingPrescribedStates.omega_FM_F);
+        this->omegaPrime_FM_F = cArray2EigenVector3d(incomingPrescribedStates.omegaPrime_FM_F);
         this->sigma_FM = cArray2EigenVector3d(incomingPrescribedStates.sigma_FM);
     }
 

@@ -37,13 +37,15 @@ public:
     Eigen::Matrix3d IPntFc_F;                           //!< [kg-m^2] Inertia of prescribed body about point Fc in F frame components
     Eigen::Vector3d r_MB_B;                             //!< [m] position vector of point M relative to point B in B frame components
     Eigen::Vector3d r_FcF_F;                            //!< [m] position vector of point Fc relative to point F in F frame components
+    Eigen::Vector3d omega_MB_B;
+    Eigen::Vector3d omegaPrime_MB_B;
 
     // Prescribed parameters
     Eigen::Vector3d r_FM_M;                             //!< [m] position vector of point F relative to point M in M frame components
     Eigen::Vector3d rPrime_FM_M;                        //!< [m/s] B frame time derivative of position vector r_FM_M in M frame components
     Eigen::Vector3d rPrimePrime_FM_M;                   //!< [m/s^2] B frame time derivative of vector rPrime_FM_M in M frame components
-    Eigen::Vector3d omega_FB_F;                         //!< [rad/s] angular velocity vector of F frame relative to the B frame in F frame components
-    Eigen::Vector3d omegaPrime_FB_F;                    //!< [rad/s^2] B frame time derivative of omega_FB_F in F frame components
+    Eigen::Vector3d omega_FM_F;                         //!< [rad/s] angular velocity vector of F frame relative to the B frame in F frame components
+    Eigen::Vector3d omegaPrime_FM_F;                    //!< [rad/s^2] B frame time derivative of omega_FB_F in F frame components
     Eigen::MRPd sigma_FM;                           //!< Initial MRP attitude of frame F relative to the M frame
     Eigen::MRPd sigma_MB;                           //!< MRP attitude of frame M relative to the B frame
 
@@ -64,6 +66,9 @@ private:
     Eigen::Vector3d r_FM_B;                             //!< [m] position vector of point F relative to point M in B frame components
     Eigen::Vector3d rPrime_FM_B;                        //!< [m/s] B frame time derivative of position vector r_FM_B
     Eigen::Vector3d rPrimePrime_FM_B;                   //!< [m/s^2] B frame time derivative of rPrime_FM_B
+    Eigen::Vector3d omega_FM_B;                         //!< [rad/s] angular velocity vector of F frame relative to the B frame in B frame components
+    Eigen::Vector3d omegaPrime_FM_B;                    //!< [rad/s^2] B frame time derivative of omega_FB_B in B frame components
+
     Eigen::Vector3d omega_FB_B;                         //!< [rad/s] angular velocity vector of F frame relative to the B frame in B frame components
     Eigen::Vector3d omegaPrime_FB_B;                    //!< [rad/s^2] B frame time derivative of omega_FB_B in B frame components
 
