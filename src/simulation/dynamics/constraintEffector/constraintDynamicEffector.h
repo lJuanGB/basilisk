@@ -31,9 +31,6 @@
 #include <Eigen/Dense>
 #include <vector>
 
-
-
-
 /*! @brief thruster dynamic effector class */
 class ConstraintDynamicEffector: public SysModel, public DynamicEffector {
 public:
@@ -82,6 +79,7 @@ private:
     double c; // derivative gain
 
     Eigen::Vector3d Fc_N;
+    Eigen::Vector3d L_B1;
     Eigen::Vector3d L_B2;
 
 };
