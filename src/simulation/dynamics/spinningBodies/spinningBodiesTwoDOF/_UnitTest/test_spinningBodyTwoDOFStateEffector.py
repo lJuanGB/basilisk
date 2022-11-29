@@ -239,29 +239,29 @@ def test_spinningBody(show_plots, cmdTorque1, lock1, cmdTorque2, lock2):
     plt.xlabel('time (s)')
     plt.ylabel('Rotational Energy Relative Difference')
 
-    plt.figure()
-    plt.clf()
-    plt.plot(theta1Data.times() * 1e-9, theta1)
-    plt.xlabel('time (s)')
-    plt.ylabel('theta1')
-
-    plt.figure()
-    plt.clf()
-    plt.plot(theta1Data.times() * 1e-9, theta1Dot)
-    plt.xlabel('time (s)')
-    plt.ylabel('theta1Dot')
-
-    plt.figure()
-    plt.clf()
-    plt.plot(theta2Data.times() * 1e-9, theta2)
-    plt.xlabel('time (s)')
-    plt.ylabel('theta2')
-
-    plt.figure()
-    plt.clf()
-    plt.plot(theta2Data.times() * 1e-9, theta2Dot)
-    plt.xlabel('time (s)')
-    plt.ylabel('theta2Dot')
+    # plt.figure()
+    # plt.clf()
+    # plt.plot(theta1Data.times() * 1e-9, theta1)
+    # plt.xlabel('time (s)')
+    # plt.ylabel('theta1')
+    #
+    # plt.figure()
+    # plt.clf()
+    # plt.plot(theta1Data.times() * 1e-9, theta1Dot)
+    # plt.xlabel('time (s)')
+    # plt.ylabel('theta1Dot')
+    #
+    # plt.figure()
+    # plt.clf()
+    # plt.plot(theta2Data.times() * 1e-9, theta2)
+    # plt.xlabel('time (s)')
+    # plt.ylabel('theta2')
+    #
+    # plt.figure()
+    # plt.clf()
+    # plt.plot(theta2Data.times() * 1e-9, theta2Dot)
+    # plt.xlabel('time (s)')
+    # plt.ylabel('theta2Dot')
 
     if show_plots:
         plt.show()
