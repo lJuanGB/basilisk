@@ -59,6 +59,8 @@ def computeRotationAngle(sigma_RN, rS_N, a1_R, a2_R, theta0):
     if a2_R_norm > 1e-6:
         a2_R_target = a2_R_target / a2_R_norm
         theta = np.arccos(min(max(np.dot(a2_R, a2_R_target),-1),1))
+        if np.dot(a1_R, np.cross(a2_R, a2_R_target)) < 0:
+            theta = 2*np.pi - theta
     else:
         theta = theta0
 

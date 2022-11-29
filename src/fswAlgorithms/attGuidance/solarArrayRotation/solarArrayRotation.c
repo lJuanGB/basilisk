@@ -111,16 +111,22 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     }
 
     /* normalize a1_B and a2_B from module input */
-    double a1_R[3], a2_R_nominal[3], a2_R_target[3];
-    v3Normalize(configData->a1_B, a1_R);                    // a1 and a2 are body fixed, therefore their coordinates in B and R remain the same
+    double a1_R_nominal[3], a2_R_nominal[3], a2_R_target[3];
+    v3Normalize(configData->a1_B, a1_R_nominal);                    // a1 and a2 are body fixed, therefore their coordinates in B and R remain the same
     v3Normalize(configData->a2_B, a2_R_nominal);
 
     /* compute a2_R target */
-    double dotP = v3Dot(a1_R, rS_R);
+    double dotP = v3Dot(a1_R_nominal, rS_R);
     for (int n = 0; n < 3; n++) {
-        a2_R_target[n] = rS_R[n] - dotP * a1_R[n];
+        a2_R_target[n] = rS_R[n] - dotP * a1_R_nominal[n];
     }
     v3Normalize(a2_R_target, a2_R_target);
+
+    double a1_R_target[3];
+    v3Cross(a2_R_nominal, a2_R_target, a1_R_target);
+    v3Normalize(a1_R_target, a1_R_target);
+
+    // printf("a1 = [%.2f, %.2f, %.2f] \n", a1_R_new[0], a1_R_new[1], a1_R_new[2]);
 
     /* compute reference rotation angle theta */
     double thetaR;
@@ -135,6 +141,9 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     }
     else {
         thetaR = acos( fmin(fmax(v3Dot(a2_R_nominal, a2_R_target),-1),1) );
+        if (v3Dot(a1_R_nominal, a1_R_target) < 0) {
+            thetaR = 2*MPI - thetaR;
+        }
         if (thetaR - thetaC > MPI/2) {
             spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC - MPI;
         }
