@@ -73,7 +73,13 @@ extern "C" {
     void Reset_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, int64_t moduleID);
     void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, int64_t moduleID);
 
+    void computeFirstRotation(double hRef_B[3], double hReq_B[3], double R1B[3][3]);
+    void computeSecondRotation(double hRef_B[3], double rSun_R1[3], double a1_B[3], double a2_B[3], double R2R1[3][3]);
+    void computeThirdRotation(int priorityFlag, double hRef_B[3], double rSun_R2[3], double a1_B[3], double R3R2[3][3]);
+    void computeFinalRotation(int priorityFlag, double BN[3][3], double rSun_B[3], double hRef_B[3], double hReq_B[3], double a1_B[3], double a2_B[3], double RN[3][3]);
+
     void v3Perpendicular(double x[3], double y[3]);
+
 
 #ifdef __cplusplus
 }

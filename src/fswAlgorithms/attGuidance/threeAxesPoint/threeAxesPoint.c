@@ -155,6 +155,15 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     double a1_B[3];
     v3Normalize(configData->a1_B, a1_B);
 
+    /*! get the second body frame direction */
+    double a2_B[3];
+    if (v3Norm(configData->a2_B) > EPS) {
+        v3Normalize(configData->a2_B, a2_B);
+    }
+    else {
+        a2_B[0] = 0; a2_B[1] = 0; a2_B[2] = 0;
+    }
+
     /*! read Sun direction in B frame from the attNav message */
     double rSun_B[3];
     v3Copy(attNavIn.vehSunPntBdy, rSun_B);
@@ -163,6 +172,75 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     double hReq_B[3];
     m33MultV3(BN, hReq_N, hReq_B);
 
+    /*! compute the first rotation DCM */
+    double RN[3][3];
+    computeFinalRotation(configData->priorityFlag, BN, rSun_B, hRef_B, hReq_B, a1_B, a2_B, RN);
+
+    /*! compute reference MRP */
+    double sigma_RN[3], omega_RN_R[3], omegaDot_RN_R[3];
+    C2MRP(RN, sigma_RN);
+
+    v3Copy(sigma_RN, attRefOut.sigma_RN);
+
+    /*! compute reference MRP derivatives via finite differences */
+    double T1, T2, sigma_RN_1[3], sigma_RN_2[3], sigmaDot_RN[3], sigmaDDot_RN[3];
+    v3Copy(configData->sigma_RN_1, sigma_RN_1);
+    v3Copy(configData->sigma_RN_2, sigma_RN_2);
+    // if first update call, derivatives are set to zero
+    if (configData->count == 0) {
+        for (int j = 0; j < 3; j++) {
+            sigmaDot_RN[j] = 0.0;
+            sigmaDDot_RN[j] = 0.0;
+        }
+        // store information for next time step
+        configData->T1 = callTime;
+        v3Copy(sigma_RN, configData->sigma_RN_1);
+    }
+    // if second update call, derivatives are computed with first order finite differences
+    else if (configData->count == 1) {
+        T1 = - (double) (callTime - configData->T1) / 1e9;
+        for (int j = 0; j < 3; j++) {
+            sigmaDot_RN[j] = (sigma_RN_1[j] - sigma_RN[j]) / T1;
+            sigmaDDot_RN[j] = 0.0;
+        }
+        // store information for next time step
+        configData->T2 = configData->T1;
+        configData->T1 = callTime;
+        v3Copy(configData->sigma_RN_1, configData->sigma_RN_2);
+        v3Copy(sigma_RN, configData->sigma_RN_1);
+    }
+    // if third update call or higher, derivatives are computed with second order finite differences
+    else {
+        T1 = - (double) (callTime - configData->T1) / 1e9;
+        T2 = - (double) (callTime - configData->T2) / 1e9;
+        for (int j = 0; j < 3; j++) {
+            sigmaDot_RN[j] = ((sigma_RN_1[j]*T2*T2 - sigma_RN_2[j]*T1*T1) / (T2 - T1) - sigma_RN[j] * (T2 + T1)) / T1 / T2;
+            sigmaDDot_RN[j] = 2 * ((sigma_RN_1[j]*T2 - sigma_RN_2[j]*T1) / (T1 - T2) + sigma_RN[j]) / T1 / T2;
+        }
+        // store information for next time step
+        configData->T2 = configData->T1;
+        configData->T1 = callTime;
+        v3Copy(configData->sigma_RN_1, configData->sigma_RN_2);
+        v3Copy(sigma_RN, configData->sigma_RN_1);
+    }
+    configData-> count += 1;
+
+    /*! compute angular rates and accelerations in R frame */
+    dMRP2Omega(sigma_RN, sigmaDot_RN, omega_RN_R);
+    ddMRP2dOmega(sigma_RN, sigmaDot_RN, sigmaDDot_RN, omegaDot_RN_R);
+
+    /*! compute angular rates and accelerations in N frame and store in buffer msg */
+    m33tMultV3(RN, omega_RN_R, attRefOut.omega_RN_N);
+    m33tMultV3(RN, omegaDot_RN_R, attRefOut.domega_RN_N);
+
+    /*! write output message */
+    AttRefMsg_C_write(&attRefOut, &configData->attRefOutMsg, moduleID, callTime);
+
+    return;
+}
+
+void computeFirstRotation(double hRef_B[3], double hReq_B[3], double R1B[3][3])
+{
     /*! compute principal rotation angle (phi) and vector (e_phi) for the first rotation */
     double phi, e_phi[3];
     phi = acos( fmin( fmax( v3Dot(hRef_B, hReq_B), -1 ), 1 ) );
@@ -179,14 +257,13 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     v3Normalize(e_phi, e_phi);
 
     /*! define first rotation R1B */
-    double R1B[3][3], PRV_phi[3];
+    double PRV_phi[3];
     v3Scale(phi, e_phi, PRV_phi);
     PRV2C(PRV_phi, R1B);
+}
 
-    /*! compute Sun direction vector in D frame coordinates */
-    double rSun_R1[3];
-    m33MultV3(R1B, rSun_B, rSun_R1);
-
+void computeSecondRotation(double hRef_B[3], double rSun_R1[3], double a1_B[3], double a2_B[3], double R2R1[3][3])
+{
     /*! define second rotation vector to coincide with the thrust direction in B coordinates */
     double e_psi[3];
     v3Copy(hRef_B, e_psi);
@@ -201,17 +278,9 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
 
     /*! get the body direction that must be kept close to Sun and compute the coefficients of the quadratic equation E, F and G */
     double E, F, G;
-    double a2_B[3];
-    if (v3Norm(configData->a2_B) > EPS) {
-        E = 2 * v3Dot(rSun_R1, e_psi) * v3Dot(e_psi, a2_B) - v3Dot(a2_B, rSun_R1);
-        F = 2 * v3Dot(a2_B, b);
-        G = v3Dot(a2_B, rSun_R1);
-    }
-    else {
-        a2_B[0] = 0; a2_B[1] = 0; a2_B[2] = 0;
-        E = 0;       F = 0;       G = 0;
-    }
-    
+    E = 2 * v3Dot(rSun_R1, e_psi) * v3Dot(e_psi, a2_B) - v3Dot(a2_B, rSun_R1);
+    F = 2 * v3Dot(a2_B, b);
+    G = v3Dot(a2_B, rSun_R1);
 
     /*! compute exact solution or best solution depending on Delta */
     double t, t1, t2, y, y1, y2, psi;
@@ -269,24 +338,17 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     }
 
     /*! compute second rotation R2R1 */
-    double R2R1[3][3], PRV_psi[3];
+    double PRV_psi[3];
     v3Scale(psi, e_psi, PRV_psi);
     PRV2C(PRV_psi, R2R1);
-    
-    /*! compute second reference frame w.r.t inertial frame */
-    double R1N[3][3], R2N[3][3];
-    m33MultM33(R1B, BN, R1N);
-    m33MultM33(R2R1, R1N, R2N);
+}
 
-    /*! define third rotation R3R2 */
-    double R3R2[3][3];
+void computeThirdRotation(int priorityFlag, double hRef_B[3], double rSun_R2[3], double a1_B[3], double R3R2[3][3])
+{
     double theta, sTheta, e_theta[3], aP_B[3]; 
     double PRV_theta[3];
 
-    /*! if priorityFlag == 0, the third rotation is null; otherwise, the third rotation is computed */
-    double rSun_R2[3];
-    m33MultV3(R2R1, rSun_R1, rSun_R2);
-    if (configData->priorityFlag == 0) {
+    if (priorityFlag == 0) {
         for (int i = 0; i < 3; i++) {
             PRV_theta[i] = 0;
         }
@@ -302,13 +364,14 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
         }
         else {
             // if Sun direction and solar array drive are not perpendicular, project solar array drive a1_B onto perpendicular plane (aP_B) and compute third rotation
-            if (fabs(theta-MPI/2) > EPS) {
+            if (fabs(fabs(theta)-MPI/2) > EPS) {
                 for (int i = 0; i < 3; i++) {
                     aP_B[i] = (a1_B[i] - sTheta * rSun_R2[i]) / (1 - sTheta * sTheta);
                 }
                 v3Cross(a1_B, aP_B, e_theta);
             }
             else {
+                // rotate about the axis that minimizes variation in hRef_B direction
                 v3Cross(rSun_R2, hRef_B, aP_B);
                 if (v3Norm(aP_B) < EPS) {
                     v3Perpendicular(rSun_R2, aP_B);
@@ -322,74 +385,36 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
 
     /*! compute third rotation R3R2 */
     PRV2C(PRV_theta, R3R2);
-
-    /*! compute third reference frame w.r.t inertial frame */
-    double R3N[3][3];
-    m33MultM33(R3R2, R2N, R3N);
-
-    /*! compute reference MRP */
-    double sigma_RN[3], omega_RN_R[3], omegaDot_RN_R[3];
-    C2MRP(R3N, sigma_RN);
-
-    v3Copy(sigma_RN, attRefOut.sigma_RN);
-
-    /*! compute reference MRP derivatives via finite differences */
-    double T1, T2, sigma_RN_1[3], sigma_RN_2[3], sigmaDot_RN[3], sigmaDDot_RN[3];
-    v3Copy(configData->sigma_RN_1, sigma_RN_1);
-    v3Copy(configData->sigma_RN_2, sigma_RN_2);
-    // if first update call, derivatives are set to zero
-    if (configData->count == 0) {
-        for (int j = 0; j < 3; j++) {
-            sigmaDot_RN[j] = 0.0;
-            sigmaDDot_RN[j] = 0.0;
-        }
-        // store information for next time step
-        configData->T1 = callTime;
-        v3Copy(sigma_RN, configData->sigma_RN_1);
-    }
-    // if second update call, derivatives are computed with first order finite differences
-    else if (configData->count == 1) {
-        T1 = - (double) (callTime - configData->T1) / 1e9;
-        for (int j = 0; j < 3; j++) {
-            sigmaDot_RN[j] = (sigma_RN_1[j] - sigma_RN[j]) / T1;
-            sigmaDDot_RN[j] = 0.0;
-        }
-        // store information for next time step
-        configData->T2 = configData->T1;
-        configData->T1 = callTime;
-        v3Copy(configData->sigma_RN_1, configData->sigma_RN_2);
-        v3Copy(sigma_RN, configData->sigma_RN_1);
-    }
-    // if third update call or higher, derivatives are computed with second order finite differences
-    else {
-        T1 = - (double) (callTime - configData->T1) / 1e9;
-        T2 = - (double) (callTime - configData->T2) / 1e9;
-        for (int j = 0; j < 3; j++) {
-            sigmaDot_RN[j] = ((sigma_RN_1[j]*T2*T2 - sigma_RN_2[j]*T1*T1) / (T2 - T1) - sigma_RN[j] * (T2 + T1)) / T1 / T2;
-            sigmaDDot_RN[j] = 2 * ((sigma_RN_1[j]*T2 - sigma_RN_2[j]*T1) / (T1 - T2) + sigma_RN[j]) / T1 / T2;
-        }
-        // store information for next time step
-        configData->T2 = configData->T1;
-        configData->T1 = callTime;
-        v3Copy(configData->sigma_RN_1, configData->sigma_RN_2);
-        v3Copy(sigma_RN, configData->sigma_RN_1);
-    }
-    configData-> count += 1;
-
-    /*! compute angular rates and accelerations in R frame */
-    dMRP2Omega(sigma_RN, sigmaDot_RN, omega_RN_R);
-    ddMRP2dOmega(sigma_RN, sigmaDot_RN, sigmaDDot_RN, omegaDot_RN_R);
-
-    /*! compute angular rates and accelerations in N frame and store in buffer msg */
-    m33tMultV3(R3N, omega_RN_R, attRefOut.omega_RN_N);
-    m33tMultV3(R3N, omegaDot_RN_R, attRefOut.domega_RN_N);
-
-    /*! write output message */
-    AttRefMsg_C_write(&attRefOut, &configData->attRefOutMsg, moduleID, callTime);
-
-    return;
 }
 
+void computeFinalRotation(int priorityFlag, double BN[3][3], double rSun_B[3], double hRef_B[3], double hReq_B[3], double a1_B[3], double a2_B[3], double RN[3][3])
+{
+    /*! compute the first rotation DCM */
+    double R1B[3][3];
+    computeFirstRotation(hRef_B, hReq_B, R1B);
+
+    /*! compute Sun direction vector in D frame coordinates */
+    double rSun_R1[3];
+    m33MultV3(R1B, rSun_B, rSun_R1);
+
+    /*! compute the second rotation DCM */
+    double R2R1[3][3];
+    computeSecondRotation(hRef_B, rSun_R1, a1_B, a2_B, R2R1);
+
+    /* compute Sun direction in R2 frame components */
+    double rSun_R2[3];
+    m33MultV3(R2R1, rSun_R1, rSun_R2);
+
+    /*! compute the third rotation DCM */
+    double R3R2[3][3];
+    computeThirdRotation(priorityFlag, hRef_B, rSun_R2, a1_B, R3R2);
+
+    /*! compute reference frames w.r.t inertial frame */
+    double R1N[3][3], R2N[3][3];
+    m33MultM33(R1B, BN, R1N);
+    m33MultM33(R2R1, R1N, R2N);
+    m33MultM33(R3R2, R2N, RN);
+}
 
 void v3Perpendicular(double x[3], double y[3])
 {
