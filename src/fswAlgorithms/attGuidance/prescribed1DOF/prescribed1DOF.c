@@ -39,7 +39,7 @@ void SelfInit_prescribed1DOF(Prescribed1DOFConfig *configData, int64_t moduleID)
     SpinningBodyMsg_C_init(&configData->spinningBodyOutMsg);
 
     /*! Store initial time */
-    configData->tInit = callTime*1e-9; // [s]
+    configData->tInit = 0.0; // [s]
 
     /*! Set initial convergence to true */
     configData->convergence = true;
