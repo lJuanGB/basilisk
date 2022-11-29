@@ -113,7 +113,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     /*! Define temporal information */
     double tf = sqrt(((0.5 * fabs(thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax); // [s]
     double ts = tf / 2; // switch time [s]
-    double t = callTime*1e-9 - configData->t0; // current time [s]
+    double t = callTime*1e-9 - configData->tInit; // current time [s]
 
     /*! Define scalar module states */
     double thetaDDot;
