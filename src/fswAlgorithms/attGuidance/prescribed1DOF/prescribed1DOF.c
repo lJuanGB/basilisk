@@ -38,6 +38,13 @@ void SelfInit_prescribed1DOF(Prescribed1DOFConfig *configData, int64_t moduleID)
     PrescribedMotionMsg_C_init(&configData->prescribedMotionOutMsg);
     SpinningBodyMsg_C_init(&configData->spinningBodyOutMsg);
 
+    /*! Store initial time */
+    configData->tInit = callTime*1e-9; // [s]
+
+    /*! Set initial convergence to true */
+    configData->convergence = true;
+
+
     configData->lastRefTime = -1;
 }
 
@@ -59,12 +66,6 @@ void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, i
     if (!PrescribedMotionMsg_C_isLinked(&configData->prescribedMotionInMsg)) {
         _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed1DOF.prescribedMotionInMsg wasn't connected.");
     }
-
-    /*! Store initial time */
-    configData->tInit = callTime*1e-9; // [s]
-
-    /*! Set convergence to false to keep the reset parameters */
-    configData->convergence = true;
 }
 
 /*! Add a description of what this main Update() routine does for this module
@@ -107,7 +108,6 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
 
     if (SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg) <= callTime && SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg) != configData->lastRefTime && configData->convergence)
     {
-        printf("ENTERED \n");
         configData->tInit = callTime*1e-9;
         configData->lastRefTime = SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg);
         double prv_FM_array[3];
@@ -117,7 +117,6 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
 
         /*! Grab reference variables */
         configData->thetaRef = spinningBodyIn.theta; // [rad]
-        printf("thetaRef = %f \n", configData->thetaRef);
         configData->thetaDotRef = spinningBodyIn.thetaDot; // [rad/s]
 
         /*! Define temporal information */
@@ -146,14 +145,12 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
         thetaDDot = configData->thetaDDotMax;
         thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit;
         theta = configData->a * (t - configData->tInit) * (t - configData->tInit) + configData->thetaInit;
-        printf("1");
     }
     else if ( t > configData->ts && t <= configData->tf && configData->tf != 0)
     {
         thetaDDot = -1 * configData->thetaDDotMax;
         thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit - thetaDDot * (configData->tf - configData->tInit);
         theta = configData->b * (t - configData->tf) * (t - configData->tf) + configData->thetaRef;
-        printf("2");
     }
     else
     {
@@ -161,7 +158,6 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
         thetaDot = configData->thetaDotRef;
         theta = configData->thetaRef;
         configData->convergence = true;
-        printf("entered, thetaRef = %f \n", configData->thetaRef);
     }
 
     /*! Determine omega_FM_F and omegaPrime_FM_F parameters */
