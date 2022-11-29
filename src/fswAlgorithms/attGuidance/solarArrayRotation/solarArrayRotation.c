@@ -128,12 +128,10 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     v3Cross(a2_R_nominal, a2_R_target, a1_R_target);
     v3Normalize(a1_R_target, a1_R_target);
 
-    // printf("a1 = [%.2f, %.2f, %.2f] \n", a1_R_new[0], a1_R_new[1], a1_R_new[2]);
-
     /* compute reference rotation angle theta */
     double thetaR;
     double thetaC, sinThetaC, cosThetaC;
-    // clip theta current between 0 an pi
+    // clip theta current between 0 and 2*pi
     sinThetaC = sin(spinningBodyIn.theta);
     cosThetaC = cos(spinningBodyIn.theta);
     thetaC = atan2(sinThetaC, cosThetaC);
@@ -144,7 +142,7 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
     else {
         thetaR = acos( fmin(fmax(v3Dot(a2_R_nominal, a2_R_target),-1),1) );
         if (v3Dot(a1_R_nominal, a1_R_target) < 0) {
-            thetaR = 2*MPI - thetaR;
+            thetaR = -thetaR;
         }
         if (thetaR - thetaC > MPI/2) {
             spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC - MPI;
