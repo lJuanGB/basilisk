@@ -22,6 +22,7 @@
 #include "string.h"
 #include <math.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 /* Support files.  Be sure to use the absolute path relative to Basilisk directory. */
 #include "architecture/utilities/linearAlgebra.h"
@@ -59,6 +60,9 @@ void Reset_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, i
 
     /*! Store initial time */
     configData->tInit = callTime*1e-9; // [s]
+
+    /*! Set convergence to false to keep the reset parameters */
+    configData->convergence = true;
 }
 
 /*! Add a description of what this main Update() routine does for this module
@@ -98,21 +102,33 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     v3Copy(prescribedMotionIn.sigma_FM, configData->sigma_FM);
     
     /*! Define initial variables */
-    if (SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg) == callTime)
+
+    if (SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg) < callTime && configData->convergence)
     {
+        printf("ENTERED \n");
+        configData->tInit = callTime*1e-9;
         double prv_FM_array[3];
         MRP2PRV(configData->sigma_FM, prv_FM_array);
         configData->thetaInit = v3Norm(prv_FM_array); // [rad]
         configData->thetaDotInit = v3Norm(configData->omega_FM_F); // [rad/s]
+
+        /*! Grab reference variables */
+        configData->thetaRef = spinningBodyIn.theta; // [rad]
+        printf("thetaRef = %f \n", configData->thetaRef);
+        configData->thetaDotRef = spinningBodyIn.thetaDot; // [rad/s]
+
+        /*! Define temporal information */
+        configData->tf = sqrt(((0.5 * fabs(configData->thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax); // [s]
+        configData->ts = configData->tf / 2; // switch time [s]
+
+        // Define constants for analytic parabolas
+        configData->a = (0.5 * configData->thetaRef - configData->thetaInit) / ((configData->ts - configData->tInit) * (configData->ts - configData->tInit)); // Constant for first parabola
+        configData->b = -0.5 * configData->thetaRef / ((configData->ts - configData->tf) * (configData->ts - configData->tf)); // Constant for second parabola
+
+        /*! Set convergence to false to keep the reset parameters */
+        configData->convergence = false;
     }
 
-    /*! Grab reference variables */
-    double thetaRef = spinningBodyIn.theta; // [rad]
-    double thetaDotRef = spinningBodyIn.thetaDot; // [rad/s]
-
-    /*! Define temporal information */
-    double tf = sqrt(((0.5 * fabs(thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax); // [s]
-    double ts = tf / 2; // switch time [s]
     double t = callTime*1e-9 - configData->tInit; // current time [s]
 
     /*! Define scalar module states */
@@ -120,28 +136,28 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     double thetaDot;
     double theta;
 
-    // Define constants for analytic parabolas
-    double a = (0.5 * thetaRef - configData->thetaInit) / ((ts - configData->tInit) * (ts - configData->tInit)); // Constant for first parabola
-    double b = -0.5 * thetaRef / ((ts - tf) * (ts - tf)); // Constant for second parabola
-
     /*! Compute analytic scalar states: thetaDDot, thetaDot, and theta */
-    if ((t < ts || t == ts) && tf != 0)
+    if ((t < configData->ts || t == configData->ts) && configData->tf != 0)
     {
         thetaDDot = configData->thetaDDotMax;
         thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit;
-        theta = a * (t - configData->tInit) * (t - configData->tInit) + configData->thetaInit;
+        theta = configData->a * (t - configData->tInit) * (t - configData->tInit) + configData->thetaInit;
+        printf("1");
     }
-    else if ( t > ts && (t < tf || t == tf) && tf != 0)
+    else if ( t > configData->ts && (t < configData->tf || t == configData->tf) && configData->tf != 0)
     {
         thetaDDot = -1 * configData->thetaDDotMax;
-        thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit - thetaDDot * (tf - configData->tInit);
-        theta = b * (t - tf) * (t - tf) + thetaRef;
+        thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit - thetaDDot * (configData->tf - configData->tInit);
+        theta = configData->b * (t - configData->tf) * (t - configData->tf) + configData->thetaRef;
+        printf("2");
     }
     else
     {
         thetaDDot = 0.0;
-        thetaDot = thetaDotRef;
-        theta = thetaRef;
+        thetaDot = configData->thetaDotRef;
+        theta = configData->thetaRef;
+        configData->convergence = true;
+        printf("entered, thetaRef = %f \n", configData->thetaRef);
     }
 
     /*! Determine omega_FM_F and omegaPrime_FM_F parameters */

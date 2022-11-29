@@ -20,6 +20,7 @@
 #define _PRESCRIBED1DOF_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "architecture/utilities/bskLogging.h"
 #include "cMsgCInterface/SpinningBodyMsg_C.h"
 #include "cMsgCInterface/PrescribedMotionMsg_C.h"
@@ -40,9 +41,16 @@ typedef struct {
     double sigma_FM[3];
 
     /* Private variables */
+    bool convergence;
     double tInit;                                               //!< Initial time when module reset is called [s]
     double thetaInit;
     double thetaDotInit;
+    double thetaRef;
+    double thetaDotRef;
+    double ts;
+    double tf;
+    double a;
+    double b;
 
     /* Declare module input-output interfaces */
     SpinningBodyMsg_C    spinningBodyInMsg;                     //!< Input msg for reference angle and angle rate

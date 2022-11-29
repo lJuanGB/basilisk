@@ -127,7 +127,18 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
 
     # Set the simulation time
     simTime = np.sqrt(((0.5 * np.abs(thetaRef - thetaInit)) * 8) / thetaDDotMax)
-    unitTestSim.ConfigureStopTime(macros.sec2nano(simTime))        # seconds to stop simulation
+    unitTestSim.ConfigureStopTime(macros.sec2nano(1.05*simTime))        # seconds to stop simulation
+
+    # Begin the simulation time run set above
+    unitTestSim.ExecuteSimulation()
+
+    breakpoint()
+    SpinningBodyMessageData = messaging.SpinningBodyMsgPayload()
+    SpinningBodyMessageData.theta = 2 * thetaRef
+    SpinningBodyMessageData.thetaDot = thetaDotRef
+    SpinningBodyMessage = messaging.SpinningBodyMsg().write(SpinningBodyMessageData, macros.sec2nano(1.1*simTime))
+    Prescribed1DOFConfig.spinningBodyInMsg.subscribeTo(SpinningBodyMessage)
+    unitTestSim.ConfigureStopTime(2 * macros.sec2nano(simTime))  # seconds to stop simulation
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
@@ -141,7 +152,11 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     sigma_FM_Final = sigma_FM[-1, :]
 
     # Convert MRPs to theta_FM
-    theta_FM = 4 * np.arctan(np.linalg.norm(sigma_FM))
+    n = len(timespan)
+    theta_FM = []
+    for i in range(n):
+        theta_FM.append(4 * np.arctan(np.linalg.norm(sigma_FM[i, :])))
+
     theta_FM_Final = 4 * np.arctan(np.linalg.norm(sigma_FM_Final))
 
     # Plot omega_FB_F
