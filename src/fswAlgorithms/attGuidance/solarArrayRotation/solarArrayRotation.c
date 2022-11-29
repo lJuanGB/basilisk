@@ -62,6 +62,8 @@ void Reset_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t cal
     if (!SpinningBodyMsg_C_isLinked(&configData->spinningBodyInMsg)) {
         _bskLog(configData->bskLogger, BSK_ERROR, "Error: solarArrayAngle.spinningBodyInMsg wasn't connected.");
     }
+    // zero counter
+    configData->count = 0;
 }
 
 /*! This method computes the updated rotation angle reference based on current attitude, reference attitude, and current rotation angle
@@ -155,7 +157,20 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
         }
     }
 
-    spinningBodyRefOut.thetaDot = 0;
+    /* implement finite differences to compute thetaDotR */
+    double dt;
+    if (configData->count == 0) {
+        spinningBodyRefOut.thetaDot = 0;
+    }
+    else {
+        dt = (double) (callTime - configData->priorT) / 1e9;
+        spinningBodyRefOut.thetaDot = (thetaR - configData->priorThetaR) / dt;
+    }
+    // update stored variables
+    configData->priorThetaR = thetaR;
+    configData->priorT = callTime;
+    configData->count += 1;
+    
 
     /* write output message */
     SpinningBodyMsg_C_write(&spinningBodyRefOut, &configData->spinningBodyRefOutMsg, moduleID, callTime);

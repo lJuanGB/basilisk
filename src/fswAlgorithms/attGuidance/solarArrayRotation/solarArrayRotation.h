@@ -31,16 +31,21 @@
 /*! @brief Top level structure for the sub-module routines. */
 typedef struct {
 
-    /* declare these quantities that will eventually become input modules */
+    /* declare these user-defined quantities */
     double a1_B[3];                 //!< solar array drive axis in body frame coordinates
     double a2_B[3];                 //!< solar array nominal zero direction
     int bodyFrame;                  //!< flag = 1: compute theta reference based on current attitude instead of attitude reference
 
+    /* declare this msg for internal computations */
+    int                 count;                    //!< counter variable for finite differences
+    uint64_t            priorT;                   //!< prior call time for finite differences
+    double              priorThetaR;              //!< prior output msg for finite differences
+
     /* declare module IO interfaces */
-    NavAttMsg_C attNavInMsg;                      //!< input msg measured attitude
-    AttRefMsg_C attRefInMsg;                      //!< input attitude reference message
-    SpinningBodyMsg_C  spinningBodyInMsg;         //!< input spinning body message
-    SpinningBodyMsg_C  spinningBodyRefOutMsg;     //!< output msg containing spinning body target angle and angle rate
+    NavAttMsg_C         attNavInMsg;               //!< input msg measured attitude
+    AttRefMsg_C         attRefInMsg;               //!< input attitude reference message
+    SpinningBodyMsg_C   spinningBodyInMsg;         //!< input spinning body message
+    SpinningBodyMsg_C   spinningBodyRefOutMsg;     //!< output msg containing spinning body target angle and angle rate
 
     BSKLogger *bskLogger;                         //!< BSK Logging
 
