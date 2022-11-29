@@ -37,6 +37,8 @@ void SelfInit_prescribed1DOF(Prescribed1DOFConfig *configData, int64_t moduleID)
 {
     PrescribedMotionMsg_C_init(&configData->prescribedMotionOutMsg);
     SpinningBodyMsg_C_init(&configData->spinningBodyOutMsg);
+
+    configData->lastRefTime = -1;
 }
 
 
@@ -103,10 +105,11 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
     
     /*! Define initial variables */
 
-    if (SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg) < callTime && configData->convergence)
+    if (SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg) <= callTime && SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg) != configData->lastRefTime && configData->convergence)
     {
         printf("ENTERED \n");
         configData->tInit = callTime*1e-9;
+        configData->lastRefTime = SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg);
         double prv_FM_array[3];
         MRP2PRV(configData->sigma_FM, prv_FM_array);
         configData->thetaInit = v3Norm(prv_FM_array); // [rad]
@@ -118,18 +121,19 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
         configData->thetaDotRef = spinningBodyIn.thetaDot; // [rad/s]
 
         /*! Define temporal information */
-        configData->tf = sqrt(((0.5 * fabs(configData->thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax); // [s]
-        configData->ts = configData->tf / 2; // switch time [s]
+        double convTime = sqrt(((0.5 * fabs(configData->thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax);
+        configData->tf = configData->tInit + convTime; // [s]
+        configData->ts = configData->tInit + convTime / 2; // switch time [s]
 
         // Define constants for analytic parabolas
-        configData->a = (0.5 * configData->thetaRef - configData->thetaInit) / ((configData->ts - configData->tInit) * (configData->ts - configData->tInit)); // Constant for first parabola
-        configData->b = -0.5 * configData->thetaRef / ((configData->ts - configData->tf) * (configData->ts - configData->tf)); // Constant for second parabola
+        configData->a = 0.5 * (configData->thetaRef - configData->thetaInit) / ((configData->ts - configData->tInit) * (configData->ts - configData->tInit)); // Constant for first parabola
+        configData->b = -0.5 * (configData->thetaRef - configData->thetaInit) / ((configData->ts - configData->tf) * (configData->ts - configData->tf)); // Constant for second parabola
 
         /*! Set convergence to false to keep the reset parameters */
         configData->convergence = false;
     }
 
-    double t = callTime*1e-9 - configData->tInit; // current time [s]
+    double t = callTime*1e-9; // current time [s]
 
     /*! Define scalar module states */
     double thetaDDot;
@@ -144,7 +148,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
         theta = configData->a * (t - configData->tInit) * (t - configData->tInit) + configData->thetaInit;
         printf("1");
     }
-    else if ( t > configData->ts && (t < configData->tf || t == configData->tf) && configData->tf != 0)
+    else if ( t > configData->ts && t <= configData->tf && configData->tf != 0)
     {
         thetaDDot = -1 * configData->thetaDDotMax;
         thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit - thetaDDot * (configData->tf - configData->tInit);

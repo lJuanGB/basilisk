@@ -42,6 +42,7 @@ typedef struct {
 
     /* Private variables */
     bool convergence;
+    double lastRefTime;
     double tInit;                                               //!< Initial time when module reset is called [s]
     double thetaInit;
     double thetaDotInit;

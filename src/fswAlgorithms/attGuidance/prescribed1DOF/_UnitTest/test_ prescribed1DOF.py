@@ -75,7 +75,7 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     unitTestSim = SimulationBaseClass.SimBaseClass()
 
     # Create test thread
-    testProcessRate = macros.sec2nano(0.5)     # update process rate update time
+    testProcessRate = macros.sec2nano(0.1)     # update process rate update time
     testProc = unitTestSim.CreateNewProcess(unitProcessName)
     testProc.addTask(unitTestSim.CreateNewTask(unitTaskName, testProcessRate))
 
@@ -107,16 +107,8 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     SpinningBodyMessage = messaging.SpinningBodyMsg().write(SpinningBodyMessageData)
     Prescribed1DOFConfig.spinningBodyInMsg.subscribeTo(SpinningBodyMessage)
 
-    # connect prescribedMotionStateEffector input message
-    PrescribedMotionMessageData = messaging.PrescribedMotionMsgPayload()
-    PrescribedMotionMessageData.r_FM_M = np.array([1.0, 0.0, 0.0])
-    PrescribedMotionMessageData.rPrime_FM_M = np.array([0.0, 0.0, 0.0])
-    PrescribedMotionMessageData.rPrimePrime_FM_M = np.array([0.0, 0.0, 0.0])
-    PrescribedMotionMessageData.omega_FM_F = np.array([0.0, 0.0, 0.0])
-    PrescribedMotionMessageData.omegaPrime_FM_F = np.array([0.0, 0.0, 0.0])
-    PrescribedMotionMessageData.sigma_FM = np.array([0.0, 0.0, 0.0])
-    PrescribedMotionMessage = messaging.PrescribedMotionMsg().write(PrescribedMotionMessageData)
-    Prescribed1DOFConfig.prescribedMotionInMsg.subscribeTo(PrescribedMotionMessage)
+    # Connect output message to input
+    Prescribed1DOFConfig.prescribedMotionInMsg.subscribeTo(Prescribed1DOFConfig.prescribedMotionOutMsg)
 
     # Setup logging on the test module output message so that we get all the writes to it
     dataLog = Prescribed1DOFConfig.prescribedMotionOutMsg.recorder()
@@ -127,16 +119,15 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
 
     # Set the simulation time
     simTime = np.sqrt(((0.5 * np.abs(thetaRef - thetaInit)) * 8) / thetaDDotMax)
-    unitTestSim.ConfigureStopTime(macros.sec2nano(1.05*simTime))        # seconds to stop simulation
+    unitTestSim.ConfigureStopTime(macros.sec2nano(simTime))        # seconds to stop simulation
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
-    breakpoint()
     SpinningBodyMessageData = messaging.SpinningBodyMsgPayload()
     SpinningBodyMessageData.theta = 2 * thetaRef
     SpinningBodyMessageData.thetaDot = thetaDotRef
-    SpinningBodyMessage = messaging.SpinningBodyMsg().write(SpinningBodyMessageData, macros.sec2nano(1.1*simTime))
+    SpinningBodyMessage = messaging.SpinningBodyMsg().write(SpinningBodyMessageData, macros.sec2nano(simTime))
     Prescribed1DOFConfig.spinningBodyInMsg.subscribeTo(SpinningBodyMessage)
     unitTestSim.ConfigureStopTime(2 * macros.sec2nano(simTime))  # seconds to stop simulation
 
