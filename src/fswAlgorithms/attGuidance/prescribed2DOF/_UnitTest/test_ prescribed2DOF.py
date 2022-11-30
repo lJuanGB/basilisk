@@ -129,13 +129,24 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
     unitTestSim.ExecuteSimulation()
 
     SpinningBodyTwoDOFMessageData = messaging.SpinningBodyTwoDOFMsgPayload()
-    SpinningBodyTwoDOFMessageData.theta1 = 2 * thetaRef1
-    SpinningBodyTwoDOFMessageData.theta2 = 2 * thetaRef2
+
+    thetaRef1b = thetaRef1 + 0.5 * thetaRef1
+    thetaRef2b = thetaRef2 + 0.5 * thetaRef2
+
+    #thetaRef1b = 0
+    #thetaRef2b = thetaRef2
+
+    #thetaRef1b = 0
+    #thetaRef2b = -thetaRef2
+
+    SpinningBodyTwoDOFMessageData.theta1 = thetaRef1b
+    SpinningBodyTwoDOFMessageData.theta2 = thetaRef2b
     SpinningBodyTwoDOFMessageData.thetaDot1 = thetaDotRef
     SpinningBodyTwoDOFMessageData.thetaDot2 = thetaDotRef
     SpinningBodyTwoDOFMessage = messaging.SpinningBodyTwoDOFMsg().write(SpinningBodyTwoDOFMessageData, macros.sec2nano(simTime))
     Prescribed2DOFConfig.spinningBodyTwoDOFInMsg.subscribeTo(SpinningBodyTwoDOFMessage)
-    unitTestSim.ConfigureStopTime(6 * macros.sec2nano(simTime))  # seconds to stop simulation
+    unitTestSim.ConfigureStopTime(3 * macros.sec2nano(simTime))  # seconds to stop simulation
+    #breakpoint()
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
@@ -168,12 +179,14 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
     plt.ylabel('omega_FB_F (rad/s)')
 
     # Plot simulated theta_FM
-    thetaRef_plotting = np.ones(len(timespan)) * (thetaRef1 + thetaRef2)
+    thetaRef1_plotting = np.ones(len(timespan)) * (thetaRef1 + thetaRef2)
+    thetaRef2_plotting = np.ones(len(timespan)) * (thetaRef1b + thetaRef2b)
     thetaInit_plotting = np.ones(len(timespan)) * thetaInit
     plt.figure()
     plt.clf()
     plt.plot(timespan * 1e-9, theta_FM, label='theta_FM')
-    plt.plot(timespan * 1e-9, thetaRef_plotting, '--', label='thetaRef')
+    plt.plot(timespan * 1e-9, thetaRef1_plotting, '--', label='thetaRef1')
+    plt.plot(timespan * 1e-9, thetaRef2_plotting, '--', label='thetaRef2')
     plt.plot(timespan * 1e-9, thetaInit_plotting, '--', label='thetaInit')
     plt.xlabel('Time (s)')
     plt.ylabel('Theta_FM (rad)')
@@ -203,8 +216,8 @@ if __name__ == "__main__":
     Prescribed2DOFTestFunction(
                  True,
                  0.0,           # thetaInit
-                 np.pi / 3,     # thetaRef1
-                 np.pi / 3,     # thetaRef2
+                 np.pi / 4,     # thetaRef1
+                 np.pi / 4,     # thetaRef2
                  0.008,         # thetaDDotMax
                  1e-12          # accuracy
                )
