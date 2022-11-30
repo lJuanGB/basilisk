@@ -107,7 +107,7 @@ def Prescribed1DOFTestFunction(show_plots, thetaInit, thetaRef, thetaDDotMax, ac
     SpinningBodyMessage = messaging.SpinningBodyMsg().write(SpinningBodyMessageData)
     Prescribed1DOFConfig.spinningBodyInMsg.subscribeTo(SpinningBodyMessage)
 
-    # Connect output message to input
+    # Connect module output message to its own input message
     Prescribed1DOFConfig.prescribedMotionInMsg.subscribeTo(Prescribed1DOFConfig.prescribedMotionOutMsg)
 
     # Setup logging on the test module output message so that we get all the writes to it
