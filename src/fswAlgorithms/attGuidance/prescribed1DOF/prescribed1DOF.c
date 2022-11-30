@@ -112,7 +112,7 @@ void Update_prescribed1DOF(Prescribed1DOFConfig *configData, uint64_t callTime, 
         configData->lastRefTime = SpinningBodyMsg_C_timeWritten(&configData->spinningBodyInMsg);
         double prv_FM_array[3];
         MRP2PRV(configData->sigma_FM, prv_FM_array);
-        configData->thetaInit = v3Norm(prv_FM_array); // [rad]
+        configData->thetaInit = v3Dot(prv_FM_array, configData->rotAxis_M); // [rad]
         configData->thetaDotInit = v3Norm(configData->omega_FM_F); // [rad/s]
 
         /*! Grab reference variables */
