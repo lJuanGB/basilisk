@@ -184,6 +184,7 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     /*! compute reference MRP */
     double sigma_RN[3], omega_RN_R[3], omegaDot_RN_R[3];
     C2MRP(RN, sigma_RN);
+    int flag = 0;
 
     if (v3Norm(configData->h2_B) > EPS && v3Norm(a2_B) > EPS) {
         // compute second reference frame 
@@ -191,17 +192,28 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
         m33MultM33t(RN, BN, RB);
         m33MultV3(RB, rSun_B, rSun_2_R);
 
-        if (v3Dot(rSun_2_R, a2_B) > v3Dot(rSun_1_R, a2_B)) {
+        if (v3Dot(rSun_2_R, a2_B) > v3Dot(rSun_1_R, a2_B) && fabs(v3Dot(rSun_2_R, a2_B) - v3Dot(rSun_1_R, a2_B)) > EPS) {
             C2MRP(RN, sigma_RN);
+            flag = 1;
         }
-    } 
+    }
 
     v3Copy(sigma_RN, attRefOut.sigma_RN);
 
     /*! compute reference MRP derivatives via finite differences */
-    double T1, T2, sigma_RN_1[3], sigma_RN_2[3], sigmaDot_RN[3], sigmaDDot_RN[3];
+    double T1, T2, delSigma[3], sigma_RN_1[3], sigma_RN_2[3], sigmaDot_RN[3], sigmaDDot_RN[3];
+    // read sigma at t-1 and switch it if needed
     v3Copy(configData->sigma_RN_1, sigma_RN_1);
+    v3Subtract(sigma_RN, sigma_RN_1, delSigma);
+    if (v3Norm(delSigma) > 1) {
+        MRPshadow(sigma_RN_1, sigma_RN_1);
+    }
+    // read sigma at t-2 and switch it if needed
     v3Copy(configData->sigma_RN_2, sigma_RN_2);
+    v3Subtract(sigma_RN_1, sigma_RN_2, delSigma);
+    if (v3Norm(delSigma) > 1) {
+        MRPshadow(sigma_RN_2, sigma_RN_2);
+    }
     // if first update call, derivatives are set to zero
     if (configData->count == 0) {
         for (int j = 0; j < 3; j++) {
@@ -239,7 +251,7 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
         v3Copy(configData->sigma_RN_1, configData->sigma_RN_2);
         v3Copy(sigma_RN, configData->sigma_RN_1);
     }
-    configData-> count += 1;
+    configData->count += 1;
 
     /*! compute angular rates and accelerations in R frame */
     dMRP2Omega(sigma_RN, sigmaDot_RN, omega_RN_R);
@@ -344,7 +356,7 @@ void computeSecondRotation(double hRef_B[3], double rSun_R1[3], double a1_B[3], 
             if (fabs(v3Dot(hRef_B, a2_B)-1) > EPS) {
                 y1 = (E*t1*t1 + F*t1 + G) / (1 + t1*t1);
                 y2 = (E*t2*t2 + F*t2 + G) / (1 + t2*t2);
-                if (y2 > y1) {
+                if (y2 - y1 > EPS) {
                     t = t2;
                 }
             }
