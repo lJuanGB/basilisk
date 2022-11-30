@@ -60,11 +60,11 @@ void Reset_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, i
         configData->flagB = 1;
     }
     else {
-        if (v3Norm(configData->h_B) > EPS) {
+        if (v3Norm(configData->h1_B) > EPS) {
             configData->flagB = 0;
         }
         else {
-            _bskLog(configData->bskLogger, BSK_ERROR, "Error: threeAxesPoint.bodyHeadingInMsg wasn't connected and no body heading h_B was specified.");
+            _bskLog(configData->bskLogger, BSK_ERROR, "Error: threeAxesPoint.bodyHeadingInMsg wasn't connected and no body heading h1_B was specified.");
         }
     }
 
@@ -121,16 +121,6 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     /* read the attitude navigation message */
     attNavIn = NavAttMsg_C_read(&configData->attNavInMsg);
 
-    /*! get body frame reference heading */
-    double hRef_B[3];
-    if (configData->flagB == 0) {
-        v3Normalize(configData->h_B, hRef_B);
-    }
-    else if (configData->flagB == 1) {
-        bodyHeadingIn = BodyHeadingMsg_C_read(&configData->bodyHeadingInMsg);
-        v3Normalize(bodyHeadingIn.rHat_XB_B, hRef_B);
-    }
-
     /*! get inertial frame requested heading */
     double hReq_N[3];
     if (configData->flagN == 0) {
@@ -172,13 +162,39 @@ void Update_threeAxesPoint(threeAxesPointConfig *configData, uint64_t callTime, 
     double hReq_B[3];
     m33MultV3(BN, hReq_N, hReq_B);
 
-    /*! compute the first rotation DCM */
+    /*! get body frame reference heading */
+    double hRef_B[3];
+    if (configData->flagB == 0) {
+        v3Normalize(configData->h1_B, hRef_B);
+    }
+    else if (configData->flagB == 1) {
+        bodyHeadingIn = BodyHeadingMsg_C_read(&configData->bodyHeadingInMsg);
+        v3Normalize(bodyHeadingIn.rHat_XB_B, hRef_B);
+    }
+
+    /*! compute the total rotation DCM */
     double RN[3][3];
     computeFinalRotation(configData->priorityFlag, BN, rSun_B, hRef_B, hReq_B, a1_B, a2_B, RN);
+
+    /*! compute the relative rotation DCM */
+    double RB[3][3], rSun_1_R[3], rSun_2_R[3];
+    m33MultM33t(RN, BN, RB);
+    m33MultV3(RB, rSun_B, rSun_1_R);
 
     /*! compute reference MRP */
     double sigma_RN[3], omega_RN_R[3], omegaDot_RN_R[3];
     C2MRP(RN, sigma_RN);
+
+    if (v3Norm(configData->h2_B) > EPS && v3Norm(a2_B) > EPS) {
+        // compute second reference frame 
+        computeFinalRotation(configData->priorityFlag, BN, rSun_B, configData->h2_B, hReq_B, a1_B, a2_B, RN);
+        m33MultM33t(RN, BN, RB);
+        m33MultV3(RB, rSun_B, rSun_2_R);
+
+        if (v3Dot(rSun_2_R, a2_B) > v3Dot(rSun_1_R, a2_B)) {
+            C2MRP(RN, sigma_RN);
+        }
+    } 
 
     v3Copy(sigma_RN, attRefOut.sigma_RN);
 

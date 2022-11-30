@@ -40,7 +40,8 @@ typedef struct {
     int priorityFlag;                              //!< flag to indicate which constraint must be prioritized
 
     /* declare these optional quantities */
-    double h_B[3];                                //!< main heading in B frame coordinates
+    double h1_B[3];                               //!< main heading in B frame coordinates
+    double h2_B[3];                               //!< secondary heading in B frame coordinates
     double h_N[3];                                //!< main heading in N frame coordinates
     double a2_B[3];                               //!< body frame heading that should remain as close as possible to Sun heading
 

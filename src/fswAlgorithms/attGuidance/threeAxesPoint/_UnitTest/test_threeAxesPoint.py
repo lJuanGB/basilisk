@@ -191,7 +191,7 @@ def threeAxesPointTestFunction(show_plots, alpha, delta, flagB, flagN, priorityF
     threeAxConfig.attNavInMsg.subscribeTo(NavAttMsg)
 
     if flagB == 0:
-        threeAxConfig.h_B = h_B
+        threeAxConfig.h1_B = h_B
     else:
         # Create input bodyHeadingMsg
         bodyHeadingData = messaging.BodyHeadingMsgPayload()
