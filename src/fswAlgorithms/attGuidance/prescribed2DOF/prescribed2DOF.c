@@ -65,6 +65,8 @@ void Reset_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, i
 
     /*! Set initial convergence to true */
     configData->convergence = true;
+
+    configData->thetaRefPrev = 1000;
 }
 
 /*! Add a description of what this main Update() routine does for this module
@@ -108,11 +110,12 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
     {
         configData->tInit = callTime*1e-9;
         configData->lastRefTime = SpinningBodyTwoDOFMsg_C_timeWritten(&configData->spinningBodyTwoDOFInMsg);
-        double prv_FM_array[3];
-        MRP2PRV(configData->sigma_FM, prv_FM_array);
-        configData->thetaInit = v3Norm(prv_FM_array); // [rad]
+        double prv_FM_array1[3];
+        MRP2PRV(configData->sigma_FM, prv_FM_array1);
+        v3Normalize(prv_FM_array1, configData->rotAxis_M);
+        configData->thetaInit = v3Dot(prv_FM_array1, configData->rotAxis_M); // [rad]
         configData->thetaDotInit = v3Norm(configData->omega_FM_F); // [rad/s]
-        v3Normalize(prv_FM_array, configData->rotAxisInit_M);
+        v3Normalize(prv_FM_array1, configData->rotAxisInit_M);
 
         /*! Grab reference variables */
         double theta1Ref = spinningBodyTwoDOFIn.theta1; // [rad]
@@ -143,10 +146,47 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
         C2PRV(dcm_MF0, prv_MF0_array);
 
         /*! Compute the single PRV reference angle */
-        configData->thetaRef = v3Norm(prv_MF0_array); // [rad]
-        configData->thetaDotRef = 0.0;
         v3Normalize(prv_MF0_array, configData->rotAxis_M);
 
+        /*
+        if (configData->rotAxis_M[0] < 0 || configData->rotAxis_M[1] < 0 || configData->rotAxis_M[2] < 0)
+        {
+            configData->rotAxis_M[0] = -1 *configData->rotAxis_M[0];
+            configData->rotAxis_M[1] = -1 *configData->rotAxis_M[1];
+            configData->rotAxis_M[2] = -1 *configData->rotAxis_M[2];
+        }
+        */
+
+        configData->thetaRef = v3Dot(prv_MF0_array, configData->rotAxis_M); // [rad]
+
+        /*
+        printf("thetaRef %f \n", configData->thetaRef);
+        printf("thetaRefPrev %f \n", configData->thetaRefPrev);
+        if (abs(configData->thetaRef) == abs(configData->thetaRefPrev))
+        {
+            printf("entered \n");
+            configData->thetaRef = 2 * PI - abs(configData->thetaRef);
+        }
+        printf("thetaRef %f \n", configData->thetaRef);
+        printf("prv [%f %f %f] \n", prv_MF0_array[0], prv_MF0_array[1], prv_MF0_array[2]);
+        printf("rotAxis_M [%f %f %f] \n", configData->rotAxis_M[0], configData->rotAxis_M[1], configData->rotAxis_M[2]);
+        configData->thetaDotRef = 0.0;
+        */
+
+        /*
+        configData->thetaRef = v3Dot(prv_MF0_array, configData->rotAxis_M); // [rad]
+        printf("thetaRef %f \n", configData->thetaRef);
+
+        if (configData->thetaRef < 0)
+        {
+            printf("entered \n");
+            configData->thetaRef = 2 * PI + configData->thetaRef;
+        }
+        
+        printf("thetaRef %f \n", configData->thetaRef);
+        printf("thetaInit %f \n", configData->thetaInit);
+        */
+        
         /*! Define temporal information */
         double convTime = sqrt(((0.5 * fabs(configData->thetaRef - configData->thetaInit)) * 8) / configData->thetaDDotMax);
         configData->tf = configData->tInit + convTime; // [s]
@@ -158,6 +198,8 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
 
         /*! Set convergence to false to keep the reset parameters */
         configData->convergence = false;
+        
+        configData->thetaRefPrev = configData->thetaRef;
     }
 
     double t = callTime*1e-9; // current time [s]
@@ -173,12 +215,14 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
         thetaDDot = configData->thetaDDotMax;
         thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit;
         theta = configData->a * (t - configData->tInit) * (t - configData->tInit) + configData->thetaInit;
+        printf("1 ");
     }
     else if ( t > configData->ts && t <= configData->tf && configData->tf != 0)
     {
         thetaDDot = -1 * configData->thetaDDotMax;
         thetaDot = thetaDDot * (t - configData->tInit) + configData->thetaDotInit - thetaDDot * (configData->tf - configData->tInit);
         theta = configData->b * (t - configData->tf) * (t - configData->tf) + configData->thetaRef;
+        printf("2 ");
     }
     else
     {
@@ -186,6 +230,8 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
         thetaDot = configData->thetaDotRef;
         theta = configData->thetaRef;
         configData->convergence = true;
+        printf("theta %f \n", theta);
+        printf("3 ");
     }
 
     /*! Determine omega_FM_F and omegaPrime_FM_F parameters */

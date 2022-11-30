@@ -51,6 +51,7 @@ typedef struct {
     double rotAxisInit_M[3];
     double rotAxis_M[3];
     double thetaRef;
+    double thetaRefPrev;
     double thetaDotRef;
     double ts;
     double tf;
