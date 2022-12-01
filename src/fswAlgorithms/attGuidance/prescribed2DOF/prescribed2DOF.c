@@ -15,7 +15,7 @@
  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
- */
+*/
 
 /* Modify the path to reflect the new module names */
 #include "prescribed2DOF.h"
@@ -36,10 +36,12 @@
 void SelfInit_prescribed2DOF(Prescribed2DOFConfig *configData, int64_t moduleID)
 {
     PrescribedMotionMsg_C_init(&configData->prescribedMotionOutMsg);
-    
-    // initialize other module variables to zero 
-}
 
+    /*! Initialize variables set by the user to flagged values to ensure they are properly set by the user */
+    configData->phiDDotMax = 0;
+    v3SetZero(configData->rotAxis1_M);
+    v3SetZero(configData->rotAxis2_F1);
+}
 
 /*! This method performs a complete reset of the module.  Local module variables that retain
  time varying states between function calls are reset to their default values.
@@ -61,16 +63,28 @@ void Reset_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, i
     if (!PrescribedMotionMsg_C_isLinked(&configData->prescribedMotionInMsg)) {
         _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed2DOF.prescribedMotionInMsg wasn't connected.");
     }
-    
+
+    if (configData->phiDDotMax < 0) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed2DOF.phiDDotMax wasn't set.");
+    }
+
+    if (v3Norm(configData->rotAxis1_M) < 1e-6) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed2DOF.rotAxis1_M wasn't set.");
+    }
+
+    if (v3Norm(configData->rotAxis2_F1) < 1e-6) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed2DOF.rotAxis2_F1 wasn't set.");
+    }
+
     /*! Store initial time */
     configData->tInit = callTime*1e-9; // [s]
 
     /*! Set initial convergence to true */
     configData->convergence = true;
 
-    configData->phiRefPrev = 0;
-
-    configData->phiAccum = 0.0;
+    /* Set the reference and accumulated phi to zero */
+    configData->phiRefPrev = 0; // [rad]
+    configData->phiAccum = 0.0; // [rad]
 }
 
 /*! Add a description of what this main Update() routine does for this module
@@ -118,7 +132,7 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
 
     if ((SpinningBodyMsg_C_timeWritten(&configData->spinningBodyRef1InMsg) <= callTime || SpinningBodyMsg_C_timeWritten(&configData->spinningBodyRef2InMsg) <= callTime ) && configData->convergence)
     {
-        configData->tInit = callTime*1e-9; // [s]
+        configData->tInit = callTime*1e-9;
         double dcm_FM[3][3];
         MRP2C(configData->sigma_FM, dcm_FM);
         m33Copy(dcm_FM, configData->dcm_F0M);
