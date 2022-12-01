@@ -60,7 +60,6 @@ typedef struct {
     /* Declare module input-output interfaces */
     SpinningBodyMsg_C    spinningBodyRef1InMsg;                     //!< Input msg for reference angles and angle rates
     SpinningBodyMsg_C    spinningBodyRef2InMsg;                     //!< Input msg for reference angles and angle rates
-    SpinningBodyMsg_C    spinningBodyOutMsg;                                //!< Input msg for reference angle and angle rate
     PrescribedMotionMsg_C prescribedMotionInMsg;                            //!< Prescribed input attitude reference message
     PrescribedMotionMsg_C prescribedMotionOutMsg;                           //!< Prescribed output attitude reference message
 

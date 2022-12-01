@@ -36,7 +36,6 @@
 void SelfInit_prescribed2DOF(Prescribed2DOFConfig *configData, int64_t moduleID)
 {
     PrescribedMotionMsg_C_init(&configData->prescribedMotionOutMsg);
-    SpinningBodyMsg_C_init(&configData->spinningBodyOutMsg);
     
     // initialize other module variables to zero 
 }
@@ -229,11 +228,7 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
     v3Copy(configData->omegaPrime_FM_F, prescribedMotionOut.omegaPrime_FM_F);
     v3Copy(configData->sigma_FM, prescribedMotionOut.sigma_FM);
 
-    spinningBodyOut.theta = configData->phi;
-    spinningBodyOut.thetaDot = phiDot;
-
     /*! write output message */
-    SpinningBodyMsg_C_write(&spinningBodyOut, &configData->spinningBodyOutMsg, moduleID, callTime);
     PrescribedMotionMsg_C_write(&prescribedMotionOut, &configData->prescribedMotionOutMsg, moduleID, callTime);
 
     return;
