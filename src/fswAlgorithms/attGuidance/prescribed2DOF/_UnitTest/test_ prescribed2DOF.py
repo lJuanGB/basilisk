@@ -134,14 +134,8 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
 
     SpinningBodyTwoDOFMessageData = messaging.SpinningBodyTwoDOFMsgPayload()
 
-    thetaRef1b = thetaRef1 + 0.5 * thetaRef1
-    thetaRef2b = thetaRef2 + 0.5 * thetaRef2
-
-    #thetaRef1b = 0
-    #thetaRef2b = thetaRef2
-
-    #thetaRef1b = 0
-    #thetaRef2b = -thetaRef2
+    thetaRef1b = 0
+    thetaRef2b = thetaRef2
 
     SpinningBodyTwoDOFMessageData.theta1 = thetaRef1b
     SpinningBodyTwoDOFMessageData.theta2 = thetaRef2b
