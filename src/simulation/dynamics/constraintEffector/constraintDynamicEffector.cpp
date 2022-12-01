@@ -91,6 +91,8 @@ void ConstraintDynamicEffector::linkInStates(DynParamManager& states, uint64_t s
         bskLogger.bskLog(BSK_ERROR, "constraintDynamicEffector: tried to attach more than 2 spacecraft");
     }
 
+    this->scIDs[scInitCounter] = spacecraftID;
+
     this->hubSigma.push_back(states.getStateObject("hubSigma"));
 	this->hubOmega.push_back(states.getStateObject("hubOmega"));
     this->hubPosition.push_back(states.getStateObject("hubPosition"));
@@ -108,13 +110,12 @@ void ConstraintDynamicEffector::linkInStates(DynParamManager& states, uint64_t s
 void ConstraintDynamicEffector::computeForceTorque(double integTime, double timeStep, uint64_t spacecraftID)
 {
     if (this->scInitCounter == 2) {
-    // assigning the constraint force and torque from stored values
-        if (spacecraftID == 1) {
+        // assigning the constraint force and torque from stored values
+        if (spacecraftID == scIDs[0]) {
             this->forceExternal_N = this->Fc_N;
             this->torqueExternalPntB_B = this->L_B1;
         }
-        else if (spacecraftID == 2)
-        {
+        else if (spacecraftID == scIDs[1]) {
             this->forceExternal_N = - this->Fc_N;
             this->torqueExternalPntB_B = this->L_B2;
         }

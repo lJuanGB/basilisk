@@ -92,7 +92,8 @@ public:
     void addDynamicEffector(DynamicEffector *newDynamicEffector);  //!< -- Attaches a dynamicEffector
 
 private:
-    static uint64_t spacecraftID;               //!< [] ID number of this spacecraft
+    static uint64_t spacecraftCounter;   //!< [] ID counter of previously generated spacecraft
+    uint64_t spacecraftID;               //!< [] ID number of this spacecraft
 
     StateData *hubR_N;                          //!< -- State data accesss to inertial position for the hub
     StateData *hubV_N;                          //!< -- State data access to inertial velocity for the hub
