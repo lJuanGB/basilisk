@@ -66,7 +66,9 @@ void Reset_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, i
     /*! Set initial convergence to true */
     configData->convergence = true;
 
-    configData->thetaRefPrev = 1000;
+    configData->phiRefPrev = 0;
+
+    configData->thetaAccum = 0.0;
 }
 
 /*! Add a description of what this main Update() routine does for this module
