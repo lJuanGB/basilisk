@@ -194,13 +194,20 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
     thetaInit_plotting = np.ones(len(timespan)) * thetaInit
     plt.figure()
     plt.clf()
-    plt.plot(timespan * 1e-9, theta_FM, label='theta_FM')
+    plt.plot(timespan * 1e-9, phi, label='phi')
     plt.plot(timespan * 1e-9, thetaRef1_plotting, '--', label='thetaRef1')
     plt.plot(timespan * 1e-9, thetaRef2_plotting, '--', label='thetaRef2')
     plt.plot(timespan * 1e-9, thetaInit_plotting, '--', label='thetaInit')
     plt.xlabel('Time (s)')
     plt.ylabel('Theta_FM (rad)')
     plt.legend()
+
+    # Plot accumulated theta
+    plt.figure()
+    plt.clf()
+    plt.plot(timespan * 1e-9, thetaAccum)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Accumulated Theta (rad/s)')
 
     if show_plots:
         plt.show()
