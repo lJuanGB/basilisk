@@ -39,6 +39,8 @@ void SelfInit_prescribed2DOF(Prescribed2DOFConfig *configData, int64_t moduleID)
     SpinningBodyMsg_C_init(&configData->spinningBodyOutMsg);
 
     configData->lastRefTime = -1;
+    
+    // initialize other module variables to zero 
 }
 
 
@@ -68,7 +70,7 @@ void Reset_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, i
 
     configData->phiRefPrev = 0;
 
-    configData->thetaAccum = 0.0;
+    configData->phiAccum = 0.0;
 }
 
 /*! Add a description of what this main Update() routine does for this module
@@ -126,9 +128,9 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
         double prv_F1M_array[3];
         double prv_F2F1_array[3];
         v3Normalize(configData->rotAxis1_M, configData->rotAxis1_M);
-        v3Normalize(configData->rotAxis2_M, configData->rotAxis2_M);
+        v3Normalize(configData->rotAxis2_F1, configData->rotAxis2_F1);
         v3Scale(theta1Ref, configData->rotAxis1_M, prv_F1M_array);
-        v3Scale(theta2Ref, configData->rotAxis2_M, prv_F2F1_array);
+        v3Scale(theta2Ref, configData->rotAxis2_F1, prv_F2F1_array);
 
         /*! Convert two reference PRVs to DCMs */
         double dcm_F1M[3][3];
@@ -153,7 +155,7 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
         configData->phiRef = v3Dot(prv_F2F_array, configData->rotAxis_M); // [rad]
 
         /*! Define temporal information */
-        double convTime = sqrt(fabs(configData->phiRef) * 4 / configData->thetaDDotMax); // [s]
+        double convTime = sqrt(fabs(configData->phiRef) * 4 / configData->phiDDotMax); // [s]
         
         configData->tf = configData->tInit + convTime; // [s]
         configData->ts = convTime / 2 + configData->tInit; // switch time [s]
@@ -175,13 +177,13 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
     /*! Compute analytic scalar states: phiDDot, phiDot, and phi */
     if ((t < configData->ts || t == configData->ts) && configData->tf != 0)
     {
-        phiDDot = configData->thetaDDotMax;
+        phiDDot = configData->phiDDotMax;
         phiDot = phiDDot * (t - configData->tInit);
         configData->phi = configData->a * (t - configData->tInit) * (t - configData->tInit);
     }
     else if ( t > configData->ts && t <= configData->tf && configData->tf != 0)
     {
-        phiDDot = -1 * configData->thetaDDotMax;
+        phiDDot = -1 * configData->phiDDotMax;
         phiDot = phiDDot * (t - configData->tf );
         configData->phi = configData->b * (t - configData->tf) * (t - configData->tf) + configData->phiRef;
     }
@@ -194,7 +196,7 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
         configData->phiRefPrev = configData->phiRef;
     }
 
-    configData->thetaAccum = configData->phiRefPrev + configData->phi;
+    configData->phiAccum = configData->phiRefPrev + configData->phi;
 
     /*! Determine omega_FM_F and omegaPrime_FM_F parameters */
     v3Normalize(configData->rotAxis_M, configData->rotAxis_M);

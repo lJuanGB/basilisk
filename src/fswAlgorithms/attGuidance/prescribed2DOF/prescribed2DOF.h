@@ -32,22 +32,20 @@
 typedef struct {
 
     /* User configurable variables */
-    double thetaDDotMax;                                         //!< Maximum angular acceleration [rad/s^2]
+    double phiDDotMax;                                         //!< Maximum angular acceleration [rad/s^2]
     double rotAxis1_M[3];                                        //!< F-frame spin axis of prescribed body
-    double rotAxis2_M[3];                                        //!< F-frame spin axis of prescribed body *GENERALIZE
+    double rotAxis2_F1[3];                                        //!< F-frame spin axis of prescribed body *GENERALIZE
+
+    /* Private variables */
     double r_FM_M[3];
     double rPrime_FM_M[3];
     double rPrimePrime_FM_M[3];
     double omega_FM_F[3];
     double omegaPrime_FM_F[3];
     double sigma_FM[3];
-
-    /* Private variables */
     bool convergence;
     double lastRefTime;
     double tInit;                                               //!< Initial time when module reset is called [s]
-    double thetaInit;
-    double thetaDotInit;
     double rotAxisInit_M[3];
     double rotAxis_M[3];
     double phi;
@@ -59,7 +57,7 @@ typedef struct {
     double a;
     double b;
     double dcm_F0M[3][3];
-    double thetaAccum;
+    double phiAccum;
 
     /* Declare module input-output interfaces */
     SpinningBodyTwoDOFMsg_C    spinningBodyTwoDOFInMsg;                     //!< Input msg for reference angles and angle rates
