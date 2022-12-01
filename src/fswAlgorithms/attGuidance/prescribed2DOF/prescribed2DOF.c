@@ -110,14 +110,11 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
 
     if (SpinningBodyTwoDOFMsg_C_timeWritten(&configData->spinningBodyTwoDOFInMsg) <= callTime && SpinningBodyTwoDOFMsg_C_timeWritten(&configData->spinningBodyTwoDOFInMsg) != configData->lastRefTime && configData->convergence)
     {
-        configData->tInit = callTime*1e-9;
-        configData->lastRefTime = SpinningBodyTwoDOFMsg_C_timeWritten(&configData->spinningBodyTwoDOFInMsg);
-        double prv_FM_array1[3];
-        MRP2PRV(configData->sigma_FM, prv_FM_array1);
-        v3Normalize(prv_FM_array1, configData->rotAxis_M);
-        configData->thetaInit = v3Dot(prv_FM_array1, configData->rotAxis_M); // [rad]
-        configData->thetaDotInit = v3Norm(configData->omega_FM_F); // [rad/s]
-        v3Normalize(prv_FM_array1, configData->rotAxisInit_M);
+        configData->tInit = callTime*1e-9; // [s]
+        // configData->lastRefTime = SpinningBodyTwoDOFMsg_C_timeWritten(&configData->spinningBodyTwoDOFInMsg);
+        double dcm_FM[3][3];
+        MRP2C(configData->sigma_FM, dcm_FM);
+        m33Copy(dcm_FM, configData->dcm_F0M);
 
         /*! Grab reference variables */
         double theta1Ref = spinningBodyTwoDOFIn.theta1; // [rad]
