@@ -50,13 +50,16 @@ typedef struct {
     double thetaDotInit;
     double rotAxisInit_M[3];
     double rotAxis_M[3];
-    double thetaRef;
-    double thetaRefPrev;
-    double thetaDotRef;
+    double phi;
+    double phiRef;
+    double phiRefPrev;
+    double phiDotRef;
     double ts;
     double tf;
     double a;
     double b;
+    double dcm_F0M[3][3];
+    double thetaAccum;
 
     /* Declare module input-output interfaces */
     SpinningBodyTwoDOFMsg_C    spinningBodyTwoDOFInMsg;                     //!< Input msg for reference angles and angle rates
