@@ -180,13 +180,13 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
     double phiDot;
 
     /*! Compute analytic scalar states: phiDDot, phiDot, and phi */
-    if ((t < configData->ts || t == configData->ts) && configData->tf != 0)
+    if ((t < configData->ts || t == configData->ts) && configData->tf != configData->tInit)
     {
         phiDDot = configData->phiDDotMax;
         phiDot = phiDDot * (t - configData->tInit);
         configData->phi = configData->a * (t - configData->tInit) * (t - configData->tInit);
     }
-    else if ( t > configData->ts && t <= configData->tf && configData->tf != 0)
+    else if ( t > configData->ts && t <= configData->tf && configData->tf != configData->tInit)
     {
         phiDDot = -1 * configData->phiDDotMax;
         phiDot = phiDDot * (t - configData->tf );
