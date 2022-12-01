@@ -221,8 +221,8 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
     v3Copy(configData->omegaPrime_FM_F, prescribedMotionOut.omegaPrime_FM_F);
     v3Copy(configData->sigma_FM, prescribedMotionOut.sigma_FM);
 
-    spinningBodyOut.theta = theta;
-    spinningBodyOut.thetaDot = thetaDot;
+    spinningBodyOut.theta = configData->phi;
+    spinningBodyOut.thetaDot = phiDot;
 
     /*! write output message */
     SpinningBodyMsg_C_write(&spinningBodyOut, &configData->spinningBodyOutMsg, moduleID, callTime);
