@@ -118,6 +118,10 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
     dataLog = Prescribed2DOFConfig.prescribedMotionOutMsg.recorder()
     unitTestSim.AddModelToTask(unitTaskName, dataLog)
 
+    # Add energy and momentum variables to log
+    unitTestSim.AddVariableForLogging(Prescribed2DOFWrap.ModelTag + ".phi", testProcessRate, 0, 0, 'double')
+    unitTestSim.AddVariableForLogging(Prescribed2DOFWrap.ModelTag + ".thetaAccum", testProcessRate, 0, 0, 'double')
+
     # Need to call the self-init and cross-init methods
     unitTestSim.InitializeSimulation()
 
@@ -150,6 +154,12 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
+
+    # Extract the logged variables
+    phi = unitTestSim.GetLogVariableData(Prescribed2DOFWrap.ModelTag + ".phi")
+    thetaAccum = unitTestSim.GetLogVariableData(Prescribed2DOFWrap.ModelTag + ".thetaAccum")
+    phi = np.delete(phi, 0, axis=1)
+    thetaAccum = np.delete(thetaAccum, 0, axis=1)
 
     # Extract logged data
     omega_FM_F = dataLog.omega_FM_F
