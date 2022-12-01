@@ -169,13 +169,7 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
     thetaDot_Final = np.linalg.norm(omega_FM_F[-1, :])
     sigma_FM_Final = sigma_FM[-1, :]
 
-    # Convert MRPs to theta_FM
-    n = len(timespan)
-    theta_FM = []
-    for i in range(n):
-        theta_FM.append(4 * np.arctan(np.linalg.norm(sigma_FM[i, :])))
-
-    theta_FM_Final = 4 * np.arctan(np.linalg.norm(sigma_FM_Final))
+    theta_FM_Final = np.linalg.norm(rbk.MRP2PRV(sigma_FM_Final))
 
     # Calculate required reference angle
 
