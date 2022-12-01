@@ -90,7 +90,7 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiD
 
     # Initialize the test module configuration data
     Prescribed2DOFConfig.rotAxis1_M = np.array([1.0, 0.0, 0.0])
-    Prescribed2DOFConfig.rotAxis2_F1 = np.array([1.0, 0.0, 0.0])
+    Prescribed2DOFConfig.rotAxis2_F1 = np.array([0.0, 1.0, 0.0])
     Prescribed2DOFConfig.phiDDotMax = phiDDotMax  # [rad/s^2]
     Prescribed2DOFConfig.r_FM_M = np.array([1.0, 0.0, 0.0])
     Prescribed2DOFConfig.rPrime_FM_M = np.array([0.0, 0.0, 0.0])
@@ -103,13 +103,16 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiD
     thetaDotRef = 0.0  # [rad/s]
     thetaDotInit = 0.0  # [rad/s^2]
 
-    SpinningBodyTwoDOFMessageData = messaging.SpinningBodyTwoDOFMsgPayload()
-    SpinningBodyTwoDOFMessageData.theta1 = thetaRef1
-    SpinningBodyTwoDOFMessageData.theta2 = thetaRef2
-    SpinningBodyTwoDOFMessageData.thetaDot1 = thetaDotRef
-    SpinningBodyTwoDOFMessageData.thetaDot2 = thetaDotRef
-    SpinningBodyTwoDOFMessage = messaging.SpinningBodyTwoDOFMsg().write(SpinningBodyTwoDOFMessageData)
-    Prescribed2DOFConfig.spinningBodyTwoDOFInMsg.subscribeTo(SpinningBodyTwoDOFMessage)
+    SpinningBodyMessageData1 = messaging.SpinningBodyMsgPayload()
+    SpinningBodyMessageData2 = messaging.SpinningBodyMsgPayload()
+    SpinningBodyMessageData1.theta = thetaRef1
+    SpinningBodyMessageData2.theta = thetaRef2
+    SpinningBodyMessageData1.thetaDot = thetaDotRef
+    SpinningBodyMessageData2.thetaDot = thetaDotRef
+    SpinningBodyMessage1 = messaging.SpinningBodyMsg().write(SpinningBodyMessageData1)
+    SpinningBodyMessage2 = messaging.SpinningBodyMsg().write(SpinningBodyMessageData2)
+    Prescribed2DOFConfig.spinningBodyRef1InMsg.subscribeTo(SpinningBodyMessage1)
+    Prescribed2DOFConfig.spinningBodyRef2InMsg.subscribeTo(SpinningBodyMessage2)
 
     # Connect module output message to its own input message
     Prescribed2DOFConfig.prescribedMotionInMsg.subscribeTo(Prescribed2DOFConfig.prescribedMotionOutMsg)
@@ -132,17 +135,21 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiD
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
 
-    SpinningBodyTwoDOFMessageData = messaging.SpinningBodyTwoDOFMsgPayload()
+    SpinningBodyMessageData1 = messaging.SpinningBodyMsgPayload()
+    SpinningBodyMessageData2 = messaging.SpinningBodyMsgPayload()
 
     thetaRef1b = 0
     thetaRef2b = thetaRef2
 
-    SpinningBodyTwoDOFMessageData.theta1 = thetaRef1b
-    SpinningBodyTwoDOFMessageData.theta2 = thetaRef2b
-    SpinningBodyTwoDOFMessageData.thetaDot1 = thetaDotRef
-    SpinningBodyTwoDOFMessageData.thetaDot2 = thetaDotRef
-    SpinningBodyTwoDOFMessage = messaging.SpinningBodyTwoDOFMsg().write(SpinningBodyTwoDOFMessageData, macros.sec2nano(simTime))
-    Prescribed2DOFConfig.spinningBodyTwoDOFInMsg.subscribeTo(SpinningBodyTwoDOFMessage)
+    SpinningBodyMessageData1.theta = thetaRef1b
+    SpinningBodyMessageData2.theta = thetaRef2b
+    SpinningBodyMessageData1.thetaDot = thetaDotRef
+    SpinningBodyMessageData2.thetaDot = thetaDotRef
+    SpinningBodyMessage1 = messaging.SpinningBodyMsg().write(SpinningBodyMessageData1, macros.sec2nano(simTime))
+    SpinningBodyMessage2 = messaging.SpinningBodyMsg().write(SpinningBodyMessageData2, macros.sec2nano(simTime))
+    Prescribed2DOFConfig.spinningBodyRef1InMsg.subscribeTo(SpinningBodyMessage1)
+    Prescribed2DOFConfig.spinningBodyRef2InMsg.subscribeTo(SpinningBodyMessage2)
+
     unitTestSim.ConfigureStopTime(3 * macros.sec2nano(simTime))  # seconds to stop simulation
     #breakpoint()
 
