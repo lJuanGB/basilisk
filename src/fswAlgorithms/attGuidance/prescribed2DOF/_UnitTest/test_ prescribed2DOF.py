@@ -52,19 +52,19 @@ maxAngAccel = list(maxAngAccel)
 @pytest.mark.parametrize("thetaInit", ang)
 @pytest.mark.parametrize("thetaRef1", ang)
 @pytest.mark.parametrize("thetaRef2", ang)
-@pytest.mark.parametrize("thetaDDotMax", maxAngAccel)
+@pytest.mark.parametrize("phiDDotMax", maxAngAccel)
 @pytest.mark.parametrize("accuracy", [1e-12])
 
 # update "module" in this function name to reflect the module name
-def test_Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thetaDDotMax, accuracy):
+def test_Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiDDotMax, accuracy):
 
     # each test method requires a single assert method to be called
-    [testResults, testMessage] = Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thetaDDotMax, accuracy)
+    [testResults, testMessage] = Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiDDotMax, accuracy)
 
     assert testResults < 1, testMessage
 
 
-def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thetaDDotMax, accuracy):
+def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiDDotMax, accuracy):
 
     testFailCount = 0                                        # zero unit test result counter
     testMessages = []                                        # create empty array to store test log messages
@@ -90,8 +90,8 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
 
     # Initialize the test module configuration data
     Prescribed2DOFConfig.rotAxis1_M = np.array([1.0, 0.0, 0.0])
-    Prescribed2DOFConfig.rotAxis2_M = np.array([1.0, 0.0, 0.0])
-    Prescribed2DOFConfig.thetaDDotMax = thetaDDotMax  # [rad/s^2]
+    Prescribed2DOFConfig.rotAxis2_F1 = np.array([1.0, 0.0, 0.0])
+    Prescribed2DOFConfig.phiDDotMax = phiDDotMax  # [rad/s^2]
     Prescribed2DOFConfig.r_FM_M = np.array([1.0, 0.0, 0.0])
     Prescribed2DOFConfig.rPrime_FM_M = np.array([0.0, 0.0, 0.0])
     Prescribed2DOFConfig.rPrimePrime_FM_M = np.array([0.0, 0.0, 0.0])
@@ -120,13 +120,13 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
 
     # Add energy and momentum variables to log
     unitTestSim.AddVariableForLogging(Prescribed2DOFWrap.ModelTag + ".phi", testProcessRate, 0, 0, 'double')
-    unitTestSim.AddVariableForLogging(Prescribed2DOFWrap.ModelTag + ".thetaAccum", testProcessRate, 0, 0, 'double')
+    unitTestSim.AddVariableForLogging(Prescribed2DOFWrap.ModelTag + ".phiAccum", testProcessRate, 0, 0, 'double')
 
     # Need to call the self-init and cross-init methods
     unitTestSim.InitializeSimulation()
 
     # Set the simulation time
-    simTime = np.sqrt(((0.5 * np.abs((thetaRef1 + thetaRef2) - thetaInit)) * 8) / thetaDDotMax)
+    simTime = np.sqrt(((0.5 * np.abs((thetaRef1 + thetaRef2) - thetaInit)) * 8) / phiDDotMax)
     unitTestSim.ConfigureStopTime(macros.sec2nano(simTime))        # seconds to stop simulation
 
     # Begin the simulation time run set above
@@ -151,9 +151,9 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
 
     # Extract the logged variables
     phi = unitTestSim.GetLogVariableData(Prescribed2DOFWrap.ModelTag + ".phi")
-    thetaAccum = unitTestSim.GetLogVariableData(Prescribed2DOFWrap.ModelTag + ".thetaAccum")
+    phiAccum = unitTestSim.GetLogVariableData(Prescribed2DOFWrap.ModelTag + ".phiAccum")
     phi = np.delete(phi, 0, axis=1)
-    thetaAccum = np.delete(thetaAccum, 0, axis=1)
+    phiAccum = np.delete(phiAccum, 0, axis=1)
 
     # Extract logged data
     omega_FM_F = dataLog.omega_FM_F
@@ -193,7 +193,7 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, thet
     # Plot accumulated theta
     plt.figure()
     plt.clf()
-    plt.plot(timespan * 1e-9, thetaAccum)
+    plt.plot(timespan * 1e-9, phiAccum)
     plt.xlabel('Time (s)')
     plt.ylabel('Accumulated Theta (rad/s)')
 
@@ -223,6 +223,6 @@ if __name__ == "__main__":
                  0.0,           # thetaInit
                  np.pi / 4,     # thetaRef1
                  np.pi / 4,     # thetaRef2
-                 0.008,         # thetaDDotMax
+                 0.008,         # phiDDotMax
                  1e-12          # accuracy
                )
