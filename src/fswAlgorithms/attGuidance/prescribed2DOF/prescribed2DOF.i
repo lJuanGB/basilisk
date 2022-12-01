@@ -31,8 +31,6 @@
 
 %include "prescribed2DOF.h"
 
-%include "architecture/msgPayloadDefC/SpinningBodyTwoDOFMsgPayload.h"
-struct SpinningBodyTwoDOFMsg_C;
 %include "architecture/msgPayloadDefC/SpinningBodyMsgPayload.h"
 struct SpinningBodyMsg_C;
 %include "architecture/msgPayloadDefC/prescribedMotionMsgPayload.h"

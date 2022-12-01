@@ -22,7 +22,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "architecture/utilities/bskLogging.h"
-#include "cMsgCInterface/SpinningBodyTwoDOFMsg_C.h"
 #include "cMsgCInterface/SpinningBodyMsg_C.h"
 #include "cMsgCInterface/PrescribedMotionMsg_C.h"
 
@@ -44,7 +43,6 @@ typedef struct {
     double omegaPrime_FM_F[3];
     double sigma_FM[3];
     bool convergence;
-    double lastRefTime;
     double tInit;                                               //!< Initial time when module reset is called [s]
     double rotAxisInit_M[3];
     double rotAxis_M[3];
@@ -60,7 +58,8 @@ typedef struct {
     double phiAccum;
 
     /* Declare module input-output interfaces */
-    SpinningBodyTwoDOFMsg_C    spinningBodyTwoDOFInMsg;                     //!< Input msg for reference angles and angle rates
+    SpinningBodyMsg_C    spinningBodyRef1InMsg;                     //!< Input msg for reference angles and angle rates
+    SpinningBodyMsg_C    spinningBodyRef2InMsg;                     //!< Input msg for reference angles and angle rates
     SpinningBodyMsg_C    spinningBodyOutMsg;                                //!< Input msg for reference angle and angle rate
     PrescribedMotionMsg_C prescribedMotionInMsg;                            //!< Prescribed input attitude reference message
     PrescribedMotionMsg_C prescribedMotionOutMsg;                           //!< Prescribed output attitude reference message

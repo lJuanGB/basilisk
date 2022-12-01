@@ -37,8 +37,6 @@ void SelfInit_prescribed2DOF(Prescribed2DOFConfig *configData, int64_t moduleID)
 {
     PrescribedMotionMsg_C_init(&configData->prescribedMotionOutMsg);
     SpinningBodyMsg_C_init(&configData->spinningBodyOutMsg);
-
-    configData->lastRefTime = -1;
     
     // initialize other module variables to zero 
 }
@@ -54,8 +52,11 @@ void SelfInit_prescribed2DOF(Prescribed2DOFConfig *configData, int64_t moduleID)
 void Reset_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! Check if the required input messages are included */
-    if (!SpinningBodyTwoDOFMsg_C_isLinked(&configData->spinningBodyTwoDOFInMsg)) {
-        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed2DOF.spinningBodyTwoDOFInMsg wasn't connected.");
+    if (!SpinningBodyMsg_C_isLinked(&configData->spinningBodyRef1InMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed2DOF.spinningBodyRef1InMsg wasn't connected.");
+    }
+    if (!SpinningBodyMsg_C_isLinked(&configData->spinningBodyRef2InMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: prescribed2DOF.spinningBodyRef2InMsg wasn't connected.");
     }
 
     if (!PrescribedMotionMsg_C_isLinked(&configData->prescribedMotionInMsg)) {
@@ -82,7 +83,8 @@ void Reset_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, i
 void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, int64_t moduleID)
 {
     /*! Create buffer messages */
-    SpinningBodyTwoDOFMsgPayload spinningBodyTwoDOFIn;
+    SpinningBodyMsgPayload spinningBodyRef1In;
+    SpinningBodyMsgPayload spinningBodyRef2In;
     SpinningBodyMsgPayload spinningBodyOut;
     PrescribedMotionMsgPayload prescribedMotionIn;
     PrescribedMotionMsgPayload prescribedMotionOut;
@@ -92,10 +94,15 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
     prescribedMotionOut = PrescribedMotionMsg_C_zeroMsgPayload();
 
     /*! Read the input messages */
-    spinningBodyTwoDOFIn = SpinningBodyTwoDOFMsg_C_zeroMsgPayload();
-    if (SpinningBodyTwoDOFMsg_C_isWritten(&configData->spinningBodyTwoDOFInMsg))
+    spinningBodyRef1In = SpinningBodyMsg_C_zeroMsgPayload();
+    if (SpinningBodyMsg_C_isWritten(&configData->spinningBodyRef1InMsg))
     {
-        spinningBodyTwoDOFIn = SpinningBodyTwoDOFMsg_C_read(&configData->spinningBodyTwoDOFInMsg);
+        spinningBodyRef1In = SpinningBodyMsg_C_read(&configData->spinningBodyRef1InMsg);
+    }
+    spinningBodyRef2In = SpinningBodyMsg_C_zeroMsgPayload();
+    if (SpinningBodyMsg_C_isWritten(&configData->spinningBodyRef2InMsg))
+    {
+        spinningBodyRef2In = SpinningBodyMsg_C_read(&configData->spinningBodyRef2InMsg);
     }
     prescribedMotionIn = PrescribedMotionMsg_C_zeroMsgPayload();
     if (PrescribedMotionMsg_C_isWritten(&configData->prescribedMotionInMsg))
@@ -110,19 +117,18 @@ void Update_prescribed2DOF(Prescribed2DOFConfig *configData, uint64_t callTime, 
     v3Copy(prescribedMotionIn.omegaPrime_FM_F, configData->omegaPrime_FM_F);
     v3Copy(prescribedMotionIn.sigma_FM, configData->sigma_FM);
 
-    if (SpinningBodyTwoDOFMsg_C_timeWritten(&configData->spinningBodyTwoDOFInMsg) <= callTime && SpinningBodyTwoDOFMsg_C_timeWritten(&configData->spinningBodyTwoDOFInMsg) != configData->lastRefTime && configData->convergence)
+    if ((SpinningBodyMsg_C_timeWritten(&configData->spinningBodyRef1InMsg) <= callTime || SpinningBodyMsg_C_timeWritten(&configData->spinningBodyRef2InMsg) <= callTime ) && configData->convergence)
     {
         configData->tInit = callTime*1e-9; // [s]
-        // configData->lastRefTime = SpinningBodyTwoDOFMsg_C_timeWritten(&configData->spinningBodyTwoDOFInMsg);
         double dcm_FM[3][3];
         MRP2C(configData->sigma_FM, dcm_FM);
         m33Copy(dcm_FM, configData->dcm_F0M);
 
         /*! Grab reference variables */
-        double theta1Ref = spinningBodyTwoDOFIn.theta1; // [rad]
-        double theta2Ref = spinningBodyTwoDOFIn.theta2; // [rad]
-        double thetaDot1Ref = spinningBodyTwoDOFIn.thetaDot1; // [rad/s]
-        double thetaDot2Ref = spinningBodyTwoDOFIn.thetaDot2; // [rad/s]
+        double theta1Ref = spinningBodyRef1In.theta; // [rad]
+        double theta2Ref = spinningBodyRef2In.theta; // [rad]
+        double thetaDot1Ref = spinningBodyRef1In.thetaDot; // [rad/s]
+        double thetaDot2Ref = spinningBodyRef2In.thetaDot; // [rad/s]
 
         /*! Convert two reference angles and rotation axes to reference PRVs */
         double prv_F1M_array[3];
