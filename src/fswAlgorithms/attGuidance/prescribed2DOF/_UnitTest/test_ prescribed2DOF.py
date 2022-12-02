@@ -85,12 +85,9 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiD
     Prescribed2DOFWrap = unitTestSim.setModelDataWrap(Prescribed2DOFConfig)
     Prescribed2DOFWrap.ModelTag = "Prescribed2DOF"                                 # update python name of test module
 
-    # Add test module to runtime call list
-    unitTestSim.AddModelToTask(unitTaskName, Prescribed2DOFWrap, Prescribed2DOFConfig)
-
     # Initialize the test module configuration data
     Prescribed2DOFConfig.rotAxis1_M = np.array([1.0, 0.0, 0.0])
-    Prescribed2DOFConfig.rotAxis2_F1 = np.array([0.0, 1.0, 0.0])
+    Prescribed2DOFConfig.rotAxis2_F1 = np.array([1.0, 0.0, 0.0])
     Prescribed2DOFConfig.phiDDotMax = phiDDotMax  # [rad/s^2]
     Prescribed2DOFConfig.r_FM_M = np.array([1.0, 0.0, 0.0])
     Prescribed2DOFConfig.rPrime_FM_M = np.array([0.0, 0.0, 0.0])
@@ -98,6 +95,9 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiD
     Prescribed2DOFConfig.omega_FM_F = np.array([0.0, 0.0, 0.0])
     Prescribed2DOFConfig.omegaPrime_FM_F = np.array([0.0, 0.0, 0.0])
     Prescribed2DOFConfig.sigma_FM = np.array([0.0, 0.0, 0.0])
+
+    # Add test module to runtime call list
+    unitTestSim.AddModelToTask(unitTaskName, Prescribed2DOFWrap, Prescribed2DOFConfig)
 
     # Create input message
     thetaDotRef = 0.0  # [rad/s]
@@ -130,7 +130,7 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiD
 
     # Set the simulation time
     simTime = np.sqrt(((0.5 * np.abs((thetaRef1 + thetaRef2) - thetaInit)) * 8) / phiDDotMax)
-    unitTestSim.ConfigureStopTime(macros.sec2nano(simTime))        # seconds to stop simulation
+    unitTestSim.ConfigureStopTime(macros.sec2nano(simTime))
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
@@ -138,8 +138,8 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiD
     SpinningBodyMessageData1 = messaging.SpinningBodyMsgPayload()
     SpinningBodyMessageData2 = messaging.SpinningBodyMsgPayload()
 
-    thetaRef1b = 0
-    thetaRef2b = thetaRef2
+    thetaRef1b = np.pi / 2
+    thetaRef2b = np.pi / 2
 
     SpinningBodyMessageData1.theta = thetaRef1b
     SpinningBodyMessageData2.theta = thetaRef2b
