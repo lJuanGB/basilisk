@@ -151,7 +151,6 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiD
     Prescribed2DOFConfig.spinningBodyRef2InMsg.subscribeTo(SpinningBodyMessage2)
 
     unitTestSim.ConfigureStopTime(3 * macros.sec2nano(simTime))  # seconds to stop simulation
-    #breakpoint()
 
     # Begin the simulation time run set above
     unitTestSim.ExecuteSimulation()
@@ -172,37 +171,38 @@ def Prescribed2DOFTestFunction(show_plots, thetaInit, thetaRef1, thetaRef2, phiD
 
     theta_FM_Final = np.linalg.norm(rbk.MRP2PRV(sigma_FM_Final))
 
-    # Calculate required reference angle
-
     # Plot omega_FB_F
     plt.figure()
     plt.clf()
     plt.plot(timespan * 1e-9, omega_FM_F[:, 0],
              timespan * 1e-9, omega_FM_F[:, 1],
              timespan * 1e-9, omega_FM_F[:, 2])
+    plt.title('Prescribed Angular Velocity (omega_FM_F)')
     plt.xlabel('Time (s)')
-    plt.ylabel('omega_FB_F (rad/s)')
+    plt.ylabel('(rad/s)')
 
-    # Plot simulated theta_FM
+    # Plot simulated phi
     thetaRef1_plotting = np.ones(len(timespan)) * (thetaRef1 + thetaRef2)
-    thetaRef2_plotting = np.ones(len(timespan)) * (thetaRef1b + thetaRef2b)
+    thetaRef2_plotting = np.ones(len(timespan)) * (thetaRef1b + thetaRef2b - thetaRef1 - thetaRef2)
     thetaInit_plotting = np.ones(len(timespan)) * thetaInit
     plt.figure()
     plt.clf()
-    plt.plot(timespan * 1e-9, phi, label='phi')
-    plt.plot(timespan * 1e-9, thetaRef1_plotting, '--', label='thetaRef1')
-    plt.plot(timespan * 1e-9, thetaRef2_plotting, '--', label='thetaRef2')
-    plt.plot(timespan * 1e-9, thetaInit_plotting, '--', label='thetaInit')
+    plt.plot(timespan * 1e-9, phi, label='Phi')
+    plt.plot(timespan * 1e-9, thetaRef1_plotting, '--', label='Phi Ref 1')
+    plt.plot(timespan * 1e-9, thetaRef2_plotting, '--', label='Phi Ref 2')
+    plt.plot(timespan * 1e-9, thetaInit_plotting, '--', label='Phi Init')
+    plt.title('Prescribed Principal Rotation Vector (PRV) Angle')
     plt.xlabel('Time (s)')
-    plt.ylabel('Theta_FM (rad)')
+    plt.ylabel('(rad)')
     plt.legend()
 
     # Plot accumulated theta
     plt.figure()
     plt.clf()
     plt.plot(timespan * 1e-9, phiAccum)
+    plt.title('Accumulated Principal Rotation Vector (PRV) Angle')
     plt.xlabel('Time (s)')
-    plt.ylabel('Accumulated Theta (rad/s)')
+    plt.ylabel('(rad)')
 
     if show_plots:
         plt.show()
