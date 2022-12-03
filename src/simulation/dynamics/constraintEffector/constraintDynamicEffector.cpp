@@ -170,10 +170,10 @@ void ConstraintDynamicEffector::UpdateState(uint64_t CurrentSimNanos)
 
         // calculate the difference in angular rate
         Eigen::Vector3d omega_B1N_B2 = dcm_B2N * dcm_B1N.transpose() * omega_B1N_B1;
-        Eigen::Vector3d omega_B2B1_B2 = omega_B2N_B2 - omega_B1N_B2;
+        omega_B2B1_B2 = omega_B2N_B2 - omega_B1N_B2;
 
         // calculate the difference in attitude
-        Eigen::Vector3d sigma_B2B1 = eigenMRPd2Vector3d(eigenC2MRP(dcm_B2N * dcm_B1N.transpose()));
+        sigma_B2B1 = eigenMRPd2Vector3d(eigenC2MRP(dcm_B2N * dcm_B1N.transpose()));
 
         // computing the constraint force
         this->Fc_N = this->k * this->psi_N + this->c * this->psiPrime_N;

@@ -31,7 +31,7 @@ filename = inspect.getframeinfo(inspect.currentframe()).filename
 path = os.path.dirname(os.path.abspath(filename))
 splitPath = path.split('simulation')
 
-from Basilisk.utilities import SimulationBaseClass, unitTestSupport, orbitalMotion, macros, RigidBodyKinematics
+from Basilisk.utilities import SimulationBaseClass, unitTestSupport, orbitalMotion, macros, RigidBodyKinematics, vizSupport
 from Basilisk.simulation import spacecraft, constraintDynamicEffector, gravityEffector, svIntegrators
 import matplotlib.pyplot as plt
 import numpy as np
@@ -66,7 +66,7 @@ def test_constraintEffector(show_plots):
     # Create test thread
     unitTaskName = "unitTask"  # arbitrary name (don't change)
     unitProcessName = "TestProcess"  # arbitrary name (don't change)
-    testProcessRate = macros.sec2nano(0.0001)  # update process rate update time
+    testProcessRate = macros.sec2nano(0.001)  # update process rate update time
     testProc = unitTestSim.CreateNewProcess(unitProcessName)
     testProc.addTask(unitTestSim.CreateNewTask(unitTaskName, testProcessRate))
 
@@ -86,19 +86,19 @@ def test_constraintEffector(show_plots):
     constraintEffector = constraintDynamicEffector.ConstraintDynamicEffector()
 
     # Define properties of the constraint
-    r_P1B1_B1 = [1, 0, 0]
-    r_P2B2_B2 = [0, 1, 0]
+    r_P1B1_B1 = [0.2974, 0.9466, 0.1246]
+    r_P2B2_B2 = [-0.2974, -0.9466, -0.1246]
     l = 0.1
-    r_P2P1_B1Init = np.dot([0, 1, 0], l)
+    r_P2P1_B1Init = np.dot([0.76835, 0.54882, 0.32929], l)
 
     # Set up the constraint effector
     constraintEffector.r_P1B1_B1 = r_P1B1_B1
     constraintEffector.r_P2B2_B2 = r_P2B2_B2
     constraintEffector.r_P2P1_B1Init = r_P2P1_B1Init
-    constraintEffector.alpha = 1e1
-    constraintEffector.beta = 1e1
-    constraintEffector.K = 3
-    constraintEffector.P = 30
+    constraintEffector.alpha = 1e2
+    constraintEffector.beta = 1e2
+    constraintEffector.K = 100
+    constraintEffector.P = 10
     constraintEffector.ModelTag = "constraintEffector"
 
     # Add constraints to both spacecraft
@@ -116,12 +116,12 @@ def test_constraintEffector(show_plots):
 
     # Find r and v from orbital elements
     oe = orbitalMotion.ClassicElements()
-    oe.a = earthGravBody.radEquator + 500e3  # meters
+    oe.a = earthGravBody.radEquator + 7500e3  # meters
     oe.e = 0.01
-    oe.i = 55.0 * macros.D2R
-    oe.Omega = 0.0 * macros.D2R
-    oe.omega = 0.0 * macros.D2R
-    oe.f = 0.0 * macros.D2R
+    oe.i = 30.0 * macros.D2R
+    oe.Omega = 60.0 * macros.D2R
+    oe.omega = 15.0 * macros.D2R
+    oe.f = 90.0 * macros.D2R
     r_B1N_N, rDot_B1N_N = orbitalMotion.elem2rv(earthGravBody.mu, oe)
     r_B2N_N = r_B1N_N + r_P1B1_B1 + r_P2P1_B1Init - r_P2B2_B2
     rDot_B2N_N = rDot_B1N_N
@@ -137,12 +137,12 @@ def test_constraintEffector(show_plots):
     #scObject2.hub.r_CN_NInit = scObject1.hub.r_CN_NInit + r_P1B1_NInit + r_P2P1_NInit - r_P2B2_N
 
     # Define mass properties of the rigid hub of both spacecraft
-    scObject1.hub.mHub = 750.0
+    scObject1.hub.mHub = 50.0
     scObject1.hub.r_BcB_B = [[0.0], [0.0], [0.0]]
-    scObject1.hub.IHubPntBc_B = [[900.0, 0.0, 0.0], [0.0, 800.0, 0.0], [0.0, 0.0, 600.0]]
-    scObject2.hub.mHub = 250.0
+    scObject1.hub.IHubPntBc_B = [[1.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 5.0]]
+    scObject2.hub.mHub = 200.0
     scObject2.hub.r_BcB_B = [[0.0], [0.0], [0.0]]
-    scObject2.hub.IHubPntBc_B = [[300.0, 0.0, 0.0], [0.0, 250.0, 0.0], [0.0, 0.0, 200.0]]
+    scObject2.hub.IHubPntBc_B = [[33.0, 0.0, 0.0], [0.0, 33.0, 0.0], [0.0, 0.0, 33.0]]
 
     # Set the initial values for the states
     scObject1.hub.r_CN_NInit = r_B1N_N
@@ -168,19 +168,28 @@ def test_constraintEffector(show_plots):
     # Add energy and momentum variables to log
     unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".psi_B1", testProcessRate, 0, 2, 'double')
     unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".psiPrime_B1", testProcessRate, 0, 2, 'double')
+    unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".sigma_B2B1", testProcessRate, 0, 2, 'double')
+    unitTestSim.AddVariableForLogging(constraintEffector.ModelTag + ".omega_B2B1_B2", testProcessRate, 0, 2, 'double')
 
     # Initialize the simulation
     # breakpoint()
     unitTestSim.InitializeSimulation()
 
     # Setup and run the simulation
-    stopTime = 100
+    stopTime = 75*60
     unitTestSim.ConfigureStopTime(macros.sec2nano(stopTime))
     unitTestSim.ExecuteSimulation()
+
+    viz = vizSupport.enableUnityVisualization(unitTestSim, unitTaskName, [scObject1, scObject2],
+                                            saveFile=__file__
+                                            # liveStream=True
+                                            )
 
     # Extract the logged variables
     psi_B1 = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".psi_B1")
     psiPrime_B1 = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".psiPrime_B1")
+    sigma_B2B1 = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".sigma_B2B1")
+    omega_B2B1_B2 = unitTestSim.GetLogVariableData(constraintEffector.ModelTag + ".omega_B2B1_B2")
 
     # Grab the time vector
     timeData = psi_B1[:, 0] * macros.NANO2SEC
@@ -191,17 +200,37 @@ def test_constraintEffector(show_plots):
     plt.clf()
     psi_B1 = np.delete(psi_B1, 0, axis=1)
     for i in range(3):
-        plt.plot(timeData, psi_B1[:, i])
-    plt.xlabel('time (s)')
-    plt.ylabel('psi_B1')
+        plt.plot(timeData/60, psi_B1[:, i])
+    plt.xlabel('time (minutes)')
+    plt.ylabel('variation from fixed length: '+r'$\psi$'+' (meters)')
+    plt.title('Length Constraint Components')
 
     plt.figure()
     plt.clf()
     psiPrime_B1 = np.delete(psiPrime_B1, 0, axis=1)
     for i in range(3):
-        plt.plot(timeData, psiPrime_B1[:, i])
-    plt.xlabel('time (s)')
-    plt.ylabel('psiPrime_B1')
+        plt.plot(timeData/60, psiPrime_B1[:, i])
+    plt.xlabel('time (minutes)')
+    plt.ylabel('magnitude: d'+r'$\psi$'+'/dt (meters/second)')
+    plt.title('Length Rate of Change Constraint Components')
+
+    plt.figure()
+    plt.clf()
+    sigma_B2B1 = np.delete(sigma_B2B1, 0, axis=1)
+    for i in range(3):
+        plt.plot(timeData/60, 4*np.arctan(sigma_B2B1[:, i]) * macros.R2D)
+    plt.xlabel('time (minutes)')
+    plt.ylabel('relative attitude angle: '+r'$\phi$'+' (deg)')
+    plt.title('Attitude Constraint Components')
+
+    plt.figure()
+    plt.clf()
+    omega_B2B1_B2 = np.delete(omega_B2B1_B2, 0, axis=1)
+    for i in range(3):
+        plt.plot(timeData/60, omega_B2B1_B2[:, i] * macros.R2D)
+    plt.xlabel('time (minutes)')
+    plt.ylabel('angular rate: '+r'$\omega$'+' (deg/second)')
+    plt.title('Attitude Rate Constraint Components')
 
     if show_plots:
         plt.show()

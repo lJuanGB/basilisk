@@ -60,6 +60,8 @@ public:
     Eigen::Vector3d psi_B1;
     Eigen::Vector3d psiPrime_N;
     Eigen::Vector3d psiPrime_B1;
+    Eigen::Vector3d sigma_B2B1;
+    Eigen::Vector3d omega_B2B1_B2;
 
 	std::vector<StateData*> hubSigma;                           // class variable
     std::vector<StateData*> hubOmega;                           // class varaible
