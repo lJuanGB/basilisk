@@ -103,10 +103,8 @@ private:
     // States
     StateData *hubSigma;                                //!< hub/inertial attitude represented by MRP
     StateData *hubOmega;                                //!< hub/inertial angular velocity vector in B frame components
-    StateData *hubPosition;                             //!< hub/inertial position vector in inertial frame components
-    StateData *hubVelocity;                             //!< hub/inertial velocity vector in inertial frame components
-    Eigen::MatrixXd *c_B;                               //!< [m] vector from point B to CoM of s/c in B frame components
-    Eigen::MatrixXd *cPrime_B;                          //!< [m/s] body time derivative of vector c_B in B frame components
+    Eigen::MatrixXd* inertialPositionProperty;  //!< [m] r_N inertial position relative to system spice zeroBase/refBase
+    Eigen::MatrixXd* inertialVelocityProperty;  //!< [m] v_N inertial velocity relative to system spice zeroBase/refBase
 
 public:
     PrescribedMotionStateEffector();                        //!< -- Constructor
