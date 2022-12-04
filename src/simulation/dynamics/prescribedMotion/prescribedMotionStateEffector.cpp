@@ -118,17 +118,11 @@ void PrescribedMotionStateEffector::prependSpacecraftNameToStates()
 /*! This method allows the SB state effector to have access to the hub states and gravity*/
 void PrescribedMotionStateEffector::linkInStates(DynParamManager& statesIn)
 {
-    // - Get access to the hub's sigma_BN, omegaBN_B and velocity needed for dynamic coupling and gravity
-    std::string tmpMsgName;
-    tmpMsgName = this->nameOfSpacecraftAttachedTo + "centerOfMassSC";
-    this->c_B = statesIn.getPropertyReference(tmpMsgName);
-    tmpMsgName = this->nameOfSpacecraftAttachedTo + "centerOfMassPrimeSC";
-    this->cPrime_B = statesIn.getPropertyReference(tmpMsgName);
-
+    // - Get access to the hub's sigma_BN, omegaBN_B and velocity needed for dynamic coupling
     this->hubSigma = statesIn.getStateObject(this->nameOfSpacecraftAttachedTo + "hubSigma");
     this->hubOmega = statesIn.getStateObject(this->nameOfSpacecraftAttachedTo + "hubOmega");
-    this->hubPosition = statesIn.getStateObject(this->nameOfSpacecraftAttachedTo + "hubPosition");
-    this->hubVelocity = statesIn.getStateObject(this->nameOfSpacecraftAttachedTo + "hubVelocity");
+    this->inertialPositionProperty = statesIn.getPropertyReference(this->nameOfSpacecraftAttachedTo + "r_BN_N");
+    this->inertialVelocityProperty = statesIn.getPropertyReference(this->nameOfSpacecraftAttachedTo + "v_BN_N");
 
     return;
 }
@@ -256,10 +250,10 @@ void PrescribedMotionStateEffector::computePrescribedMotionInertialStates()
     this->sigma_FN = eigenMRPd2Vector3d(eigenC2MRP(dcm_FN));
 
     // inertial position vector
-    this->r_FcN_N = (Eigen::Vector3d)this->hubPosition->getState() + this->dcm_BN.transpose() * this->r_FcB_B;
+    this->r_FcN_N = (Eigen::Vector3d)(*this->inertialPositionProperty) + this->dcm_BN.transpose() * this->r_FcB_B;
 
     // inertial velocity vector
-    this->v_FcN_N = (Eigen::Vector3d)this->hubVelocity->getState() + this->dcm_BN.transpose() * this->rDot_FcB_B;
+    this->v_FcN_N = (Eigen::Vector3d)(*this->inertialVelocityProperty) + this->dcm_BN.transpose() * this->rDot_FcB_B;
 
     return;
 }
