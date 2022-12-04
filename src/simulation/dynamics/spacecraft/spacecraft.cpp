@@ -38,8 +38,8 @@ Spacecraft::Spacecraft()
     this->numOutMsgBuffers = 2;
     this->dvAccum_CN_B.setZero();
     this->dvAccum_BN_B.setZero();
-    this->spacecraftCounter++;
     this->spacecraftID = this->spacecraftCounter;
+    this->spacecraftCounter++;
 
     // - Set integrator as RK4 by default
     this->integrator = new svIntegratorRK4(this);
@@ -47,12 +47,12 @@ Spacecraft::Spacecraft()
     return;
 }
 
-uint64_t Spacecraft::spacecraftCounter = 0;
+uint64_t Spacecraft::spacecraftCounter = 1;
 
 /*! This is the destructor, nothing to report here */
 Spacecraft::~Spacecraft()
 {
-    this->spacecraftCounter = 0;    /* reset the spacecraft ID*/
+    this->spacecraftCounter = 1;    /* reset the spacecraft ID*/
     return;
 }
 

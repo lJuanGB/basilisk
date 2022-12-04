@@ -33,16 +33,17 @@ SpacecraftUnit::SpacecraftUnit()
     // - Set values to either zero or default values
     this->dvAccum_CN_B.setZero();
     this->dvAccum_BN_B.setZero();
-    this->spacecraftID++;
+    this->spacecraftID = this->spacecraftCounter;
+    this->spacecraftCounter++;
 
     return;
 }
 
-uint64_t SpacecraftUnit::spacecraftID = 1;
+uint64_t SpacecraftUnit::spacecraftCounter = 1;
 
 SpacecraftUnit::~SpacecraftUnit()
 {
-    this->spacecraftID = 1;
+    this->spacecraftCounter = 1;
     return;
 }
 
