@@ -190,6 +190,11 @@ double computeSecondRotation(double r_CM_F[3], double r_FM_F[3], double r_TF_F[3
 
     v3Add(r_FM_F, r_TF_F, aVec);
     a = v3Norm(aVec);
+
+    if (a < EPS) {
+        return 0.0;
+    }
+
     v3Copy(r_CM_F, bVec);
     b = v3Norm(bVec);
     c1 = v3Norm(r_CT_F);
@@ -257,9 +262,9 @@ double computeThirdRotation(double e_theta[3], double F2M[3][3])
                 y2 = (A*t2*t2 + B*t2 + C) / (1 + t2*t2);
 
                 t = t1;
-                if (fabs(y2) < fabs(y1)) {
-                    t = t2;
-                }
+                // if (fabs(y2) < fabs(y1)) {
+                //     t = t2;
+                // }
             }
             theta = 2*atan(t);
             y = (A*t*t + B*t + C) / (1 + t*t);
