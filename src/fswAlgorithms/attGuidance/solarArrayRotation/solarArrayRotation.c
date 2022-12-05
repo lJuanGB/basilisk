@@ -144,11 +144,11 @@ void Update_solarArrayRotation(solarArrayRotationConfig *configData, uint64_t ca
         if (v3Dot(a1_R_nominal, a1_R_target) < 0) {
             thetaR = -thetaR;
         }
-        if (thetaR - thetaC > MPI/2) {
-            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC - MPI;
+        if (thetaR - thetaC > MPI) {
+            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC - 2*MPI;
         }
-        else if (thetaR - thetaC < - MPI/2) {
-            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC + MPI;
+        else if (thetaR - thetaC < - MPI) {
+            spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC + 2*MPI;
         }
         else {
             spinningBodyRefOut.theta = spinningBodyIn.theta + thetaR - thetaC;
