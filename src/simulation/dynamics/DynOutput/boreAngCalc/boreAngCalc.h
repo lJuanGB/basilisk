@@ -40,8 +40,9 @@ public:
     
     void Reset(uint64_t CurrentSimNanos);
     void UpdateState(uint64_t CurrentSimNanos);
-    void computeAxisPoint();
-    void computeOutputData();
+    void computeCelestialAxisPoint();
+    void computeCelestialOutputData();
+    void computeInertialOutputData();
     void WriteOutputMessages(uint64_t CurrentClock);
     void ReadInputs();
     
@@ -50,15 +51,19 @@ public:
     ReadFunctor<SpicePlanetStateMsgPayload> celBodyInMsg;   //!< (-) celestial body state msg at which we pointing at
     Message<BoreAngleMsgPayload> angOutMsg;                 //!< (-) bore sight output message
 
-    double boreVec_B[3];              //!< (-) boresight vector in structure
-    double boreVecPoint[3];           //!< (-) pointing vector in the target relative point frame
-    BoreAngleMsgPayload boresightAng; //!< (-) Boresight angles relative to target
-    bool inputsGood;                  //!< (-) Flag indicating that inputs were read correctly
-    BSKLogger bskLogger;                      //!< -- BSK Logging
+    double boreVec_B[3];                //!< (-) boresight vector in structure
+    double inertialHeadingVec_N[3];     //!< (-) inertial boresight vector
 
 private:
     SpicePlanetStateMsgPayload localPlanet;//!< (-) planet that we are pointing at
     SCStatesMsgPayload localState;   //!< (-) observed state of the spacecraft
+
+    double boreVecPoint[3];             //!< (-) pointing vector in the target relative point frame
+    BoreAngleMsgPayload boresightAng;   //!< (-) Boresight angles relative to target
+    bool inputsGood;                    //!< (-) Flag indicating that inputs were read correctly
+    bool useCelBody;                    //!< (-) Flag indicating that the module should use the celestial body heading
+    bool useInertialHeading;            //!< (-) Flag indicating that the module should use the inertial heading
+    BSKLogger bskLogger;                      //!< -- BSK Logging
 };
 
 
