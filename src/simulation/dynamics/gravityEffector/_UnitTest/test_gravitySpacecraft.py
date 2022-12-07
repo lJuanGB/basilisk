@@ -27,6 +27,7 @@ path = os.path.dirname(os.path.abspath(filename))
 from Basilisk import __path__
 bskPath = __path__[0]
 
+from Basilisk.architecture import sim_model
 from Basilisk.utilities import macros
 from Basilisk.utilities import orbitalMotion, RigidBodyKinematics
 from Basilisk.utilities import SimulationBaseClass
@@ -338,7 +339,7 @@ def polyGravityBody(show_plots):
     DynUnitTestProc.addTask(unitTestSim.CreateNewTask(unitTaskName, macros.sec2nano(intTime)))
 
     # specify orbit of polyhedral body
-    oePolyBody = planetEphemeris.ClassicElementsMsgPayload()
+    oePolyBody = sim_model.ClassicElements()
     oePolyBody.a = 2.3612 * orbitalMotion.AU * 1000
     oePolyBody.e = 0
     oePolyBody.i = 0*macros.D2R

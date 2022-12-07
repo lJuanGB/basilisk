@@ -135,7 +135,7 @@ def run(show_plots):
     gravBodyEphem.setPlanetNames(planetEphemeris.StringVector(["Itokawa", "earth"]))
 
     # specify orbits of gravitational bodies
-    oeAsteroid = planetEphemeris.ClassicElementsMsgPayload()
+    oeAsteroid = sim_model.ClassicElements()
     oeAsteroid.a = 1.3241 * orbitalMotion.AU * 1000  # meters
     oeAsteroid.e = 0.2801
     oeAsteroid.i = 1.6214*macros.D2R
@@ -143,7 +143,7 @@ def run(show_plots):
     oeAsteroid.omega = 162.82*macros.D2R
     oeAsteroid.f = 90.0*macros.D2R
 
-    oeEarth = planetEphemeris.ClassicElementsMsgPayload()
+    oeEarth = sim_model.ClassicElements()
     oeEarth.a = orbitalMotion.AU * 1000  # meters
     oeEarth.e = 0.0167086
     oeEarth.i = 7.155 * macros.D2R

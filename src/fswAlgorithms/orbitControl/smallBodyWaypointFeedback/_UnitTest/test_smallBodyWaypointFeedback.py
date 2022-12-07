@@ -84,7 +84,7 @@ def smallBodyWaypointFeedbackTestFunction1():
     module.K2 = unitTestSupport.np2EigenMatrix3d([1., 0., 0., 0., 1., 0., 0., 0., 1.])
 
     # Set the orbital parameters of the asteroid
-    oeAsteroid = planetEphemeris.ClassicElementsMsgPayload()
+    oeAsteroid = messaging.ClassicElementsMsgPayload()
     oeAsteroid.a = 1.1259 * orbitalMotion.AU * 1000  # meters
     oeAsteroid.e = 0.20373
     oeAsteroid.i = 6.0343 * macros.D2R
@@ -172,7 +172,7 @@ def smallBodyWaypointFeedbackTestFunction2():
     module.K2 = unitTestSupport.np2EigenMatrix3d([1., 0., 0., 0., 1., 0., 0., 0., 1.])
 
     # Set the orbital parameters of the asteroid
-    oeAsteroid = planetEphemeris.ClassicElementsMsgPayload()
+    oeAsteroid = messaging.ClassicElementsMsgPayload()
     oeAsteroid.a = 1.1259 * orbitalMotion.AU * 1000  # meters
     oeAsteroid.e = 0.20373
     oeAsteroid.i = 6.0343 * macros.D2R
