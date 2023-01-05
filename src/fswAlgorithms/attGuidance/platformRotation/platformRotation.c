@@ -40,6 +40,7 @@ void SelfInit_platformRotation(platformRotationConfig *configData, int64_t modul
     SpinningBodyMsg_C_init(&configData->SpinningBodyRef1OutMsg);
     SpinningBodyMsg_C_init(&configData->SpinningBodyRef2OutMsg);
     BodyHeadingMsg_C_init(&configData->bodyHeadingOutMsg);
+    CmdTorqueBodyMsg_C_init(&configData->thrusterTorqueOutMsg);
 }
 
 
@@ -57,12 +58,10 @@ void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTim
         _bskLog(configData->bskLogger, BSK_ERROR, "Error: platformRotation.vehConfigInMsg wasn't connected.");
     }
 
-    if (CmdTorqueBodyMsg_C_isLinked(&configData->deltaHInMsg)) {
-        configData->momentumDumping = 1;
+    if (!CmdTorqueBodyMsg_C_isLinked(&configData->deltaHInMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: platformRotation.deltaHInMsg wasn't connected.");
     }
-    else {
-        configData->momentumDumping = 0;
-    }
+    configData->momentumDumping = 0;
 }
 
 /*! This method updates the platformAngles message based on the updated information about the system center of mass
@@ -79,6 +78,7 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     SpinningBodyMsgPayload   spinningBodyRef1Out;
     SpinningBodyMsgPayload   spinningBodyRef2Out;
     BodyHeadingMsgPayload    bodyHeadingOut;
+    CmdTorqueBodyMsgPayload  thrusterTorqueOut;
 
     /*! - zero the output messages */
     spinningBodyRef1Out = SpinningBodyMsg_C_zeroMsgPayload();
@@ -88,24 +88,44 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     /*! read the attitude navigation message */
     vehConfigMsgIn = VehicleConfigMsg_C_read(&configData->vehConfigInMsg);
 
-    /*! read the delta H message */
-    double offset[3] = {0};
-    if (configData->momentumDumping == 1) {
-        deltaHMsgIn = CmdTorqueBodyMsg_C_read(&configData->deltaHInMsg);
-        if (v3Norm(deltaHMsgIn.torqueRequestBody) > EPS) {
-            v3Copy(deltaHMsgIn.torqueRequestBody, offset);
-        }
-    }
-
     /*! compute CM position w.r.t. M frame origin, in M coordinates */
-    double r_CM_M[3], r_CM_F[3], r_CB_B[3], r_CB_M[3], MB[3][3];
+    double r_CM_M[3], r_CB_B[3], r_CB_M[3], r_TM_F[3], MB[3][3];
     MRP2C(configData->sigma_MB, MB);
     v3Copy(vehConfigMsgIn.CoM_B, r_CB_B);
     m33MultV3(MB, r_CB_B, r_CB_M);
     v3Add(r_CB_M, configData->r_BM_M, r_CM_M);
+    v3Add(configData->r_FM_F, configData->r_TF_F, r_TM_F);
 
     double FM[3][3];
-    computeFinalRotation(r_CM_M, configData->r_FM_F, configData->r_TF_F, configData->T_F, FM);
+    computeFinalRotation(r_CM_M, r_TM_F, configData->T_F, FM);
+
+    /*! read the delta H message */
+    double deltaH_M[3], T_M[3], d_M[3];
+    d_M[0] = 0;  d_M[1] = 0;  d_M[2] = 0;
+    deltaHMsgIn = CmdTorqueBodyMsg_C_read(&configData->deltaHInMsg);
+    if (v3Norm(deltaHMsgIn.torqueRequestBody) > EPS) {
+        if (configData->momentumDumping == 0) {
+
+            printf("dH = %f \n", v3Norm(deltaHMsgIn.torqueRequestBody));
+
+            configData->momentumDumping = 1;
+            configData->dumpingStart = callTime;
+
+            m33tMultV3(FM, configData->T_F, T_M);
+            m33tMultV3(FM, deltaHMsgIn.torqueRequestBody, deltaH_M);
+
+            v3Cross(T_M, deltaH_M, d_M);
+            v3Scale(1/(configData->dt * v3Dot(T_M, T_M)), d_M, d_M);
+
+            printf("offset = %f \n", v3Norm(d_M));
+        }
+    }
+
+    double r_CMd_M[3];
+    if (configData->momentumDumping == 1) {
+        v3Add(r_CM_M, d_M, r_CMd_M);
+        computeFinalRotation(r_CMd_M, r_TM_F, configData->T_F, FM);
+    }
 
     /*! extract theta1 and theta2 angles */
     spinningBodyRef1Out.theta = atan2(FM[1][2], FM[1][1]);
@@ -113,13 +133,11 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     spinningBodyRef2Out.theta = atan2(FM[2][0], FM[0][0]);
     spinningBodyRef2Out.thetaDot = 0;
 
-    printf("theta1 = %4.f, theta2 = %4.f \n", FM[1][2], FM[1][1]);
-
     /* write output spinning body messages */
     SpinningBodyMsg_C_write(&spinningBodyRef1Out, &configData->SpinningBodyRef1OutMsg, moduleID, callTime);
     SpinningBodyMsg_C_write(&spinningBodyRef2Out, &configData->SpinningBodyRef2OutMsg, moduleID, callTime);
 
-    /*! define mapping between final platform frame and body frame F3B */
+    /*! define mapping between final platform frame and body frame FB */
     double FB[3][3];
     m33MultM33(FM, MB, FB);
 
@@ -130,15 +148,26 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     /* write output message */
     BodyHeadingMsg_C_write(&bodyHeadingOut, &configData->bodyHeadingOutMsg, moduleID, callTime);
 
+    /* compute thruster torque on the system in body frame coordinates */
+    // make this easier considering d_M
+    double r_CM_F[3], r_TC_F[3], Torque_F[3];
+    m33MultV3(FM, r_CM_M, r_CM_F);
+    v3Subtract(r_TM_F, r_CM_F, r_TC_F);
+    v3Cross(configData->T_F, r_TC_F, Torque_F);       // compute the opposite of torque to compensate with the RWs
+    m33tMultV3(FB, Torque_F, thrusterTorqueOut.torqueRequestBody);
+
+    /* write output message */
+    CmdTorqueBodyMsg_C_write(&thrusterTorqueOut, &configData->thrusterTorqueOutMsg, moduleID, callTime);
+
     return;
 }
 
 
-double computeSecondRotation(double r_CM_F[3], double r_FM_F[3], double r_TF_F[3], double r_CT_F[3], double T_F_hat[3])
+double computeSecondRotation(double r_CM_F[3], double r_TM_F[3], double r_CT_F[3], double T_F_hat[3])
 {
     double a, b, c1, c2, aVec[3], bVec[3];
 
-    v3Add(r_FM_F, r_TF_F, aVec);
+    v3Copy(r_TM_F, aVec);
     a = v3Norm(aVec);
 
     if (a < EPS) {
@@ -227,7 +256,7 @@ double computeThirdRotation(double e_theta[3], double F2M[3][3])
     return theta;
 }
 
-void computeFinalRotation(double r_CM_M[3], double r_FM_F[3], double r_TF_F[3], double T_F[3], double FM[3][3])
+void computeFinalRotation(double r_CM_M[3], double r_TM_F[3], double T_F[3], double FM[3][3])
 {
     /*! define unit vectors of CM direction in M coordinates and thrust direction in F coordinates */
     double r_CM_F[3], r_CM_M_hat[3], r_CM_F_hat[3], T_F_hat[3];
@@ -274,15 +303,14 @@ void computeFinalRotation(double r_CM_M[3], double r_FM_F[3], double r_TF_F[3], 
 
     /*! compute position of CM w.r.t. thrust application point T */
     double r_CT_F[3], r_CT_F_hat[3];
-    v3Subtract(r_CM_F, r_FM_F, r_CT_F);
-    v3Subtract(r_CT_F, r_TF_F, r_CT_F);
+    v3Subtract(r_CM_F, r_TM_F, r_CT_F);
     v3Normalize(r_CT_F, r_CT_F_hat);
 
     /*! compute second rotation to zero the offset between T_F and r_CT_F */
     double psi, e_psi[3];
     v3Cross(T_F_hat, r_CT_F_hat, e_psi);
     v3Normalize(e_psi, e_psi);
-    psi = computeSecondRotation(r_CM_F, r_FM_F, r_TF_F, r_CT_F, T_F_hat);
+    psi = computeSecondRotation(r_CM_F, r_TM_F, r_CT_F, T_F_hat);
 
     /*! define intermediate platform rotation F2M */
     double F2F1[3][3], F2M[3][3], PRV_psi[3];

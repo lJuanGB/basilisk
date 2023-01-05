@@ -42,7 +42,8 @@ typedef struct {
     double dt;                                   //!< requested delta t for momentum dumping
 
     /* declare variables for internal module calculations */
-    int momentumDumping;                         //!< flag to assess if momentum dumping is required
+    int       momentumDumping;                   //!< flag to assess if momentum dumping is required
+    uint64_t  dumpingStart;
 
     /* declare module IO interfaces */
     VehicleConfigMsg_C  vehConfigInMsg;          //!< input msg vehicle configuration msg (needed for CM location)
@@ -50,6 +51,7 @@ typedef struct {
     SpinningBodyMsg_C   SpinningBodyRef1OutMsg;  //!< output msg containing theta1 reference and thetaDot1 reference
     SpinningBodyMsg_C   SpinningBodyRef2OutMsg;  //!< output msg containing theta2 reference and thetaDot2 reference
     BodyHeadingMsg_C    bodyHeadingOutMsg;       //!< output msg containing the thrust heading in body frame coordinates
+    CmdTorqueBodyMsg_C  thrusterTorqueOutMsg;    //!< output msg containing the opposite of the thruster torque to be compensated by RW's
 
     BSKLogger *bskLogger;                        //!< BSK Logging
 
@@ -63,9 +65,9 @@ extern "C" {
     void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTime, int64_t moduleID);
     void Update_platformRotation(platformRotationConfig *configData, uint64_t callTime, int64_t moduleID);
 
-    double computeSecondRotation(double r_CM_F[3], double r_FM_F[3], double r_TF_F[3], double r_CT_F[3], double T_F_hat[3]);
+    double computeSecondRotation(double r_CM_F[3], double r_TM_F[3], double r_CT_F[3], double T_F_hat[3]);
     double computeThirdRotation(double e_theta[3], double F2M[3][3]);
-    void computeFinalRotation(double r_CM_M[3], double r_FM_F[3], double r_TF_F[3], double T_F[3], double FM[3][3]);
+    void computeFinalRotation(double r_CM_M[3], double r_TM_F[3], double T_F[3], double FM[3][3]);
 
 #ifdef __cplusplus
 }
