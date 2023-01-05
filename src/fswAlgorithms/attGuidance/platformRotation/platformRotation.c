@@ -101,12 +101,12 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
 
     /*! read the delta H message */
     double deltaH_M[3], T_M[3], d_M[3];
-    d_M[0] = 0;  d_M[1] = 0;  d_M[2] = 0;
+    // d_M[0] = 0;  d_M[1] = 0;  d_M[2] = 0;
     deltaHMsgIn = CmdTorqueBodyMsg_C_read(&configData->deltaHInMsg);
     if (v3Norm(deltaHMsgIn.torqueRequestBody) > EPS) {
         if (configData->momentumDumping == 0) {
 
-            printf("dH = %f \n", v3Norm(deltaHMsgIn.torqueRequestBody));
+            // printf("dH = %f \n", v3Norm(deltaHMsgIn.torqueRequestBody));
 
             configData->momentumDumping = 1;
             configData->dumpingStart = callTime;
@@ -116,15 +116,16 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
 
             v3Cross(T_M, deltaH_M, d_M);
             v3Scale(1/(configData->dt * v3Dot(T_M, T_M)), d_M, d_M);
-
-            printf("offset = %f \n", v3Norm(d_M));
+            v3Copy(d_M, configData->d_M);
         }
     }
 
     double r_CMd_M[3];
     if (configData->momentumDumping == 1) {
-        v3Add(r_CM_M, d_M, r_CMd_M);
+        v3Add(r_CM_M, configData->d_M, r_CMd_M);
         computeFinalRotation(r_CMd_M, r_TM_F, configData->T_F, FM);
+
+        // printf("alpha = %f, beta = %f, target = [%f, %f, %f] \n", atan2(FM[1][2], FM[1][1]), atan2(FM[2][0], FM[0][0]), r_CMd_M[0], r_CMd_M[1], r_CMd_M[2]);
     }
 
     /*! extract theta1 and theta2 angles */
@@ -132,6 +133,8 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     spinningBodyRef1Out.thetaDot = 0;
     spinningBodyRef2Out.theta = atan2(FM[2][0], FM[0][0]);
     spinningBodyRef2Out.thetaDot = 0;
+
+    // printf("alpha = %f, beta = %f, offset = %f \n", spinningBodyRef1Out.theta, spinningBodyRef2Out.theta, v3Norm(d_M));
 
     /* write output spinning body messages */
     SpinningBodyMsg_C_write(&spinningBodyRef1Out, &configData->SpinningBodyRef1OutMsg, moduleID, callTime);

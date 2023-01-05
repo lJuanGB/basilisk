@@ -44,6 +44,7 @@ typedef struct {
     /* declare variables for internal module calculations */
     int       momentumDumping;                   //!< flag to assess if momentum dumping is required
     uint64_t  dumpingStart;
+    double    d_M[3];
 
     /* declare module IO interfaces */
     VehicleConfigMsg_C  vehConfigInMsg;          //!< input msg vehicle configuration msg (needed for CM location)
