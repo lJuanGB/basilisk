@@ -106,7 +106,7 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     if (v3Norm(deltaHMsgIn.torqueRequestBody) > EPS) {
         if (configData->momentumDumping == 0) {
 
-            // printf("dH = %f \n", v3Norm(deltaHMsgIn.torqueRequestBody));
+            printf("dH = %f \n", v3Norm(deltaHMsgIn.torqueRequestBody));
 
             configData->momentumDumping = 1;
             configData->dumpingStart = callTime;
