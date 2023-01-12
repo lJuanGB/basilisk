@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include "architecture/utilities/bskLogging.h"
 #include "cMsgCInterface/VehicleConfigMsg_C.h"
+#include "cMsgCInterface/RWArrayConfigMsg_C.h"
+#include "cMsgCInterface/RWSpeedMsg_C.h"
 #include "cMsgCInterface/CmdTorqueBodyMsg_C.h"
 #include "cMsgCInterface/SpinningBodyMsg_C.h"
 #include "cMsgCInterface/BodyHeadingMsg_C.h"
@@ -39,16 +41,18 @@ typedef struct {
     double r_TF_F[3];                            //!< position of the thrust application point w.r.t. F frame origin, in F frame coordinates
     double T_F[3];                               //!< thrust vector in F frame coordinates
 
-    double dt;                                   //!< requested delta t for momentum dumping
+    double K;                                  //!< momentum dumping time constant [1/s]
+    double P;
 
     /* declare variables for internal module calculations */
-    int       momentumDumping;                   //!< flag to assess if momentum dumping is required
-    uint64_t  dumpingStart;
-    double    d_M[3];
+    double                  hs_M_prior[3];
+    uint64_t                priorTime;
+    RWArrayConfigMsgPayload rwConfigParams;             //!< [-] struct to store message containing RW config parameters in body B frame
 
     /* declare module IO interfaces */
     VehicleConfigMsg_C  vehConfigInMsg;          //!< input msg vehicle configuration msg (needed for CM location)
-    CmdTorqueBodyMsg_C  deltaHInMsg;             //!< input msg containing delta H to be dumped
+    RWSpeedMsg_C        rwSpeedsInMsg;           //!< input reaction wheel speeds message
+    RWArrayConfigMsg_C  rwConfigDataInMsg;       //!< input RWA configuration message
     SpinningBodyMsg_C   SpinningBodyRef1OutMsg;  //!< output msg containing theta1 reference and thetaDot1 reference
     SpinningBodyMsg_C   SpinningBodyRef2OutMsg;  //!< output msg containing theta2 reference and thetaDot2 reference
     BodyHeadingMsg_C    bodyHeadingOutMsg;       //!< output msg containing the thrust heading in body frame coordinates

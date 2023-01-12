@@ -27,6 +27,7 @@
 #include "architecture/utilities/linearAlgebra.h"
 #include "architecture/utilities/rigidBodyKinematics.h"
 #include "architecture/utilities/astroConstants.h"
+#include "architecture/utilities/macroDefinitions.h"
 
 
 /*!
@@ -57,11 +58,18 @@ void Reset_platformRotation(platformRotationConfig *configData, uint64_t callTim
     if (!VehicleConfigMsg_C_isLinked(&configData->vehConfigInMsg)) {
         _bskLog(configData->bskLogger, BSK_ERROR, "Error: platformRotation.vehConfigInMsg wasn't connected.");
     }
-
-    if (!CmdTorqueBodyMsg_C_isLinked(&configData->deltaHInMsg)) {
-        _bskLog(configData->bskLogger, BSK_ERROR, "Error: platformRotation.deltaHInMsg wasn't connected.");
+    if (!RWArrayConfigMsg_C_isLinked(&configData->rwConfigDataInMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: thrMomentumManagement.rwConfigDataInMsg wasn't connected.");
     }
-    configData->momentumDumping = 0;
+    if (!RWSpeedMsg_C_isLinked(&configData->rwSpeedsInMsg)) {
+        _bskLog(configData->bskLogger, BSK_ERROR, "Error: thrMomentumManagement.rwSpeedsInMsg wasn't connected.");
+    }
+
+    /*! - read in the RW configuration message */
+    configData->rwConfigParams = RWArrayConfigMsg_C_read(&configData->rwConfigDataInMsg);
+
+    configData->priorTime = 0;
+    v3SetZero(configData->hs_M_prior);
 }
 
 /*! This method updates the platformAngles message based on the updated information about the system center of mass
@@ -74,7 +82,7 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
 {
     /*! - Create message buffers */
     VehicleConfigMsgPayload  vehConfigMsgIn;
-    CmdTorqueBodyMsgPayload  deltaHMsgIn;
+    RWSpeedMsgPayload        rwSpeedMsgIn; 
     SpinningBodyMsgPayload   spinningBodyRef1Out;
     SpinningBodyMsgPayload   spinningBodyRef2Out;
     BodyHeadingMsgPayload    bodyHeadingOut;
@@ -99,34 +107,46 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     double FM[3][3];
     computeFinalRotation(r_CM_M, r_TM_F, configData->T_F, FM);
 
-    /*! read the delta H message */
-    double deltaH_M[3], T_M[3], d_M[3];
-    // d_M[0] = 0;  d_M[1] = 0;  d_M[2] = 0;
-    deltaHMsgIn = CmdTorqueBodyMsg_C_read(&configData->deltaHInMsg);
-    if (v3Norm(deltaHMsgIn.torqueRequestBody) > EPS) {
-        if (configData->momentumDumping == 0) {
+    /*! read the rw speed msg */
+    rwSpeedMsgIn = RWSpeedMsg_C_read(&configData->rwSpeedsInMsg);
 
-            printf("dH = %f \n", v3Norm(deltaHMsgIn.torqueRequestBody));
-
-            configData->momentumDumping = 1;
-            configData->dumpingStart = callTime;
-
-            m33tMultV3(FM, configData->T_F, T_M);
-            m33tMultV3(FM, deltaHMsgIn.torqueRequestBody, deltaH_M);
-
-            v3Cross(T_M, deltaH_M, d_M);
-            v3Scale(1/(configData->dt * v3Dot(T_M, T_M)), d_M, d_M);
-            v3Copy(d_M, configData->d_M);
-        }
+    /*! compute net RW momentum */
+    double vec3[3], hs_B[3], hs_M[3];
+    v3SetZero(hs_B);
+    for (int i=0; i<configData->rwConfigParams.numRW; i++) {
+        v3Scale(configData->rwConfigParams.JsList[i]*rwSpeedMsgIn.wheelSpeeds[i], &configData->rwConfigParams.GsMatrix_B[i*3], vec3);
+        v3Add(hs_B, vec3, hs_B);
     }
+    m33tMultV3(MB, hs_B, hs_M);
 
+    double hsDot_M[3];
+    if (callTime == 0) {
+        double dt;
+        dt = (callTime - configData->priorTime) * NANO2SEC;
+        v3Subtract(hs_M, configData->hs_M_prior, hsDot_M);
+        v3Scale(1/dt, hsDot_M, hsDot_M);
+    }
+    else {
+        v3SetZero(hsDot_M);
+    }
+    configData->priorTime = callTime;
+    v3Copy(hs_M, configData->hs_M_prior);
+
+    double deltaH_M[3], deltaH1_M[3], deltaH2_M[3];
+    v3Scale(configData->K, hs_M, deltaH1_M);
+    v3Scale(configData->P, hsDot_M, deltaH2_M);
+    v3Add(deltaH1_M, deltaH2_M, deltaH_M);
+
+    /*! compute offset vector */
+    double T_M[3], d_M[3];
+    m33tMultV3(FM, configData->T_F, T_M);
+    v3Cross(T_M, deltaH_M, d_M);
+    v3Scale(-1/v3Dot(T_M, T_M), d_M, d_M);
+
+    /*! recompute thrust direction and FM matrix based on offset */
     double r_CMd_M[3];
-    if (configData->momentumDumping == 1) {
-        v3Add(r_CM_M, configData->d_M, r_CMd_M);
-        computeFinalRotation(r_CMd_M, r_TM_F, configData->T_F, FM);
-
-        // printf("alpha = %f, beta = %f, target = [%f, %f, %f] \n", atan2(FM[1][2], FM[1][1]), atan2(FM[2][0], FM[0][0]), r_CMd_M[0], r_CMd_M[1], r_CMd_M[2]);
-    }
+    v3Add(r_CM_M, d_M, r_CMd_M);
+    computeFinalRotation(r_CMd_M, r_TM_F, configData->T_F, FM);
 
     /*! extract theta1 and theta2 angles */
     spinningBodyRef1Out.theta = atan2(FM[1][2], FM[1][1]);
