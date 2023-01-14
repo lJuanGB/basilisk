@@ -41,9 +41,17 @@ list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/conan")
 
 include(bskTargetExcludeBuildOptions)
 
+include(CMakePrintHelpers)
+set(Python3_FIND_REGISTRY "NEVER")
+set(Python3_FIND_FRAMEWORK "NEVER")
+set(Python3_FIND_STRATEGY "LOCATION")
+#cmake_print_variables(Python_FIND_STRATEGY)
+#cmake_print_variables(CMP0094)
+find_package(Python 3 COMPONENTS Interpreter Development REQUIRED)
 
-# ! create_symlinks : create symlinks to support files in source rather than keeping them in dist The function takes one
-# required argument and N optional arguments. \argn: a list of supporting file paths
+#! create_symlinks : create symlinks to support files in source rather than keeping them in dist
+# The function takes one required argument and N optional arguments.
+# \argn: a list of supporting file paths
 #
 function(create_symlinks destinationPath)
   # Do nothing if building in-source
@@ -162,7 +170,7 @@ function(generate_package_libraries INIT_DIRECTORY AllLibs)
     target_link_libraries(${LIB_NAME} PUBLIC ArchitectureUtilities)
     target_link_libraries(${LIB_NAME} PRIVATE ModuleIdGenerator)
     target_link_libraries(${LIB_NAME} PUBLIC cMsgCInterface)
-    target_link_libraries(${LIB_NAME} PRIVATE ${PYTHON_LIBRARIES})
+    target_link_libraries(${LIB_NAME} PRIVATE ${Python_LIBRARIES})
     target_link_libraries(${LIB_NAME} PRIVATE Eigen3::Eigen3)
 
     # define build location, IDE generation specifications
@@ -336,7 +344,7 @@ function(generate_package_targets TARGET_LIST LIB_DEP_LIST MODULE_DIR)
       include("${PARENT_DIR}/Custom.cmake")
     endif()
 
-    target_include_directories(${TARGET_NAME} PRIVATE ${PYTHON_INCLUDE_PATH}) # Exposes python.h to wrap.c(xx) file
+    target_include_directories(${TARGET_NAME} PRIVATE ${Python_INCLUDE_DIRS}) # Exposes python.h to wrap.c(xx) file
     target_include_directories(
       ${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/${PARENT_DIR}) # Exposes module .h files to the PYTHON_wrap.c(xx) file
                                                                 # (not located in src)
@@ -384,10 +392,10 @@ function(generate_package_targets TARGET_LIST LIB_DEP_LIST MODULE_DIR)
 endfunction(generate_package_targets)
 
 # Start of main projection configuration
-find_package(PythonInterp 3 REQUIRED)
-find_package(PythonLibs 3 REQUIRED)
+#find_package(PythonInterp 3 REQUIRED)
+#find_package(PythonLibs 3 REQUIRED)
 
-# TODO: Remove the global link-libraries call
+#TODO: Remove the global link-libraries call
 find_package(Eigen3 CONFIG REQUIRED)
 # The following lines are necessary to prevent Xcode from issuing a warning about Eigen not being within the search
 # path. Related to Eigen being a header only library.
@@ -671,7 +679,7 @@ add_custom_target(OverwriteSwig ALL)
 set(ARG utilities/overwriteSwig.py ${CMAKE_BINARY_DIR} ${SWIG_VERSION})
 add_custom_command(
   TARGET OverwriteSwig
-  COMMAND ${PYTHON_EXECUTABLE} ${ARG}
+  COMMAND ${Python_EXECUTABLE} ${ARG}
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/../src/)
 if(TARGET _thrusterDynamicEffector)
   add_dependencies(OverwriteSwig _thrusterDynamicEffector _vscmgStateEffector _reactionWheelStateEffector)

@@ -24,7 +24,7 @@ endif()
 
 # Link all necessary libraries
 #target_link_libraries(${LIB_NAME} ArchitectureUtilities)
-target_link_libraries(${LIB_NAME} ${PYTHON_LIBRARIES})
+target_link_libraries(${LIB_NAME} ${Python_LIBRARIES})
 #target_link_libraries(${LIB_NAME} Eigen3::Eigen3)
 
 # define build location, IDE generation specifications
