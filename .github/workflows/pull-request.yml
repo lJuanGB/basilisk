@@ -191,4 +191,4 @@ jobs:
               echo $GITHUB_PATH
               source .venv/bin/activate && python conanfile.py
       - name: "Run pytest"
-        run: source .venv/bin/activate && cd src && pytest -n 3 -m "not scenarioTest"
+        run: source .venv/bin/activate && cd src && python -m pytest -n 3 "not scenarioTest"
