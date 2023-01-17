@@ -186,5 +186,7 @@ jobs:
         run: source .venv/bin/activate && pip install wheel conan && pip install pytest-xdist
       - name: "Build basilisk"
         run: source .venv/bin/activate && python conanfile.py
+      - name: "Check library paths"
+        run: oTool -lL ./dist3/Basilisk/architecture/_alg_contain.so
       - name: "Run pytest"
         run: source .venv/bin/activate && cd src && pytest -m "not scenarioTest"
