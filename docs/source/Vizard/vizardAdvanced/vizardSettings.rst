@@ -1639,27 +1639,36 @@ information.  This allows Vizard to show this rigid body as a separate spacecraf
     line drawn. Moreover, each body component will have its own axis shown when ``View/All Spacecraft CS``
     option is selected.
 
-To show these time-varying body components, the argument ``bodyList`` is provided to ``enableUnityVisualization``::
+To show these time-varying body components such as :ref:`hingedRigidBodyStateEffector`, :ref:`spinningBodyStateEffector` or :ref:`dualHingedRigidBodyStateEffector` , the BSK modules can be
+added to the ``enableUnityVisualization`` spacecraft list message.  The parent spacecraft object
+should be listed first, followed by the spacecraft effector objects.  Let ``panel1`` and ``panel2``
+be instances of :ref:`hingedRigidBodyStateEffector` which are attached to spacecraft ``scObject``,
+all three components can be visualized using::
 
-    viz = vizSupport.enableUnityVisualization(scSim, simTaskName, [scObject, scObject2]
+    viz = vizSupport.enableUnityVisualization(scSim, simTaskName, [scObject, panel1, panel2]
                                               , saveFile=fileName
-                                              , bodyList=[ None, panelList ]
                                               )
 
-The ``bodyList`` is a list of dictionary lists where the dictionary key is the component name, and the
-dictionary item is the  message containing the component inertial states.  The length of ``bodyList``
-must match the length of the list of spacecraft objects.  Information must be provided for each
-spacecraft. If a spacecraft has no time varying components then provide the argument ``None``.
+Each effector is treated like a Vizard spacecraft object.  This means it is possible to add CSS,
+lights etc. to the spacecraft panel objects as you do with the primary spacecreaft.
+Note, however, that the device list length must match that of the rigid body objects being
+sent to Vizard.  In the above example, this means Vizard is seeing 3 objects and the ``lightList``, for
+example, would need to contain three entrees.
+
+.. warning::
+
+    Some effectors contain more then 1 rigid body component.  For example,
+    :ref:`dualHingedRigidBodyStateEffector` has 2 panels.  Thus, adding this effector will add
+    2 rigid spacecraft objects to Vizard, not one.  This means the device list must match
+    the total number of rigid body objects being send to Vizard in the spacecraft list.
+    The spacecraft name with be the ``ModelTag`` of the effector, and each body after the first
+    one has the index number appended to with.  Thus, the tag ``panels`` would become ``panels``
+    for the first panel, and ``panels-1`` for the 2nd, and so on.
 
 For example, assume a simulation has 2 spacecraft where the second spacecraft contains two time varying
 panels.  This could be visualized using::
 
-    scBodyList = {}
-    scBodyList[panel1.ModelTag] = panel1.hingedRigidBodyConfigLogOutMsg
-    scBodyList[panel2.ModelTag] = panel2.hingedRigidBodyConfigLogOutMsg
-
-    viz = vizSupport.enableUnityVisualization(scSim, simTaskName, [scObject1, scObject2]
-                                              , bodyList=[None, scBodyList]
+    viz = vizSupport.enableUnityVisualization(scSim, simTaskName, [scObject1, scObject2, panel1, panel2]
                                               , saveFile=__file__
                                               )
 
