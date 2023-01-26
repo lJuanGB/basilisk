@@ -1106,9 +1106,6 @@ def enableUnityVisualization(scSim, simTaskName, scList, **kwargs):
         list of MSM configuration messages
     ellipsoidList:
         list of lists of ``Ellipsoid`` structures.  The outer list length must match ``scList``.
-    bodyList:
-        list of lists containing time-varying spacecraft components (panels, etc.) The outer list length
-        must match ``scList``.
 
     Returns
     -------
@@ -1130,7 +1127,7 @@ def enableUnityVisualization(scSim, simTaskName, scList, **kwargs):
         ['saveFile', 'opNavMode', 'rwEffectorList', 'thrEffectorList', 'thrColors', 'liveStream', 'cssList',
          'genericSensorList', 'transceiverList', 'genericStorageList', 'lightList', 'spriteList',
          'modelDictionaryKeyList', 'oscOrbitColorList', 'trueOrbitColorList', 'logoTextureList',
-         'msmInfoList', 'ellipsoidList', 'bodyList'],
+         'msmInfoList', 'ellipsoidList'],
         kwargs)
 
     # setup the Vizard interface module
@@ -1316,14 +1313,6 @@ def enableUnityVisualization(scSim, simTaskName, scList, **kwargs):
                   'number of spacecraft')
             exit(1)
 
-    bodyScList = False
-    if 'bodyList' in kwargs:
-        bodyScList = kwargs['bodyList']
-        if len(bodyScList) != scListLength:
-            print('ERROR: vizSupport: bodyScList should have the same length as the '
-                  'number of spacecraft and contain lists of generic sensors')
-            exit(1)
-
     # loop over all spacecraft to associated states and msg information
     planetNameList = []
     planetInfoList = []
@@ -1498,15 +1487,6 @@ def enableUnityVisualization(scSim, simTaskName, scList, **kwargs):
                     scData.msmInfo = msmInfoList[c]
 
             vizMessenger.scData.push_back(scData)
-
-            # process spacecraft ellipsoids
-            if bodyScList:
-                if bodyScList[c] is not None:  # extra body(ies) have been added to this spacecraft
-                    for tag, msg in bodyScList[c].items():
-                        bodyData = vizInterface.VizSpacecraftData()
-                        bodyData.spacecraftName = tag
-                        bodyData.scStateInMsg.subscribeTo(msg)
-                        vizMessenger.scData.push_back(bodyData)
 
             c += 1
 
