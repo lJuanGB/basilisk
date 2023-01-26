@@ -45,6 +45,7 @@ typedef struct {
     double P;
 
     /* declare variables for internal module calculations */
+    double alpha;
     double                  hs_M_prior[3];
     uint64_t                priorTime;
     RWArrayConfigMsgPayload rwConfigParams;             //!< [-] struct to store message containing RW config parameters in body B frame

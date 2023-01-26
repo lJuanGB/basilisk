@@ -22,6 +22,7 @@
 #include "platformRotation.h"
 #include "string.h"
 #include <math.h>
+#include "stdio.h"
 
 /* Support files.  Be sure to use the absolute path relative to Basilisk directory. */
 #include "architecture/utilities/linearAlgebra.h"
@@ -178,6 +179,8 @@ void Update_platformRotation(platformRotationConfig *configData, uint64_t callTi
     v3Subtract(r_TM_F, r_CM_F, r_TC_F);
     v3Cross(configData->T_F, r_TC_F, Torque_F);       // compute the opposite of torque to compensate with the RWs
     m33tMultV3(FB, Torque_F, thrusterTorqueOut.torqueRequestBody);
+
+    configData->alpha = acos(v3Dot(hs_B, bodyHeadingOut.rHat_XB_B) / v3Norm(hs_B));
 
     /* write output message */
     CmdTorqueBodyMsg_C_write(&thrusterTorqueOut, &configData->thrusterTorqueOutMsg, moduleID, callTime);
