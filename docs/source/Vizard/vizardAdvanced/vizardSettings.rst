@@ -1547,8 +1547,25 @@ spacecraft::
 The argument None is used to specify the Vizard default shape to be used.
 
 Similarly, to set the actual or true trajectory color, use the keyword ``trueOrbitColorList`` with the same behavior
-as ``oscOrbitColorList``.
+as ``oscOrbitColorList``.  Note that if the color is set through this variable it remains the same
+throughout the simulation.  By reading in the line color through an input message it is possible
+to change the color of the local true orbit line segment to a new color.  This is useful to denote
+during what parts of the orbit an ion engine is active, or we are in sun pointing mode, etc.  To connect
+a color message of type :ref:`ColorMsgPayload`, you use the argument ``trueOrbitColorInMsgList``
+and provide it the color message.  This could be the output of a BSK module, or a stand alone message.
+Here is sample code using a stand-alone message::
 
+    colorMsgContent = messaging.ColorMsgPayload()
+    colorMsgContent.colorRGBA = vizSupport.toRGBA255("Yellow")
+    colorMsg = messaging.ColorMsg().write(colorMsgContent)
+
+    viz = vizSupport.enableUnityVisualization(scSim, simTaskName, scObject
+                                              , trueOrbitColorInMsgList=colorMsg.addSubscriber()
+                                              , saveFile=__file__
+                                              )
+
+See :ref:`scenarioHelioTransSpice` for an example where the true trajectory line color is
+changed during the simulation.
 
 
 Adding Ellipsoid Objects to a Spacecraft Location
@@ -1651,7 +1668,7 @@ information.  This allows Vizard to show this rigid body as a separate spacecraf
     line drawn. Moreover, each body component will have its own axis shown when ``View/All Spacecraft CS``
     option is selected.
 
-To show these time-varying body components such as :ref:`hingedRigidBodyStateEffector`, :ref:`spinningBodyStateEffector` or :ref:`dualHingedRigidBodyStateEffector` , the BSK modules can be
+To show these time-varying body components such as :ref:`hingedRigidBodyStateEffector`, :ref:`spinningBodyOneDOFStateEffector` or :ref:`dualHingedRigidBodyStateEffector` , the BSK modules can be
 added to the ``enableUnityVisualization`` spacecraft list message.  The parent spacecraft object
 should be listed first, followed by the spacecraft effector objects.  Let ``panel1`` and ``panel2``
 be instances of :ref:`hingedRigidBodyStateEffector` which are attached to spacecraft ``scObject``,
