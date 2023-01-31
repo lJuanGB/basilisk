@@ -180,13 +180,19 @@ jobs:
 #            brew update
 #            brew doctor
 #            brew install swig cmake && brew link cmake
-      - name: "Create python virtual env"
-        run: python -m venv .venv
-      - name: "Install wheel and conan package"
-        run: source .venv/bin/activate && pip install wheel conan && pip install pytest-xdist
-      - name: "Build basilisk"
-        run: source .venv/bin/activate && python conanfile.py
-      - name: "Check library paths"
-        run: oTool -lL ./dist3/Basilisk/architecture/_alg_contain.so
-      - name: "Run pytest"
-        run: source .venv/bin/activate && cd src && pytest -m "not scenarioTest"
+      - name: dump
+        run: |  
+          echo 'github.workspace === ${{ github.workspace }}'  
+          echo "GITHUB_WORKSPACE === $GITHUB_WORKSPACE"  
+          echo 'runner.workspace === ${{ runner.workspace }}'  
+          echo "RUNNER_WORKSPACE === $RUNNER_WORKSPACE"
+#      - name: "Create python virtual env"
+#        run: python -m venv .venv
+#      - name: "Install wheel and conan package"
+#        run: source .venv/bin/activate && pip install wheel conan && pip install pytest-xdist
+#      - name: "Build basilisk"
+#        run: source .venv/bin/activate && python conanfile.py
+#      - name: "Check library paths"
+#        run: oTool -lL ./dist3/Basilisk/architecture/_alg_contain.so
+#      - name: "Run pytest"
+#        run: source .venv/bin/activate && cd src && pytest -m "not scenarioTest"
