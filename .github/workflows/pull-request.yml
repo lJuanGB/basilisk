@@ -180,15 +180,22 @@ jobs:
 #            brew update
 #            brew doctor
 #            brew install swig cmake && brew link cmake
-      - name: "Create python virtual env"
-        run: python -m venv .venv
+#      - name: "Create python virtual env"
+#        run: python -m venv .venv
       - name: "Install wheel and conan package"
-        run: source .venv/bin/activate && pip install wheel conan && pip install pytest-xdist          
-      - name: "Build basilisk"
+        run: pip install wheel conan && pip install pytest-xdist
+      - name: dump
         run: |
-              echo "${{env.Python_ROOT_DIR}}" >> $GITHUB_PATH
-              echo $PATH
-              echo $GITHUB_PATH
-              source .venv/bin/activate && python conanfile.py
-      - name: "Run pytest"
-        run: source .venv/bin/activate && cd src && pytest -n 3 -m "not scenarioTest"
+          echo 'github.workspace === ${{ github.workspace }}'
+          echo "GITHUB_WORKSPACE === $GITHUB_WORKSPACE"
+          echo 'runner.workspace === ${{ runner.workspace }}'
+          echo "RUNNER_WORKSPACE === $RUNNER_WORKSPACE"
+#        run: source .venv/bin/activate && pip install wheel conan && pip install pytest-xdist
+#      - name: "Build basilisk"
+#        run: |
+#              echo "${{env.Python_ROOT_DIR}}" >> $GITHUB_PATH
+#              echo $PATH
+#              echo $GITHUB_PATH
+#              source .venv/bin/activate && python conanfile.py
+#      - name: "Run pytest"
+#        run: source .venv/bin/activate && cd src && pytest -n 3 -m "not scenarioTest"
