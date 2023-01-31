@@ -171,7 +171,7 @@ jobs:
 #          restore-keys: |
 #            ${{ runner.os }}-pip-
       - name: "Install python packages"
-        run: pip install wheel conan pytest-xdist
+        run: pip install wheel conan pytest-xdist pandas numpy matplotlib pytest Pillow conan>=1.40.1 parse>=1.18.0
       - name: "Install swig and cmake"
         run: brew update
       - name: "Install swig and cmake"
