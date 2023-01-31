@@ -185,4 +185,4 @@ jobs:
       - name: "Build basilisk"
         run: python conanfile.py
       - name: "Run pytest"
-        run: cd src && pytest -n 3 -m "not scenarioTest"
+        run: cd src && pytest -m "not scenarioTest"
