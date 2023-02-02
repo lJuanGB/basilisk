@@ -133,7 +133,7 @@ jobs:
 
   build-macos:
     name: Build Macos
-    runs-on: macos-latest
+    runs-on: macos-11
     strategy:
       matrix:
         python-version: ["3.9"]
@@ -185,4 +185,4 @@ jobs:
       - name: "Build basilisk"
         run: python conanfile.py
       - name: "Run pytest"
-        run: cd src && pytest -m "not scenarioTest"
+        run: cd src && pytest -vv -m "not scenarioTest"
