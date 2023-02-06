@@ -43,6 +43,9 @@ Version |release|
   and after of the ``src/cmake/usingOpenCV.cmake`` file.
 - updated :ref:`unitTestSupport` to create the file path in a platform agnostic manner
 - Created a :ref:`sensorThermal` module to model the temperature of a sensor using radiative heat transfer
+- Created a :ref:`prescribedRot2DOF` fsw module to profile a prescribed 2 DOF rotational maneuver for a secondary rigid
+  body connected to the spacecraft hub. To simulate the maneuver, this module must be connected to the
+  :ref:`prescribedMotionStateEffector` dynamics module.
 
 Version 2.1.6 (Jan. 21, 2023)
 -----------------------------
