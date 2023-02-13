@@ -3,6 +3,9 @@ name: "Pull Request Test"
 on:
   pull_request:
 
+env:
+  ACTIONS_STEP_DEBUG: true
+
 jobs:
 #  build-linux:
 #    name: Build Linux
