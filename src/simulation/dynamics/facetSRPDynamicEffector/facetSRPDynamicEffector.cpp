@@ -39,6 +39,10 @@ FacetSRPDynamicEffector::~FacetSRPDynamicEffector()
 */
 void FacetSRPDynamicEffector::Reset(uint64_t CurrentSimNanos)
 {
+    // Check if input message has not been included
+	if (!this->sunInMsg.isLinked()) {
+		bskLogger.bskLog(BSK_ERROR, "FacetSRPDynamicEffector.sunInMsg was not linked.");
+	}
 }
 
 /*! The SRP dynamic effector does not write any output messages.
