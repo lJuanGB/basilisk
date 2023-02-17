@@ -49,6 +49,7 @@ Version |release|
 - Created a :ref:`prescribedMotionStateEffector` dynamics module for appending rigid bodies with prescribed motion
   to the spacecraft hub.
 - Added :ref:`solarArrayReference` to compute the reference angle and angle rate for a rotating solar array.
+- Created a :ref:`facetSRPDynamicEffector` dynamics module to calculate the B frame SRP force and torque acting on a static spacecraft.
 
 Version 2.1.6 (Jan. 21, 2023)
 -----------------------------
