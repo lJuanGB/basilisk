@@ -136,7 +136,7 @@ jobs:
 
   build-macos:
     name: Build Macos
-    runs-on: macos-11
+    runs-on: macos-latest
     strategy:
       matrix:
         python-version: ["3.9"]
