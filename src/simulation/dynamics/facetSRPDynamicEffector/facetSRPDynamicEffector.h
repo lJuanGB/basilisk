@@ -39,7 +39,7 @@ typedef struct {
   std::vector<double> facetDiffCoeffs;                              //!< Vector of facet diffuse reflection optical coefficients
   std::vector<Eigen::Vector3d> facetNormals_B;                      //!< Vector of facet normals expressed in B frame components
   std::vector<Eigen::Vector3d> facetLocationsPntB_B;                //!< [m] Vector of facet locations wrt point B in B frame components
-}SpacecraftGeometryData;
+}FacetedSRPSpacecraftGeometryData;
 
 /*! @brief Faceted Solar Radiation Pressure Dynamic Effector */
 class FacetSRPDynamicEffector: public SysModel, public DynamicEffector
@@ -62,7 +62,7 @@ public:
     BSKLogger bskLogger;                                            //!< BSK Logging
 
 private:
-    SpacecraftGeometryData scGeometry;                              //!< Structure to hold the spacecraft facet data
+    FacetedSRPSpacecraftGeometryData scGeometry;                    //!< Structure to hold the spacecraft facet data
 };
 
 #endif 
