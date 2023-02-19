@@ -22,7 +22,6 @@ from Basilisk.architecture import messaging
 from Basilisk.fswAlgorithms import lambertSolver
 from Basilisk.utilities import SimulationBaseClass
 from Basilisk.utilities import macros
-from Basilisk.utilities import orbitalMotion
 from Basilisk.utilities import unitTestSupport
 
 from IzzoLambert import *
@@ -75,29 +74,47 @@ def lambertSolverTestFunction():
 
     r1vec = [38826.24143253, 52763.58685417, 83.17983272]
     r2vec = [-26100., 0., 0.]
-    time = 7592.319902320611
+    time = 7592.319902320611*10
+    # conv = time/0.86518
     mu = 4370000
-    M_max = 0
+    M = 1
 
     module.solverName = "Gooding"
     module.r1vec = r1vec
     module.r2vec = r2vec
     module.transferTime = time
     module.mu = mu  # Gravitational constant of the asteroid
-    module.M_max = M_max
+    module.M = M
 
-    Izzo = IzzoSolve(np.array(r1vec), np.array(r2vec), time, mu, M_max)
-    Izzo.solve()
-    print(Izzo.x0)
-    print(Izzo.v1)
-    print(Izzo.v2)
+    # setup output message recorder objects
+    # lambertOutMsgRec = module.lambertSolutionOutMsgs[0].recorder()
+    # unitTestSim.AddModelToTask(unitTaskName, lambertOutMsgRec)
 
-    v1 = [-8.35812140e+00, -2.84849745e-01, -4.49055031e-04]
-    v2 = [-0.17159854, -6.56310227, -0.01034649]
+    # Izzo = IzzoSolve(np.array(r1vec), np.array(r2vec), time, mu, M)
+    # Izzo.solve()
+    # print(Izzo.x)
+    # print(Izzo.v1)
+    # print(Izzo.v2)
+
+    # v1 = [-8.35812140e+00, -2.84849745e-01, -4.49055031e-04]
+    # v2 = [-0.17159854, -6.56310227, -0.01034649]
 
     unitTestSim.InitializeSimulation()
     unitTestSim.TotalSim.SingleStepProcesses()
 
+    # pull module data
+    # x = lambertOutMsgRec.x
+    # v1 = lambertOutMsgRec.v1
+    # v2 = lambertOutMsgRec.v2
+    x = module.lambertSolutionOutMsgs[0].read().x
+    v1 = module.lambertSolutionOutMsgs[0].read().v1
+    v2 = module.lambertSolutionOutMsgs[0].read().v2
+    x_2 = module.lambertSolutionOutMsgs[1].read().x
+    v1_2 = module.lambertSolutionOutMsgs[1].read().v1
+    v2_2 = module.lambertSolutionOutMsgs[1].read().v2
+
+    print(x)
+    print(x_2)
 
     if testFailCount == 0:
         print("PASSED: " + module.ModelTag)

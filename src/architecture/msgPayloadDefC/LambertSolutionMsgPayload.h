@@ -1,7 +1,7 @@
 /*
  ISC License
 
- Copyright (c) 2023, Autonomous Vehicle Systems Lab, University of Colorado Boulder
+ Copyright (c) 2023, Autonomous Vehicle Systems Lab, University of Colorado at Boulder
 
  Permission to use, copy, modify, and/or distribute this software for any
  purpose with or without fee is hereby granted, provided that the above
@@ -15,30 +15,18 @@
  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-*/
+ */
 
-%module lambertSolver
-%{
-    #include "lambertSolver.h"
-%}
+#ifndef LAMBERT_SOLUTION_MESSAGE_H
+#define LAMBERT_SOLUTION_MESSAGE_H
 
-%pythoncode %{
-    from Basilisk.architecture.swig_common_model import *
-%}
-%include "std_string.i"
-%include "swig_conly_data.i"
-%include "std_vector.i"
-%include "swig_eigen.i"
 
-%include "sys_model.h"
-%include "lambertSolver.h"
+/*! @brief Structure used to define the output definition for translatoin guidance*/
+typedef struct {
+    double v1[3];        //!< [m/s] velocity solution at t1
+    double v2[3];        //!< [m/s] velocity solution at t2
+    double x;    //!< solution for x
+}LambertSolutionMsgPayload;
 
-%include "architecture/msgPayloadDefC/NavTransMsgPayload.h"
-%include "architecture/msgPayloadDefC/LambertSolutionMsgPayload.h"
-struct NavTransMsg_C;
 
-%pythoncode %{
-import sys
-protectAllClasses(sys.modules[__name__])
-%}
-
+#endif

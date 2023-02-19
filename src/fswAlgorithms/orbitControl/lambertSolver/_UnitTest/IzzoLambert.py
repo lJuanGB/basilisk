@@ -40,6 +40,7 @@ class IzzoSolve():
 
     def solve(self):
         x_list = self.findxy(self.lambd, self.T)
+        self.x = x_list
         gamma = np.sqrt(self.mu * self.s / 2.)
         rho = (np.linalg.norm(self.r1) - np.linalg.norm(self.r2)) / np.linalg.norm(self.c)
         sigma = np.sqrt(1. - rho ** 2)
@@ -95,10 +96,12 @@ class IzzoSolve():
             tmp = ((i * np.pi + np.pi) / (8.0 * T)) ** (2. / 3.)
             x[2*i - 1] = (tmp - 1) / (tmp + 1)
             iters[2*i - 1] = self.householder(T, x[2*i - 1], i, 1e-8, self.max_iter)
+            x[2*i - 1] = self.x0
 
             tmp = ((8.0 * T) / (i * np.pi)) ** (2. / 3.)
             x[2*i] = (tmp - 1) / (tmp + 1)
             iters[2*i] = self.householder(T, x[2*i], i, 1e-8, self.max_iter)
+            x[2*i] = self.x0
         return x
 
     def get_v1(self):
