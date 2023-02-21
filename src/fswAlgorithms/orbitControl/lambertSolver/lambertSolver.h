@@ -79,12 +79,12 @@ private:
     double c;
     double s;
     double x;
-    double x_2;
+    double x_sol2;
     bool noMultiRevSolution;
     Eigen::Vector3d v1vec;
     Eigen::Vector3d v2vec;
-    Eigen::Vector3d v1vec_2;
-    Eigen::Vector3d v2vec_2;
+    Eigen::Vector3d v1vec_sol2;
+    Eigen::Vector3d v2vec_sol2;
     Eigen::Vector3d i_r1;
     Eigen::Vector3d i_t1;
     Eigen::Vector3d i_r2;

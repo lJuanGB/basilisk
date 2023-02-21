@@ -81,9 +81,9 @@ void LambertSolver::UpdateState(uint64_t CurrentSimNanos)
         this->x = NAN;
         this->v1vec = {NAN, NAN, NAN};
         this->v2vec = {NAN, NAN, NAN};
-        this->x_2 = NAN;
-        this->v1vec_2 = {NAN, NAN, NAN};
-        this->v2vec_2 = {NAN, NAN, NAN};
+        this->x_sol2 = NAN;
+        this->v1vec_sol2 = {NAN, NAN, NAN};
+        this->v2vec_sol2 = {NAN, NAN, NAN};
         
         return;
     }
@@ -92,25 +92,25 @@ void LambertSolver::UpdateState(uint64_t CurrentSimNanos)
     this->v1vec = vvecs.col(0);
     this->v2vec = vvecs.col(1);
     if (M > 0){
-        Eigen::MatrixXd vvecs_2 = this->computeVelocities(this->x_2);
-        this->v1vec_2 = vvecs_2.col(0);
-        this->v2vec_2 = vvecs_2.col(1);
+        Eigen::MatrixXd vvecs_sol2 = this->computeVelocities(this->x_sol2);
+        this->v1vec_sol2 = vvecs_sol2.col(0);
+        this->v2vec_sol2 = vvecs_sol2.col(1);
     }
     else{
-        this->x_2 = NAN;
-        this->v1vec_2 = {NAN, NAN, NAN};
-        this->v2vec_2 = {NAN, NAN, NAN};
+        this->x_sol2 = NAN;
+        this->v1vec_sol2 = {NAN, NAN, NAN};
+        this->v2vec_sol2 = {NAN, NAN, NAN};
     }
     
     this->writeMessages(CurrentSimNanos);
     
     std::cout << std::endl;
-    std::cout << "x: " << this->x << ", " << this->x_2 << std::endl;
+    std::cout << "x: " << this->x << ", " << this->x_sol2 << std::endl;
     std::cout << "v1: " << this->v1vec[0] << ", " << this->v1vec[1] << ", " << this->v1vec[2] << std::endl;
     std::cout << "v2: " << this->v2vec[0] << ", " << this->v2vec[1] << ", " << this->v2vec[2] << std::endl;
-    std::cout << "v1_2: " << this->v1vec_2[0] << ", " << this->v1vec_2[1] << ", " << this->v1vec_2[2] << std::endl;
+    std::cout << "v1_2: " << this->v1vec_sol2[0] << ", " << this->v1vec_sol2[1] << ", " << this->v1vec_sol2[2] << std::endl;
     
-    std::cout << "v2_2: " << this->v2vec_2[0] << ", " << this->v2vec_2[1] << ", " << this->v2vec_2[2] << std::endl;
+    std::cout << "v2_2: " << this->v2vec_sol2[0] << ", " << this->v2vec_sol2[1] << ", " << this->v2vec_sol2[2] << std::endl;
     
 }
 
@@ -140,9 +140,9 @@ void LambertSolver::writeMessages(uint64_t CurrentSimNanos){
     LambertSolutionMsgPayload lambertSolutionOutMsgBuffer2;
     
     lambertSolutionOutMsgBuffer2 = this->lambertSolutionOutMsgs.at(1)->zeroMsgPayload;
-    eigenVector3d2CArray(this->v1vec_2, lambertSolutionOutMsgBuffer2.v1);
-    eigenVector3d2CArray(this->v2vec_2, lambertSolutionOutMsgBuffer2.v2);
-    lambertSolutionOutMsgBuffer2.x = this->x_2;
+    eigenVector3d2CArray(this->v1vec_sol2, lambertSolutionOutMsgBuffer2.v1);
+    eigenVector3d2CArray(this->v2vec_sol2, lambertSolutionOutMsgBuffer2.v2);
+    lambertSolutionOutMsgBuffer2.x = this->x_sol2;
     
     // Write to the output message
     this->lambertSolutionOutMsgs.at(1)->write(&lambertSolutionOutMsgBuffer2, this->moduleID, CurrentSimNanos);
@@ -198,14 +198,14 @@ void LambertSolver::findx()
         // for Gooding algorithm use halley root finder
         this->x = halley(this->T, x0[0], this->M, 1e-5, 12);
         if (this->M > 0){
-            this->x_2 = halley(this->T, x0[1], this->M, 1e-5, 12);
+            this->x_sol2 = halley(this->T, x0[1], this->M, 1e-5, 12);
         }
     }
     else if (this->solverName == "Izzo"){
         // for Izzo algorithm use 3rd order householder root finder
         this->x = householder(this->T, x0[0], this->M, 1e-5, 12);
         if (this->M > 0){
-            this->x_2 = householder(this->T, x0[1], this->M, 1e-5, 12);
+            this->x_sol2 = householder(this->T, x0[1], this->M, 1e-5, 12);
         }
     }
 }
