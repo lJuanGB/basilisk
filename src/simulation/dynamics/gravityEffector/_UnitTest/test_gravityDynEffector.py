@@ -145,7 +145,6 @@ def computeGravityTo20(positionVector):
 # @pytest.mark.xfail() # need to update how the RW states are defined
 # provide a unique test method name, starting with test_
 @pytest.mark.skip(reason="debugging this test's failure on mac os github CI")
-
 def test_gravityEffectorAllTest(show_plots):
     """Module Unit Test"""
     [testResults, testMessage] = independentSphericalHarmonics(show_plots)
