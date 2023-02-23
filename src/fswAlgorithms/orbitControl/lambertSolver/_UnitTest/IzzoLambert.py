@@ -23,7 +23,7 @@ class IzzoSolve():
         self.s = 0.5*(R1 + R2 + c_norm)
         self.r1_hat = self.r1/R1
         self.r2_hat = self.r2/R2
-        h_hat = np.cross(self.r1_hat, self.r2_hat)
+        h_hat = np.cross(self.r1_hat, self.r2_hat)/np.linalg.norm(np.cross(self.r1_hat, self.r2_hat))
         assert h_hat[2]!= 0 , print("r1 and r2 don't define a plane")
 
         self.lambda2 = 1. - c_norm / self.s

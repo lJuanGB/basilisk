@@ -18,26 +18,34 @@
 # 
 
 import numpy as np
+import pytest
 from Basilisk.architecture import messaging
 from Basilisk.fswAlgorithms import lambertSolver
 from Basilisk.utilities import SimulationBaseClass
 from Basilisk.utilities import macros
+from Basilisk.utilities import orbitalMotion
 from Basilisk.utilities import unitTestSupport
 
 from IzzoLambert import *
 
-# @pytest.mark.parametrize("accuracy", [1e-12])
-# @pytest.mark.parametrize("param1, param2", [
-#      (1, 1)
-#     ,(1, 3)
-# ])
+solver = ["Gooding", "Izzo"]
+revs = [0, 1, 4]
+times = [10000, 3500e3]
+eccentricities = [0.00001, 0.05, 1.0, 1.2]
+transferAngle = [30., 90., 210.]
 
-def test_lambertSolver(show_plots):
+
+@pytest.mark.parametrize("accuracy", [1e-2])
+@pytest.mark.parametrize("p1_solver, p2_revs, p3_times, p4_eccs, p5_angles", [
+    (solver[0], revs[0], times[0], eccentricities[0], transferAngle[0]),
+    (solver[1], revs[0], times[0], eccentricities[0], transferAngle[0]),
+])
+
+def test_lambertSolver(show_plots, p1_solver, p2_revs, p3_times, p4_eccs, p5_angles, accuracy):
     r"""
     **Validation Test Description**
 
-    This test checks two things: a large force output when the spacecraft is far from the waypoint, and a small force
-    output when the spacecraft is at the waypoint.
+    This test checks if the Lambert solver module works correctly for different Lambert solver algorithms, number of revolutions, times of flight,
 
     **Test Parameters**
 
@@ -46,15 +54,13 @@ def test_lambertSolver(show_plots):
 
     **Description of Variables Being Tested**
 
-    In this test, the ``forceRequestBody`` variable in the :ref:`CmdForceBodyMsgPayload` output by the module is tested.
-    When far away from the waypoint, the force request should be larger than 1 N. When close to the waypoint, the force
-    request should only account for third body perturbations and SRP.
+    The computed velocity vectors at position 1 and position 2 are compared to the solution of a Python script that uses Izzo's algorithm to solve Lambert's problem.
     """
-    [testResults, testMessages] = lambertSolverTestFunction()
+    [testResults, testMessages] = lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs, p5_angles, accuracy)
     assert testResults < 1, testMessages
 
 
-def lambertSolverTestFunction():
+def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs, p5_angles, accuracy):
     """This test checks for a large force return when far away from the waypoint"""
     testFailCount = 0
     testMessages = []
@@ -72,49 +78,134 @@ def lambertSolverTestFunction():
     module.ModelTag = "lambertSolver"
     unitTestSim.AddModelToTask(unitTaskName, module)
 
-    r1vec = [38826.24143253, 52763.58685417, 83.17983272]
-    r2vec = [-26100., 0., 0.]
-    time = 7592.319902320611*10
-    # conv = time/0.86518
-    mu = 4370000
-    M = 1
+    # solverName = "Izzo"
+    # r1vec = [38826.24143253, 52763.58685417, 83.17983272]
+    # r2vec = [-26100., 0., 0.]
+    # time = 7592.319902320611*10
+    # mu = 4370000.
+    # M = 2
 
-    module.solverName = "Gooding"
-    module.r1vec = r1vec
-    module.r2vec = r2vec
-    module.transferTime = time
-    module.mu = mu  # Gravitational constant of the asteroid
-    module.M = M
+    # set up the transfer orbit using classical orbit elements
+    mu = 3.986004418e14
+    oe1 = orbitalMotion.ClassicElements()
+    radius = 10000. * 1000      # meters
+    oe1.a = radius
+    oe1.e = p4_eccs
+    oe1.i = 0.0 * macros.D2R
+    oe1.Omega = 30. * macros.D2R
+    oe1.omega = 25. * macros.D2R
+    oe1.f = 10. * macros.D2R
+    r1_N, v1_N = orbitalMotion.elem2rv(mu, oe1)
+
+    oe2 = oe1
+    oe2.f = oe1.f + p5_angles * macros.D2R
+    r2_N, v2_N = orbitalMotion.elem2rv(mu, oe2)
+
+    solverName = p1_solver
+    time = p3_times
+    r1vec = r1_N
+    r2vec = r2_N
+    M = p2_revs
+
+    # Configure input messages
+    lambertProblemInMsgData = messaging.LambertProblemMsgPayload()
+    lambertProblemInMsgData.solverName = solverName
+    lambertProblemInMsgData.r1vec = r1vec
+    lambertProblemInMsgData.r2vec = r2vec
+    lambertProblemInMsgData.transferTime = time
+    lambertProblemInMsgData.mu = mu
+    lambertProblemInMsgData.numRevolutions = M
+    lambertProblemInMsg = messaging.LambertProblemMsg().write(lambertProblemInMsgData)
+
+    # subscribe input messages to module
+    module.lambertProblemInMsg.subscribeTo(lambertProblemInMsg)
 
     # setup output message recorder objects
-    # lambertOutMsgRec = module.lambertSolutionOutMsgs[0].recorder()
-    # unitTestSim.AddModelToTask(unitTaskName, lambertOutMsgRec)
+    lambertSolutionOutMsgRec = module.lambertSolutionOutMsg.recorder()
+    unitTestSim.AddModelToTask(unitTaskName, lambertSolutionOutMsgRec)
+    lambertPerformanceOutMsgRec = module.lambertPerformanceOutMsg.recorder()
+    unitTestSim.AddModelToTask(unitTaskName, lambertPerformanceOutMsgRec)
 
-    # Izzo = IzzoSolve(np.array(r1vec), np.array(r2vec), time, mu, M)
-    # Izzo.solve()
-    # print(Izzo.x)
-    # print(Izzo.v1)
-    # print(Izzo.v2)
+    Izzo = IzzoSolve(np.array(r1vec), np.array(r2vec), time, mu, M)
+    Izzo.solve()
 
-    # v1 = [-8.35812140e+00, -2.84849745e-01, -4.49055031e-04]
-    # v2 = [-0.17159854, -6.56310227, -0.01034649]
+    idx = 2*M - 1
+    idx_sol2 = idx + 1
+
+    if M == 0:
+        xTrue = Izzo.x[0]
+        v1True = Izzo.v1[0]
+        v2True = Izzo.v2[0]
+        xTrue_sol2 = 0.
+        v1True_sol2 = np.array([0., 0., 0.])
+        v2True_sol2 = np.array([0., 0., 0.])
+    elif idx > len(Izzo.x):
+        xTrue = 0.
+        v1True = np.array([0., 0., 0.])
+        v2True = np.array([0., 0., 0.])
+        xTrue_sol2 = 0.
+        v1True_sol2 = np.array([0., 0., 0.])
+        v2True_sol2 = np.array([0., 0., 0.])
+    else:
+        xTrue = Izzo.x[idx]
+        v1True = Izzo.v1[idx]
+        v2True = Izzo.v2[idx]
+        xTrue_sol2 = Izzo.x[idx_sol2]
+        v1True_sol2 = Izzo.v1[idx_sol2]
+        v2True_sol2 = Izzo.v2[idx_sol2]
+
+    print(xTrue)
+    print(v1True)
+    print(v2True)
+    print(xTrue_sol2)
+    print(v1True_sol2)
+    print(v2True_sol2)
 
     unitTestSim.InitializeSimulation()
     unitTestSim.TotalSim.SingleStepProcesses()
 
     # pull module data
-    # x = lambertOutMsgRec.x
-    # v1 = lambertOutMsgRec.v1
-    # v2 = lambertOutMsgRec.v2
-    x = module.lambertSolutionOutMsgs[0].read().x
-    v1 = module.lambertSolutionOutMsgs[0].read().v1
-    v2 = module.lambertSolutionOutMsgs[0].read().v2
-    x_2 = module.lambertSolutionOutMsgs[1].read().x
-    v1_2 = module.lambertSolutionOutMsgs[1].read().v1
-    v2_2 = module.lambertSolutionOutMsgs[1].read().v2
+    v1 = lambertSolutionOutMsgRec.v1[0]
+    v2 = lambertSolutionOutMsgRec.v2[0]
+    valid = lambertSolutionOutMsgRec.valid[0]
+    v1_sol2 = lambertSolutionOutMsgRec.v1_sol2[0]
+    v2_sol2 = lambertSolutionOutMsgRec.v2_sol2[0]
+    valid_sol2 = lambertSolutionOutMsgRec.valid_sol2[0]
+
+    x = lambertPerformanceOutMsgRec.x[0]
+    numIter = lambertPerformanceOutMsgRec.numIter[0]
+    err_x = lambertPerformanceOutMsgRec.err_x[0]
+    x_sol2 = lambertPerformanceOutMsgRec.x_sol2[0]
+    numIter_sol2 = lambertPerformanceOutMsgRec.numIter_sol2[0]
+    err_x_sol2 = lambertPerformanceOutMsgRec.err_x_sol2[0]
 
     print(x)
-    print(x_2)
+    print(numIter)
+    print(err_x)
+    print(v1)
+    print(v2)
+    print(valid)
+    print(x_sol2)
+    print(numIter_sol2)
+    print(err_x_sol2)
+    print(v1_sol2)
+    print(v2_sol2)
+    print(valid_sol2)
+
+    # make sure module output data is correct
+    ParamsString = ' for solver=' + p1_solver + ', rev=' + str(p2_revs) + ', time=' + str(p3_times) + ', eccentricity=' + str(p4_eccs) + ', angle=' + str(p5_angles) + ', accuracy=' + str(accuracy)
+    testFailCount, testMessages = unitTestSupport.compareDoubleArray(
+        v1True, v1, accuracy, ('v1' + ParamsString),
+        testFailCount, testMessages)
+    testFailCount, testMessages = unitTestSupport.compareDoubleArray(
+        v2True, v2, accuracy, ('v2' + ParamsString),
+        testFailCount, testMessages)
+    testFailCount, testMessages = unitTestSupport.compareDoubleArray(
+        v1True_sol2, v1_sol2, accuracy, ('v1_sol2' + ParamsString),
+        testFailCount, testMessages)
+    testFailCount, testMessages = unitTestSupport.compareDoubleArray(
+        v2True_sol2, v2_sol2, accuracy, ('v2_sol2' + ParamsString),
+        testFailCount, testMessages)
 
     if testFailCount == 0:
         print("PASSED: " + module.ModelTag)
@@ -125,6 +216,6 @@ def lambertSolverTestFunction():
 
 
 if __name__ == "__main__":
-    test_lambertSolver(False)
+    test_lambertSolver(False, solver[1], revs[0], times[0], eccentricities[0], transferAngle[0], 1e-2)
 
 
