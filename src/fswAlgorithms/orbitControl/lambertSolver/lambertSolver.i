@@ -33,9 +33,12 @@
 %include "sys_model.h"
 %include "lambertSolver.h"
 
-%include "architecture/msgPayloadDefC/NavTransMsgPayload.h"
+%include "architecture/msgPayloadDefC/LambertProblemMsgPayload.h"
+struct LambertProblemMsg_C;
 %include "architecture/msgPayloadDefC/LambertSolutionMsgPayload.h"
-struct NavTransMsg_C;
+struct LambertSolutionMsg_C;
+%include "architecture/msgPayloadDefC/LambertPerformanceMsgPayload.h"
+struct LambertPerformanceMsg_C;
 
 %pythoncode %{
 import sys

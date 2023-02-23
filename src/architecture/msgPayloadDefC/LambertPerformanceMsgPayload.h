@@ -17,19 +17,19 @@
 
  */
 
-#ifndef LAMBERT_SOLUTION_MESSAGE_H
-#define LAMBERT_SOLUTION_MESSAGE_H
+#ifndef LAMBERT_PERFORMANCE_MESSAGE_H
+#define LAMBERT_PERFORMANCE_MESSAGE_H
 
 
-/*! @brief Structure used to define the output of the Lambert problem solution */
+/*! @brief Structure used to define extra output of the Lambert problem solution */
 typedef struct {
-    double v1[3];            //!< [m/s] velocity solution at t1
-    double v2[3];            //!< [m/s] velocity solution at t2
-    int valid;              //!< [-] valid solution if 1, not if 0
-    double v1_sol2[3];       //!< [m/s] second velocity solution at t1 (for multi-revolution solutions)
-    double v2_sol2[3];       //!< [m/s] second velocity solution at t2 (for multi-revolution solutions)
-    int valid_sol2;         //!< [-] valid second solution if 1, not if 0
-}LambertSolutionMsgPayload;
+    double x;            //!< [-] solution for free variable (iteration variable)
+    int numIter;         //!< [-] number of root-finder iterations to find x
+    double err_x;        //!< [-] difference in x between last and second-to-last iteration
+    double x_sol2;       //!< [-] second solution for free variable (iteration variable)
+    int numIter_sol2;    //!< [-] number of root-finder iterations to find x_sol2
+    double err_x_sol2;   //!< [-] difference in x_sol2 between last and second-to-last iteration
+}LambertPerformanceMsgPayload;
 
 
 #endif

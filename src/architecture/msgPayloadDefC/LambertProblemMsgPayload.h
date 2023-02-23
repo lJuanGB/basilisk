@@ -17,19 +17,20 @@
 
  */
 
-#ifndef LAMBERT_SOLUTION_MESSAGE_H
-#define LAMBERT_SOLUTION_MESSAGE_H
+#ifndef LAMBERT_PROBLEM_MESSAGE_H
+#define LAMBERT_PROBLEM_MESSAGE_H
 
+#define MAX_STRING_LENGTH 256
 
-/*! @brief Structure used to define the output of the Lambert problem solution */
+/*! @brief Structure used to define the input for Lambert problem */
 typedef struct {
-    double v1[3];            //!< [m/s] velocity solution at t1
-    double v2[3];            //!< [m/s] velocity solution at t2
-    int valid;              //!< [-] valid solution if 1, not if 0
-    double v1_sol2[3];       //!< [m/s] second velocity solution at t1 (for multi-revolution solutions)
-    double v2_sol2[3];       //!< [m/s] second velocity solution at t2 (for multi-revolution solutions)
-    int valid_sol2;         //!< [-] valid second solution if 1, not if 0
-}LambertSolutionMsgPayload;
+    char solverName[MAX_STRING_LENGTH]; //!< [-] name of lambert algorithm
+    double r1vec[3];                    //!< [m] position vector at t0
+    double r2vec[3];                    //!< [m] position vector at t1
+    double transferTime;                //!< [s] time of flight between r1vec and r2vec (t1-t0)
+    double mu;                          //!< [m^3 s^-2] gravitational parameter of body
+    int numRevolutions;                 //!< [-] number of revolutions to be completed (completed orbits)
+}LambertProblemMsgPayload;
 
 
 #endif
