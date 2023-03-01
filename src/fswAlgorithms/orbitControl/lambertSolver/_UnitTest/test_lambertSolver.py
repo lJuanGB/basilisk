@@ -15,9 +15,11 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # 
-# 
+#
+import copy
 
 import numpy as np
+import itertools
 import pytest
 from Basilisk.architecture import messaging
 from Basilisk.fswAlgorithms import lambertSolver
@@ -28,33 +30,41 @@ from Basilisk.utilities import unitTestSupport
 
 from IzzoLambert import *
 
+# parameters
 solver = ["Gooding", "Izzo"]
 revs = [0, 1, 4]
-times = [10000, 3500e3]
-eccentricities = [0.00001, 0.05, 1.0, 1.2]
-transferAngle = [30., 90., 210.]
+times = [1e2, 1e6]
+eccentricities = [0.0, 0.05, 1.0, 1.2]
+transferAngle = [30., 90., 210., -60.]
 
+paramArray = [solver, revs, times, eccentricities, transferAngle]
+# create list with all combinations of parameters
+paramList = list(itertools.product(*paramArray))
+# transfer angles >= 180 or < 0 not applicable for parabolic and hyperbolic transfer. Delete from list.
+paramList = [item for item in paramList if not (item[3] >= 1.0 and (item[4] >= 180. or item[4] < 0.))]
 
 @pytest.mark.parametrize("accuracy", [1e-2])
-@pytest.mark.parametrize("p1_solver, p2_revs, p3_times, p4_eccs, p5_angles", [
-    (solver[0], revs[0], times[0], eccentricities[0], transferAngle[0]),
-    (solver[1], revs[0], times[0], eccentricities[0], transferAngle[0]),
-])
+@pytest.mark.parametrize("p1_solver, p2_revs, p3_times, p4_eccs, p5_angles", paramList)
 
 def test_lambertSolver(show_plots, p1_solver, p2_revs, p3_times, p4_eccs, p5_angles, accuracy):
     r"""
     **Validation Test Description**
 
-    This test checks if the Lambert solver module works correctly for different Lambert solver algorithms, number of revolutions, times of flight,
+    This test checks if the Lambert solver module works correctly for different Lambert solver algorithms, number of revolutions, time of flight, transfer orbit eccentricities, and transfer angles.
 
     **Test Parameters**
 
     Args:
-        :param show_plots: flag if plots should be shown.
+        :param show_plots: flag if plots should be shown
+        :param p1_solver: Lambert solver algorithm
+        :param p2_revs: number of revolutions to be completed
+        :param p3_times: time-of-flight (transfer time)
+        :param p4_eccs: eccentricity of transfer orbit
+        :param p5_angles: transfer angle
 
     **Description of Variables Being Tested**
 
-    The computed velocity vectors at position 1 and position 2 are compared to the solution of a Python script that uses Izzo's algorithm to solve Lambert's problem.
+    The computed velocity vectors at position 1 and position 2 are compared to the true velocity vectors. For the zero-revolution case, the eccentricity and transfer angle parameters are used to determine the time-of-flight input for the Lambert solver, and the corresponding orbit elements are used to determine the true velocity vectors for the given position vectors. For the multi-revolution case, the time-of-flight parameter is used as the input for the Lambert solver, and the true velocity vectors are computed using an external Python script that uses Izzo's algorithm to solve Lambert's problem.
     """
     [testResults, testMessages] = lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs, p5_angles, accuracy)
     assert testResults < 1, testMessages
@@ -78,34 +88,60 @@ def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs,
     module.ModelTag = "lambertSolver"
     unitTestSim.AddModelToTask(unitTaskName, module)
 
-    # solverName = "Izzo"
-    # r1vec = [38826.24143253, 52763.58685417, 83.17983272]
-    # r2vec = [-26100., 0., 0.]
-    # time = 7592.319902320611*10
-    # mu = 4370000.
-    # M = 2
-
     # set up the transfer orbit using classical orbit elements
     mu = 3.986004418e14
     oe1 = orbitalMotion.ClassicElements()
-    radius = 10000. * 1000      # meters
-    oe1.a = radius
+    r = 10000. * 1000  # meters
+    if p4_eccs < 1.0:
+        # elliptic case
+        oe1.a = r
+    else:
+        # parabolic and hyperbolic case
+        oe1.a = -r
     oe1.e = p4_eccs
-    oe1.i = 0.0 * macros.D2R
-    oe1.Omega = 30. * macros.D2R
-    oe1.omega = 25. * macros.D2R
-    oe1.f = 10. * macros.D2R
-    r1_N, v1_N = orbitalMotion.elem2rv(mu, oe1)
+    oe1.i = 5. * macros.D2R
+    oe1.Omega = 25. * macros.D2R
+    oe1.omega = 30. * macros.D2R
+    oe1.f = -10. * macros.D2R
+    r1_N, v1_N = orbitalMotion.elem2rv_parab(mu, oe1)
 
-    oe2 = oe1
+    oe2 = copy.deepcopy(oe1)
     oe2.f = oe1.f + p5_angles * macros.D2R
-    r2_N, v2_N = orbitalMotion.elem2rv(mu, oe2)
+    r2_N, v2_N = orbitalMotion.elem2rv_parab(mu, oe2)
+
+    # determine time-of-flight for given transfer orbit and position vectors (true anomalies)
+    if p2_revs > 0:
+        # for multi-revolution case use time-of-flight from parameterization
+        t_transfer = p3_times
+    elif p4_eccs < 1.0:
+        # elliptic case
+        M1 = orbitalMotion.E2M(orbitalMotion.f2E(oe1.f, p4_eccs), p4_eccs)
+        M2 = orbitalMotion.E2M(orbitalMotion.f2E(oe2.f, p4_eccs), p4_eccs)
+        # Izzo and Gooding Lambert algorithms only consider positive transfer angles. Convert to 0 < angle < 2pi
+        if p5_angles < 0.:
+            M2 = 2*np.pi + M2
+        n = np.sqrt(mu/(oe1.a)**3)
+        t_transfer = np.abs(M2-M1)/n
+    elif p4_eccs == 1.0:
+        # parabolic case
+        D1 = np.tan(oe1.f/2)
+        D2 = np.tan(oe2.f/2)
+        M1 = D1 + 1/3*D1**3
+        M2 = D2 + 1/3*D2**3
+        n = np.sqrt(mu/(2*(-oe1.a)**3))
+        t_transfer = np.abs(M2-M1)/n
+    else:
+        # hyperbolic case
+        N1 = orbitalMotion.H2N(orbitalMotion.f2H(oe1.f, p4_eccs), p4_eccs)
+        N2 = orbitalMotion.H2N(orbitalMotion.f2H(oe2.f, p4_eccs), p4_eccs)
+        n = np.sqrt(mu/(-oe1.a)**3)
+        t_transfer = np.abs(N2-N1)/n
 
     solverName = p1_solver
-    time = p3_times
+    time = t_transfer
     r1vec = r1_N
     r2vec = r2_N
-    M = p2_revs
+    revs = p2_revs
 
     # Configure input messages
     lambertProblemInMsgData = messaging.LambertProblemMsgPayload()
@@ -114,7 +150,7 @@ def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs,
     lambertProblemInMsgData.r2vec = r2vec
     lambertProblemInMsgData.transferTime = time
     lambertProblemInMsgData.mu = mu
-    lambertProblemInMsgData.numRevolutions = M
+    lambertProblemInMsgData.numRevolutions = revs
     lambertProblemInMsg = messaging.LambertProblemMsg().write(lambertProblemInMsgData)
 
     # subscribe input messages to module
@@ -126,40 +162,38 @@ def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs,
     lambertPerformanceOutMsgRec = module.lambertPerformanceOutMsg.recorder()
     unitTestSim.AddModelToTask(unitTaskName, lambertPerformanceOutMsgRec)
 
-    Izzo = IzzoSolve(np.array(r1vec), np.array(r2vec), time, mu, M)
-    Izzo.solve()
+    # for multi-revolution case, use external Lambert solver
+    if revs != 0:
+        Izzo = IzzoSolve(np.array(r1vec), np.array(r2vec), time, mu, revs)
+        Izzo.solve()
 
-    idx = 2*M - 1
+    idx = 2 * revs - 1
     idx_sol2 = idx + 1
 
-    if M == 0:
-        xTrue = Izzo.x[0]
-        v1True = Izzo.v1[0]
-        v2True = Izzo.v2[0]
-        xTrue_sol2 = 0.
+    if revs == 0:
+        # for zero-revolution case, obtain true velocity vectors from computed transfer orbit
+        v1True = v1_N
+        v2True = v2_N
+        validFlagTrue = 1
         v1True_sol2 = np.array([0., 0., 0.])
         v2True_sol2 = np.array([0., 0., 0.])
-    elif idx > len(Izzo.x):
-        xTrue = 0.
+        validFlagTrue_sol2 = 0
+    elif idx+1 > len(Izzo.x):
+        # external Lambert solver does not compute solution if requested transfer time is less than minimum time-of-flight for multi-revolution solution. In this case set all true outputs to zero (so does the lambert module as well, since no solution exists for the requested time-of-flight)
         v1True = np.array([0., 0., 0.])
         v2True = np.array([0., 0., 0.])
-        xTrue_sol2 = 0.
+        validFlagTrue = 0
         v1True_sol2 = np.array([0., 0., 0.])
         v2True_sol2 = np.array([0., 0., 0.])
+        validFlagTrue_sol2 = 0
     else:
-        xTrue = Izzo.x[idx]
+        # for multi-revolution case, obtain true velocity vectors from external Lambert solver script if solution exist
         v1True = Izzo.v1[idx]
         v2True = Izzo.v2[idx]
-        xTrue_sol2 = Izzo.x[idx_sol2]
+        validFlagTrue = 1
         v1True_sol2 = Izzo.v1[idx_sol2]
         v2True_sol2 = Izzo.v2[idx_sol2]
-
-    print(xTrue)
-    print(v1True)
-    print(v2True)
-    print(xTrue_sol2)
-    print(v1True_sol2)
-    print(v2True_sol2)
+        validFlagTrue_sol2 = 1
 
     unitTestSim.InitializeSimulation()
     unitTestSim.TotalSim.SingleStepProcesses()
@@ -167,44 +201,30 @@ def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs,
     # pull module data
     v1 = lambertSolutionOutMsgRec.v1[0]
     v2 = lambertSolutionOutMsgRec.v2[0]
-    valid = lambertSolutionOutMsgRec.valid[0]
+    validFlag = lambertSolutionOutMsgRec.valid[0]
     v1_sol2 = lambertSolutionOutMsgRec.v1_sol2[0]
     v2_sol2 = lambertSolutionOutMsgRec.v2_sol2[0]
-    valid_sol2 = lambertSolutionOutMsgRec.valid_sol2[0]
-
-    x = lambertPerformanceOutMsgRec.x[0]
-    numIter = lambertPerformanceOutMsgRec.numIter[0]
-    err_x = lambertPerformanceOutMsgRec.err_x[0]
-    x_sol2 = lambertPerformanceOutMsgRec.x_sol2[0]
-    numIter_sol2 = lambertPerformanceOutMsgRec.numIter_sol2[0]
-    err_x_sol2 = lambertPerformanceOutMsgRec.err_x_sol2[0]
-
-    print(x)
-    print(numIter)
-    print(err_x)
-    print(v1)
-    print(v2)
-    print(valid)
-    print(x_sol2)
-    print(numIter_sol2)
-    print(err_x_sol2)
-    print(v1_sol2)
-    print(v2_sol2)
-    print(valid_sol2)
+    validFlag_sol2 = lambertSolutionOutMsgRec.valid_sol2[0]
 
     # make sure module output data is correct
     ParamsString = ' for solver=' + p1_solver + ', rev=' + str(p2_revs) + ', time=' + str(p3_times) + ', eccentricity=' + str(p4_eccs) + ', angle=' + str(p5_angles) + ', accuracy=' + str(accuracy)
     testFailCount, testMessages = unitTestSupport.compareDoubleArray(
-        v1True, v1, accuracy, ('v1' + ParamsString),
+        v1True, v1, accuracy, ('Variable: v1,' + ParamsString),
         testFailCount, testMessages)
     testFailCount, testMessages = unitTestSupport.compareDoubleArray(
-        v2True, v2, accuracy, ('v2' + ParamsString),
+        v2True, v2, accuracy, ('Variable: v2,' + ParamsString),
         testFailCount, testMessages)
     testFailCount, testMessages = unitTestSupport.compareDoubleArray(
-        v1True_sol2, v1_sol2, accuracy, ('v1_sol2' + ParamsString),
+        np.array([validFlagTrue]), np.array([validFlag]), accuracy, ('Variable: validFlag,' + ParamsString),
         testFailCount, testMessages)
     testFailCount, testMessages = unitTestSupport.compareDoubleArray(
-        v2True_sol2, v2_sol2, accuracy, ('v2_sol2' + ParamsString),
+        v1True_sol2, v1_sol2, accuracy, ('Variable: v1_sol2,' + ParamsString),
+        testFailCount, testMessages)
+    testFailCount, testMessages = unitTestSupport.compareDoubleArray(
+        v2True_sol2, v2_sol2, accuracy, ('Variable: v2_sol2,' + ParamsString),
+        testFailCount, testMessages)
+    testFailCount, testMessages = unitTestSupport.compareDoubleArray(
+        np.array([validFlagTrue_sol2]), np.array([validFlag_sol2]), accuracy, ('Variable: validFlag_sol2,' + ParamsString),
         testFailCount, testMessages)
 
     if testFailCount == 0:
@@ -216,6 +236,6 @@ def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs,
 
 
 if __name__ == "__main__":
-    test_lambertSolver(False, solver[1], revs[0], times[0], eccentricities[0], transferAngle[0], 1e-2)
+    test_lambertSolver(False, solver[0], revs[1], times[1], eccentricities[3], transferAngle[1], 1e-2)
 
 
