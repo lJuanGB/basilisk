@@ -76,6 +76,7 @@ private:
     double err_x{};
     double err_x_sol2{};
     bool multiRevSolution{};
+    bool noSolution{};
     std::vector<Eigen::Vector3d> vvecs;
     std::vector<Eigen::Vector3d> vvecs_sol2;
     std::vector<Eigen::Vector3d> O_frame1;

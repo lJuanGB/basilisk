@@ -108,7 +108,13 @@ void LambertSolver::writeMessages(uint64_t CurrentSimNanos){
     lambertSolutionOutMsgBuffer = this->lambertSolutionOutMsg.zeroMsgPayload;
     lambertPerformanceOutMsgBuffer = this->lambertPerformanceOutMsg.zeroMsgPayload;
 
-    if (this->M == 0){
+    if (this->noSolution || (this->M > 0 && !this->multiRevSolution)){
+        // 1. if the transfer angle is 180 degrees, the two position vectors do not define a plane, so an infinite number of solutions exist. In this case, the module should not return any solutions.
+        // 2. transfer time is too short for multi-revolution solution, zero solutions exist. Neither solution is valid
+        lambertSolutionOutMsgBuffer.valid = 0;
+        lambertSolutionOutMsgBuffer.valid_sol2 = 0;
+    }
+    else if (this->M == 0){
         // if zero orbits are completed, only one solution exists. Only populate information for 1st solution, 2nd solution remains zero message payload
 
         eigenVector3d2CArray(this->vvecs.at(0), lambertSolutionOutMsgBuffer.v1);
@@ -119,8 +125,8 @@ void LambertSolver::writeMessages(uint64_t CurrentSimNanos){
         lambertPerformanceOutMsgBuffer.numIter = this->numIter;
         lambertPerformanceOutMsgBuffer.err_x = this->err_x;
     }
-    else if(this->multiRevSolution){
-        // of one or more orbits are completed, two solutions exist (or 0 solutions if the transfer time is too short)
+    else{
+        // if one or more orbits are completed, and the requested time of flight is long enough, two solutions exist
 
         eigenVector3d2CArray(this->vvecs.at(0), lambertSolutionOutMsgBuffer.v1);
         eigenVector3d2CArray(this->vvecs.at(1), lambertSolutionOutMsgBuffer.v2);
@@ -135,11 +141,6 @@ void LambertSolver::writeMessages(uint64_t CurrentSimNanos){
         lambertPerformanceOutMsgBuffer.x_sol2 = this->X_sol2;
         lambertPerformanceOutMsgBuffer.numIter_sol2 = this->numIter_sol2;
         lambertPerformanceOutMsgBuffer.err_x_sol2 = this->err_x_sol2;
-    }
-    else{
-        // transfer time is too short for multi-revolution solution, zero solutions exist. Neither solution is valid
-        lambertSolutionOutMsgBuffer.valid = 0;
-        lambertSolutionOutMsgBuffer.valid_sol2 = 0;
     }
 
     // Write to the output messages
@@ -170,6 +171,7 @@ void LambertSolver::problemGeometry()
     // check if the two position vectors define a plane
     if (i_r1.cross(i_r2).norm() < 1e-8){
         bskLogger.bskLog(BSK_WARNING, "lambertSolver: position vectors r1 and r2 don't define a plane.");
+        this->noSolution = true;
     }
     // orbit normal direction
     Eigen::Vector3d i_h = i_r1.cross(i_r2)/(i_r1.cross(i_r2).norm());
