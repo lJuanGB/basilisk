@@ -199,7 +199,7 @@ void LambertSolver::findx()
         // if getInitialGuess function determines that TOF is too short for multi-revolution solution to exist, return no solution
         return;
     }
-    
+
     // find x that satisfies time-of-flight constraint using numerical root finder
     if (this->solverName == "Gooding"){
         // for Gooding algorithm use halley root finder
@@ -295,20 +295,16 @@ std::vector<double> LambertSolver::getInitialGuess(double lam, double T)
         double c41 = 1.0;
         double c42 = 0.24;
 
-        double c = (this->r2vec - this->r1vec).norm(); // chord length
-        double r1 = this->r1vec.norm();
-        double r2 = this->r2vec.norm();
-        double s = 1.0/2.0*(r1+r2+c); // semiperimeter
-        
+        double theta = 2.0*atan2(1.0-pow(lam,2), 2.0*lam);
+        // theta between 0 and pi if lambda > 0 and between pi and 2pi if lambda < 0
+        if (lam < 0){
+            theta = 2.0*M_PI - theta;
+        }
+
         if (this->M == 0){
             // zero revolution case
             
             double x01 = -(T - T00)/(T - T00 + 4.0);
-            double theta = 2.0*acos(lam/(1.0-c/(2.0*s)));
-            // theta between 0 and pi if lambda > 0 and between pi and 2pi if lambda < 0
-            if (lam < 0){
-                theta = 2.0*M_PI - theta;
-            }
             // solution patches
             double W = x01 + 1.7*sqrt(2.0-theta/M_PI);
             double x03;
@@ -326,8 +322,7 @@ std::vector<double> LambertSolver::getInitialGuess(double lam, double T)
         }
         else {
             // multi-revolution case
-            
-            double theta = 2.0*atan2(2.0*lam, 1.0-pow(lam,2));
+
             double x_M_pi = 4.0/(3.0*M_PI*(2*this->M + 1));
             double x_M; // x that corresponds to Tmin (the minimum TOF for two solutions to exist, otherwise zero solutions exist)
             if (theta <= M_PI){
@@ -442,7 +437,12 @@ double LambertSolver::x2tof(double x, int N, double lam)
     double y = sqrt(1.0- pow(lam, 2) * u);
     
     double tof;
-    if (dist < battin){
+    if (dist < 1e-8){
+        // exact time of flight for parabolic case
+
+        tof = 2.0/3.0*(1.0 - pow(lam,3));
+    }
+    else if (dist < battin){
         // Use Battin formulation
         
         double eta = y - lam * x;
@@ -481,16 +481,24 @@ double LambertSolver::x2tof(double x, int N, double lam)
 */
 std::vector<double> LambertSolver::dTdx(double x, double T, double lam)
 {
-    double u = 1.0 - pow(x, 2);
-    double y = sqrt(1.0- pow(lam, 2) * u);
+    double DT; // dT/dx
+    double D2T; // d2T/dx2
+    double D3T; // d3T/dx3
+    if (abs(x - 1.0) < 1e-8){
+        // exact derivative for parabolic case
 
-    // dT/dx
-    double DT = 1.0/u*(3.0*T*x - 2.0 + 2.0 * pow(lam, 3) * x / y);
-    // d2T/dx2
-    double D2T = 1.0/u*(3.0*T + 5.0*x*DT + 2.0 * (1. - pow(lam, 2)) * pow(lam, 3) / pow(y, 3));
-    // d3T/dx3
-    double D3T = 1.0/u*(7.0*x*D2T + 8.0*DT - 6.0 * (1. - pow(lam, 2)) * pow(lam, 5) * x / pow(y, 5));
-    
+        DT = 2.0/5.0*(pow(lam,5) - 1.0);
+        D2T = 0.0;
+        D3T = 0.0;
+    }
+    else{
+        double u = 1.0 - pow(x, 2);
+        double y = sqrt(1.0- pow(lam, 2) * u);
+        DT = 1.0/u*(3.0*T*x - 2.0 + 2.0 * pow(lam, 3) * x / y);
+        D2T = 1.0/u*(3.0*T + 5.0*x*DT + 2.0 * (1. - pow(lam, 2)) * pow(lam, 3) / pow(y, 3));
+        D3T = 1.0/u*(7.0*x*D2T + 8.0*DT - 6.0 * (1. - pow(lam, 2)) * pow(lam, 5) * x / pow(y, 5));
+    }
+
     std::vector<double> DTs = {DT, D2T, D3T};
     
     return DTs;
@@ -522,7 +530,7 @@ std::vector<double> LambertSolver::householder(double T, double x0, int N)
         double delta = tof - T;
         // compute new x using 3rd order householder algorithm
         xnew = x0 - delta*(pow(DT,2) - delta*D2T/2.0)/(DT*(pow(DT,2) - delta*D2T) + D3T*pow(delta,2)/6.0);
-        
+
         err = abs(x0 - xnew);
         x0 = xnew;
         if (err < tol){
