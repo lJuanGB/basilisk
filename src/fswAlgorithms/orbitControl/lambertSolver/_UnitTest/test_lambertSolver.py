@@ -35,7 +35,7 @@ solver = ["Gooding", "Izzo"]
 revs = [0, 1, 4]
 times = [1e2, 1e6]
 eccentricities = [0.0, 0.05, 1.0, 1.2]
-transferAngle = [30., 90., 210., -60.]
+transferAngle = [30., 90., 180., 210., -60., 500.]
 
 paramArray = [solver, revs, times, eccentricities, transferAngle]
 # create list with all combinations of parameters
@@ -107,6 +107,8 @@ def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs,
 
     oe2 = copy.deepcopy(oe1)
     oe2.f = oe1.f + p5_angles * macros.D2R
+    # Izzo and Gooding Lambert algorithms only consider positive transfer angles. Convert to 0 < angle < 2pi
+    oe2.f = (oe2.f*macros.R2D % 360) * macros.D2R
     r2_N, v2_N = orbitalMotion.elem2rv_parab(mu, oe2)
 
     # determine time-of-flight for given transfer orbit and position vectors (true anomalies)
@@ -117,9 +119,6 @@ def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs,
         # elliptic case
         M1 = orbitalMotion.E2M(orbitalMotion.f2E(oe1.f, p4_eccs), p4_eccs)
         M2 = orbitalMotion.E2M(orbitalMotion.f2E(oe2.f, p4_eccs), p4_eccs)
-        # Izzo and Gooding Lambert algorithms only consider positive transfer angles. Convert to 0 < angle < 2pi
-        if p5_angles < 0.:
-            M2 = 2*np.pi + M2
         n = np.sqrt(mu/(oe1.a)**3)
         t_transfer = np.abs(M2-M1)/n
     elif p4_eccs == 1.0:
@@ -163,26 +162,28 @@ def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs,
     unitTestSim.AddModelToTask(unitTaskName, lambertPerformanceOutMsgRec)
 
     # for multi-revolution case, use external Lambert solver
-    if revs != 0:
+    if revs > 0 and p5_angles != 180.:
         Izzo = IzzoSolve(np.array(r1vec), np.array(r2vec), time, mu, revs)
         Izzo.solve()
+        numSolutions = len(Izzo.x)
 
     idx = 2 * revs - 1
     idx_sol2 = idx + 1
 
-    if revs == 0:
+    if p5_angles == 180. or (revs > 0 and idx+1 > numSolutions):
+        # 1. if the transfer angle is 180 degrees, the two position vectors do not define a plane, so an infinite number of solutions exist. In this case, the module should not return any solutions.
+        # 2. external Lambert solver does not compute solution if requested transfer time is less than minimum time-of-flight for multi-revolution solution. In this case set all true outputs to zero (so does the lambert module as well, since no solution exists for the requested time-of-flight)
+        v1True = np.array([0., 0., 0.])
+        v2True = np.array([0., 0., 0.])
+        validFlagTrue = 0
+        v1True_sol2 = np.array([0., 0., 0.])
+        v2True_sol2 = np.array([0., 0., 0.])
+        validFlagTrue_sol2 = 0
+    elif revs == 0:
         # for zero-revolution case, obtain true velocity vectors from computed transfer orbit
         v1True = v1_N
         v2True = v2_N
         validFlagTrue = 1
-        v1True_sol2 = np.array([0., 0., 0.])
-        v2True_sol2 = np.array([0., 0., 0.])
-        validFlagTrue_sol2 = 0
-    elif idx+1 > len(Izzo.x):
-        # external Lambert solver does not compute solution if requested transfer time is less than minimum time-of-flight for multi-revolution solution. In this case set all true outputs to zero (so does the lambert module as well, since no solution exists for the requested time-of-flight)
-        v1True = np.array([0., 0., 0.])
-        v2True = np.array([0., 0., 0.])
-        validFlagTrue = 0
         v1True_sol2 = np.array([0., 0., 0.])
         v2True_sol2 = np.array([0., 0., 0.])
         validFlagTrue_sol2 = 0
@@ -236,6 +237,6 @@ def lambertSolverTestFunction(show_plots, p1_solver, p2_revs, p3_times, p4_eccs,
 
 
 if __name__ == "__main__":
-    test_lambertSolver(False, solver[0], revs[1], times[1], eccentricities[3], transferAngle[1], 1e-2)
+    test_lambertSolver(False, solver[0], revs[1], times[1], eccentricities[1], transferAngle[2], 1e-2)
 
 
