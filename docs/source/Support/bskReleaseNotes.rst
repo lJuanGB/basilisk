@@ -60,6 +60,8 @@ Version |release|
   axis along an inertial direction while ensuring maximum power generation on the solar arrays
 - Added a maximum power parameter ``maxPower`` to :ref:`reactionWheelStateEffector` for limiting supplied
   power, independent of the modules in simulation/power.
+- Added the ability to integrate the ODE's of two or more Basilisk modules that are ``DynamicObject`` class
+  member at the same time.  See :ref:`bskPrinciples-9`
 
 
 Version 2.1.6 (Jan. 21, 2023)
